@@ -1,0 +1,71 @@
+import libtcodpy as libtcod
+import Dlist
+import Editors
+import reader
+import windowManager
+
+#actual size of the window
+SCREEN_WIDTH = 80
+SCREEN_HEIGHT = 50
+
+LIMIT_FPS = 20  # 20 frames-per-second maximum
+
+
+#############################################
+# Initialization & Main Loop
+#############################################
+
+libtcod.console_set_custom_font('fonts/terminal8x14_gs_ro.png',
+        libtcod.FONT_TYPE_GREYSCALE | libtcod.FONT_LAYOUT_ASCII_INROW)
+libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, 'List-editor', False)
+libtcod.sys_set_fps(LIMIT_FPS)
+libtcod.console_set_background_flag(0, libtcod.BKGND_SET)
+libtcod.console_set_default_foreground(0, libtcod.white)
+
+
+
+#rootNode = Dlist.TNode()
+#rootNode.initialiseWithList(reader.readFile("image"))
+
+rootNode = Dlist.createTreeFromList(reader.readFile("image"))
+
+#tnode = Dlist.TNode('henrietta')
+#rootNode.child = tnode
+#tnode.parent = rootNode
+#tnode.append('piesinthesky')
+#tnode.append('halleluhah-tara')
+#tnode.append('somebody-punch-me')
+#tnode.append("salmon")
+
+listEd = Editors.TreeEditor()
+listEd.root = rootNode
+listEd.curRoot = listEd.root
+listEd.active = rootNode
+
+wm = windowManager.WindowManager(listEd)
+
+#listEd.loadImage()
+
+print "width is: ", libtcod.console_get_width(0)
+print "height is: ", libtcod.console_get_height(0)
+
+def getKeypress():
+    key = libtcod.console_check_for_keypress()
+    if key.c:
+        return chr(key.c)
+    else:
+        return key.vk
+
+while not libtcod.console_is_window_closed():
+
+    libtcod.console_clear(0)
+    #listEd.draw(0, 0)
+    wm.draw()
+    libtcod.console_flush()
+
+    #handle keys and exit game if needed
+    key = libtcod.console_check_for_keypress()
+    #exit = listEd.handleKeys(key)
+    exit = wm.handleKeys(key)
+    if exit:
+        break
