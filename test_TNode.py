@@ -83,15 +83,21 @@ class TestTNode(TestCase):
         self.assertEquals(node1.toPySexp(), [5, 15, 10])
 
     def test_removeSelf(self):
-        root = TNode
         node1 = TNode(5)
         node1.insertAfter(10)
 
+        node1.next.removeSelf()
 
-        node1.removeSelf()
+        self.assertEqual(node1.toPySexp(), [5])
 
+    def test_removeSelf2(self):
+        node1 = TNode(5)
+        node1.insertAfter(10)
+        node1.insertAfter(15)
 
-        self.fail()
+        node1.next.removeSelf()
+
+        self.assertEqual(node1.toPySexp(), [5, 10])
 
     def test_nestData(self):
         self.fail()
