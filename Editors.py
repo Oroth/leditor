@@ -145,6 +145,12 @@ class TreeEditor(object):
             elif chr(key.c) == 'd':
                 self.yankBuffer = self.active.activeToPySexp()
                 newActive = self.active.removeSelf()
+
+
+                # Deleting the last node
+                #if self.active == newActive:
+
+
                 if self.root == self.active:
                     self.root.child = None
 
@@ -253,7 +259,7 @@ class TreeEditor(object):
                 pen.write('(', bgcolour)
                 drawr(node.child, bgcolour)
                 pen.write(')', bgcolour)
-            else:
+            elif node.child is not None:
                 output = str(node.child)
                 if node == self.active:
 

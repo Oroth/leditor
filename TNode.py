@@ -22,6 +22,16 @@ def createTreeFromSexp(sexp):
 
     return startNode
 
+def lispAtomToPy(token):
+    "Numbers become numbers; every other token is a symbol."
+    if token is None:
+        return []
+    try: return int(token)
+    except ValueError:
+        try: return float(token)
+        except ValueError:
+            return str(token)
+
 class TNode(object):
     def __init__(self, val=None, parent=None, prev=None, next=None):
         self.next = next
@@ -38,7 +48,7 @@ class TNode(object):
             if i.isSubNode():
                 ret.append(i.child.toPySexp())
             else:
-                ret.append(reader.atom(i.child))
+                ret.append(lispAtomToPy(i.child))
 
         return ret
 
@@ -87,8 +97,11 @@ class TNode(object):
     # The new active node will be the next in sequence if one exists. Otherwise it will be the previous
     # and failing that it will return the parent.
     def removeSelf(self):
-        if not self.previous:
-            self.parent.child = self.next
+        if self.previous is None:
+            if self.next:
+                self.parent.child = self.next
+            else:
+                self.child = None
         else:
             self.previous.next = self.next
 
@@ -99,7 +112,7 @@ class TNode(object):
         if self.previous:
             return self.previous
 
-        return self.parent
+        return self
 
     # wrap the current data in brackets.
     def nestChild(self):
