@@ -4,56 +4,6 @@ import reader
 def isList(lst):
     return isinstance(lst, list)
 
-#def createTreeFromSexp(sexp):
-#    startNode = None
-#    lastNode = None
-#    rootNode = TNode()
-#
-#    if sexp:
-#        if isList(sexp):
-#            for i in sexp:
-#                if startNode:
-#                    if isList(i):
-#                        lastNode.insertNodeAfter(createTreeFromSexp(i))
-#                    else:
-#                        lastNode.insertAfter(i)
-#                    lastNode = lastNode.next
-#                else:
-#                    if isList(i):
-#                        startNode = createTreeFromSexp(i)
-#                    else:
-#                        startNode = TNode(i)
-#                    startNode.parent = rootNode
-#                    rootNode.child = startNode
-#                    lastNode = startNode
-#        else:  #atom
-#            return TNode(sexp)
-#            #startNode.parent = rootNode
-#            #rootNode.child = startNode
-#
-#    return rootNode
-
-#def createTreeFromSexp(sexp):
-#    startNode = None
-#    lastNode = None
-#    rootNode = TNode()
-#
-#    if sexp:
-#        if isList(sexp):
-#            for i in sexp:
-#                if startNode:
-#                    lastNode.insertNodeAfter(createTreeFromSexp(i))
-#                    lastNode = lastNode.next
-#                else:
-#                    startNode = createTreeFromSexp(i)
-#                    startNode.parent = rootNode
-#                    rootNode.data = startNode
-#                    lastNode = startNode
-#        else:  #atom
-#            return TNode(sexp)
-#
-#    return rootNode
-
 def createTreeFromSexp(sexp):
     startNode = None
     lastNode = None
@@ -77,7 +27,7 @@ class TNode(object):
         self.next = next
         self.previous = prev
         self.parent = parent
-        self.data = val
+        self.setChild(val)
 
     def __iter__(self):
         return TNodeIterator(self)
@@ -85,21 +35,21 @@ class TNode(object):
     def toPySexp(self):
         ret = list()
         for i in self:
-            if i.isDataNode():
-                ret.append(i.data.toPySexp())
+            if i.isChildTNode():
+                ret.append(i.child.toPySexp())
             else:
-                ret.append(reader.atom(i.data))
+                ret.append(reader.atom(i.child))
 
         return ret
 
     def activeToPySexp(self):
-        if self.isDataNode():
-            return self.data.toPySexp()
+        if self.isChildTNode():
+            return self.child.toPySexp()
         else:
-            return reader.atom(self.data)
+            return reader.atom(self.child)
 
-    def isDataNode(self):
-        if isinstance(self.data, TNode):
+    def isChildTNode(self):
+        if isinstance(self.child, TNode):
             return True
         return False
 
@@ -108,7 +58,7 @@ class TNode(object):
         if self.previous:
             self.previous.next = newNode
         elif self.parent:
-                self.parent.data = newNode
+            self.parent.child = newNode
         self.previous = newNode
 
     def insertAfter(self, element):
@@ -118,11 +68,11 @@ class TNode(object):
         self.next = newNode
 
     def setChild(self, newChild):
-        self.data = newChild
+        self.child = newChild
 
         if isTNode(newChild):
-            for i in self.data:
-                iter.parent = self.data
+            for i in self.child:
+                i.parent = self
 
     def insertNodeAfter(self, node):
         if self.next:
@@ -152,16 +102,9 @@ class TNode(object):
         return self.parent
 
     # wrap the current data in brackets.
-    def nestData(self):
-        self.data = TNode(self.data, self)
+    def nestChild(self):
+        self.setChild(TNode(self.child, self))
 
-        #iter = self.data
-        #while iter:
-            #iter.parent = self.data
-            #iter = iter.next
-
-        for i in self.data:
-            iter.parent = self.data
 
 
 def isTNode(obj):

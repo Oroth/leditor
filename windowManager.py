@@ -1,5 +1,5 @@
 __author__ = 'chephren'
-import Dlist
+import TNode
 import utility
 
 # interface
@@ -33,7 +33,7 @@ class Column(object):
 
 class WindowManager(object):
     def __init__(self, initialFunc):
-        self.root = Dlist.TNode(Column(utility.screenWidth(), initialFunc))
+        self.root = TNode.TNode(Column(utility.screenWidth(), initialFunc))
         self.active = self.root
         self.cols = 1
 
@@ -45,21 +45,21 @@ class WindowManager(object):
         self.active = self.active.next
 
         iter = self.root
-        iter.element.width = newWidth
+        iter.child.width = newWidth
         while iter.next:
-            iter.next.element.width = newWidth
+            iter.next.child.width = newWidth
             iter = iter.next
 
     def draw(self):
         iter = self.root
-        iter.element.draw(0, 2)
+        iter.child.draw(0, 2)
         #curx = iter.element.width
         #while iter.next:
             #iter.element.draw()
         #self.active.element.draw(0, 0)
 
     def handleKeys(self, key):
-        return self.active.element.function.handleKeys(key)
+        return self.active.child.function.handleKeys(key)
 
 
     #def mainLoop(self):

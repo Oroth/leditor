@@ -1,5 +1,5 @@
 import libtcodpy as libtcod
-import Dlist
+import TNode
 import Editors
 import reader
 import windowManager
@@ -23,11 +23,8 @@ libtcod.console_set_background_flag(0, libtcod.BKGND_SET)
 libtcod.console_set_default_foreground(0, libtcod.white)
 
 
-
-#rootNode = Dlist.TNode()
-#rootNode.initialiseWithList(reader.readFile("image"))
-
-rootNode = Dlist.createTreeFromList(reader.readFile("image"))
+rootNode = TNode.TNode()
+rootNode.setChild(TNode.createTreeFromSexp(reader.readFile("image")))
 
 #tnode = Dlist.TNode('henrietta')
 #rootNode.child = tnode

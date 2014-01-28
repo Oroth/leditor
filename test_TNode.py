@@ -57,7 +57,7 @@ class TestTNode(TestCase):
         node3 = TNode(55)
 
         node1.next = node2
-        node2.data = node2a
+        node2.child = node2a
         node2.next = node3
 
         node2a.next = node2b
@@ -72,12 +72,12 @@ class TestTNode(TestCase):
 
     def test_isDataNode(self):
         node = TNode(22)
-        self.assertFalse(node.isDataNode())
+        self.assertFalse(node.isChildTNode())
 
     def test_isDataNode2(self):
         node = TNode(22)
         secondNode = TNode(node, node)
-        self.assertTrue(secondNode.isDataNode())
+        self.assertTrue(secondNode.isChildTNode())
 
 
     def test_insertBefore(self):
