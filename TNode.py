@@ -35,7 +35,7 @@ class TNode(object):
     def toPySexp(self):
         ret = list()
         for i in self:
-            if i.isChildTNode():
+            if i.isSubNode():
                 ret.append(i.child.toPySexp())
             else:
                 ret.append(reader.atom(i.child))
@@ -43,12 +43,12 @@ class TNode(object):
         return ret
 
     def activeToPySexp(self):
-        if self.isChildTNode():
+        if self.isSubNode():
             return self.child.toPySexp()
         else:
             return reader.atom(self.child)
 
-    def isChildTNode(self):
+    def isSubNode(self):
         if isinstance(self.child, TNode):
             return True
         return False

@@ -72,12 +72,12 @@ class TestTNode(TestCase):
 
     def test_isDataNode(self):
         node = TNode(22)
-        self.assertFalse(node.isChildTNode())
+        self.assertFalse(node.isSubNode())
 
     def test_isDataNode2(self):
         node = TNode(22)
         secondNode = TNode(node, node)
-        self.assertTrue(secondNode.isChildTNode())
+        self.assertTrue(secondNode.isSubNode())
 
 
     def test_insertBefore(self):

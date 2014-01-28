@@ -66,7 +66,7 @@ class TreeEditor(object):
         f = open("image", 'w')
 
         def writer(node):
-            if node.isChildTNode():
+            if node.isSubNode():
                 f.write('(')
                 writer(node.child)
                 f.write(')')
@@ -78,7 +78,7 @@ class TreeEditor(object):
                 f.write(' ')
                 writer(node.next)
 
-        if self.root.isChildTNode():
+        if self.root.isSubNode():
             writer(self.root)
 
         f.close()
@@ -154,7 +154,7 @@ class TreeEditor(object):
                     self.active = newActive
 
             elif chr(key.c) == 'c':
-                if not self.active.isChildTNode():
+                if not self.active.isSubNode():
                     self.editing = True
                     self.cellEditor = CellEditor(self.active.child)
 
@@ -225,7 +225,7 @@ class TreeEditor(object):
                     self.active = self.active.next
 
             elif key.vk == libtcod.KEY_DOWN or chr(key.c) == 'j':
-                if self.active.isChildTNode():
+                if self.active.isSubNode():
                     self.active = self.active.child
 
             elif key.vk == libtcod.KEY_UP or chr(key.c) == 'k':
@@ -242,7 +242,7 @@ class TreeEditor(object):
         pen = utility.Pen(posx, posy)
 
         def drawr(node, parentCol=libtcod.black):
-            if node.isChildTNode():
+            if node.isSubNode():
                 if node.child.child == "=>":
                     pen.writeNL()
                 if node == self.active:
@@ -273,7 +273,7 @@ class TreeEditor(object):
 
                 drawr(node.next, parentCol)
 
-        if self.root.isChildTNode():
+        if self.root.isSubNode():
             drawr(self.root)
         else:
             pen.write(str(self.root.child))
@@ -284,7 +284,7 @@ class TreeEditor(object):
 
         def drawr(node, nesting, parentCol=libtcod.black,):
 
-            if node.isChildTNode():
+            if node.isSubNode():
                 if node == self.active:
                     bgcolour = libtcod.azure
                 else:
