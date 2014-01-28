@@ -1,6 +1,77 @@
 __author__ = 'chephren'
 import reader
 
+def isList(lst):
+    return isinstance(lst, list)
+
+#def createTreeFromSexp(sexp):
+#    startNode = None
+#    lastNode = None
+#    rootNode = TNode()
+#
+#    if sexp:
+#        if isList(sexp):
+#            for i in sexp:
+#                if startNode:
+#                    if isList(i):
+#                        lastNode.insertNodeAfter(createTreeFromSexp(i))
+#                    else:
+#                        lastNode.insertAfter(i)
+#                    lastNode = lastNode.next
+#                else:
+#                    if isList(i):
+#                        startNode = createTreeFromSexp(i)
+#                    else:
+#                        startNode = TNode(i)
+#                    startNode.parent = rootNode
+#                    rootNode.child = startNode
+#                    lastNode = startNode
+#        else:  #atom
+#            return TNode(sexp)
+#            #startNode.parent = rootNode
+#            #rootNode.child = startNode
+#
+#    return rootNode
+
+#def createTreeFromSexp(sexp):
+#    startNode = None
+#    lastNode = None
+#    rootNode = TNode()
+#
+#    if sexp:
+#        if isList(sexp):
+#            for i in sexp:
+#                if startNode:
+#                    lastNode.insertNodeAfter(createTreeFromSexp(i))
+#                    lastNode = lastNode.next
+#                else:
+#                    startNode = createTreeFromSexp(i)
+#                    startNode.parent = rootNode
+#                    rootNode.data = startNode
+#                    lastNode = startNode
+#        else:  #atom
+#            return TNode(sexp)
+#
+#    return rootNode
+
+def createTreeFromSexp(sexp):
+    startNode = None
+    lastNode = None
+
+    if sexp:
+        if isList(sexp):
+            for i in sexp:
+                if startNode:
+                    lastNode.insertAfter(createTreeFromSexp(i))
+                    lastNode = lastNode.next
+                else:
+                    startNode = TNode(createTreeFromSexp(i))
+                    lastNode = startNode
+        else:  #atom
+            return sexp
+
+    return startNode
+
 class TNode(object):
     def __init__(self, val=None, parent=None, prev=None, next=None):
         self.next = next
@@ -52,6 +123,14 @@ class TNode(object):
         if isTNode(newChild):
             for i in self.data:
                 iter.parent = self.data
+
+    def insertNodeAfter(self, node):
+        if self.next:
+            self.next.previous = node
+            node.next = self.next
+        self.next = node
+        node.previous = self
+        node.parent = self.parent
 
 
     # Removes the current element and returns the new active node.

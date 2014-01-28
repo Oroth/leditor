@@ -1,9 +1,35 @@
 from unittest import TestCase
 from TNode import TNode
+from TNode import createTreeFromSexp
 
 __author__ = 'chephren'
 
 class TestTNode(TestCase):
+
+    def test_createTree(self):
+        tree = createTreeFromSexp(22)
+        self.assertEqual(tree, 22)
+
+    def test_createTree2(self):
+        tree = createTreeFromSexp([11])
+        self.assertEqual(tree.toPySexp(), [11])
+
+    def test_createTree3(self):
+        tree = createTreeFromSexp([11, 15])
+        self.assertEqual(tree.toPySexp(), [11, 15])
+
+    def test_createTree4(self):
+        tree = createTreeFromSexp([11, 15, 17])
+        self.assertEqual(tree.toPySexp(), [11, 15, 17])
+
+    def test_createTreeRec(self):
+        tree = createTreeFromSexp([[10]])
+        self.assertEqual(tree.toPySexp(), [[10]])
+
+    def test_createTreeRec2(self):
+        tree = createTreeFromSexp([22, [33, 44]])
+        self.assertEqual(tree.toPySexp(), [22, [33, 44]])
+
 
     def test_toPySexp(self):
         node1 = TNode(5)
