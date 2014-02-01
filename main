@@ -36,7 +36,8 @@ rootNode.setChild(TNode.createTreeFromSexp(reader.readFile("image")))
 
 listEd = Editors.TreeEditor()
 listEd.root = rootNode
-listEd.curRoot = listEd.root
+listEd.curRoot = TNode.TNode()
+listEd.curRoot.child = listEd.root.child
 listEd.active = rootNode
 
 wm = windowManager.WindowManager(listEd)

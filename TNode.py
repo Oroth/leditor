@@ -39,6 +39,10 @@ class TNode(object):
         self.parent = parent
         self.setChild(val)
 
+        self.value = None
+        self.env = None
+        self.displayValue = False
+
     def __iter__(self):
         return TNodeIterator(self)
 
@@ -62,6 +66,10 @@ class TNode(object):
         if isinstance(self.child, TNode):
             return True
         return False
+
+    def calcValue(self):
+        if isinstance(self.child, int):
+            self.value = self.child
 
     def insertBefore(self, element):
         newNode = TNode(element, self.parent, self.previous, self)

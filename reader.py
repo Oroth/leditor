@@ -10,7 +10,7 @@ def read(s):
     "Read a Scheme expression from a string."
     return read_from(tokenize(s))
 
-parse = read
+
 Symbol = str
 
 def tokenize(s):

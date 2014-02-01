@@ -137,27 +137,30 @@ class TreeEditor(object):
                 self.active.child.insertAfter(TNode.createTreeFromSexp(evalResult))
                 self.active.child.insertBefore("=>")  #needs to go after as will change child
 
-                # move down a line
-
-                #reset the writer
-                #self.root = None
+            elif key.vk == 'x' and key.lctrl:
+                print "evaluating"
 
             elif chr(key.c) == 'd':
-                self.yankBuffer = self.active.activeToPySexp()
-                newActive = self.active.removeSelf()
+                if self.active.parent:
 
+                    #The root node
+                    if self.active.child == self.curRoot.child:
+                        # set curRoot.Child to the first node in the outer list
+                        self.curRoot.child = self.curRoot.child.parent.parent.child
+
+                    self.yankBuffer = self.active.activeToPySexp()
+
+                    if self.active.child == self.curRoot.child.child:
+                        newActive = self.active.removeSelf()
+                        self.curRoot.child = newActive.parent
+                    else:
+                        newActive = self.active.removeSelf()
+
+                    self.active = newActive
 
                 # Deleting the last node
                 #if self.active == newActive:
 
-
-                if self.root == self.active:
-                    self.root.child = None
-
-                if newActive:
-                    if self.root.child == self.active:
-                        self.root.child = self.active.next
-                    self.active = newActive
 
             elif chr(key.c) == 'c':
                 if not self.active.isSubNode():
@@ -171,14 +174,24 @@ class TreeEditor(object):
                 self.cellEditor = CellEditor(self.active.child)
 
             elif chr(key.c) == 'i':
-                if self.active != self.root:    # maybe the correct behaviour is to sub and ins
+                if self.active.child != self.curRoot.child:    # maybe the correct behaviour is to sub and ins
                     self.editing = True
                     self.active.insertBefore('')
-                    self.active = self.active.previous
+                    if self.active.child == self.curRoot.child.child:
+                        self.active = self.active.previous
+                        self.curRoot.child = self.active
+                    else:
+                        self.active = self.active.previous
                     self.cellEditor = CellEditor(self.active.child)
 
             elif chr(key.c) == 'G':
-                self.curRoot = self.active
+                if self.active.isSubNode():
+                    self.curRoot.child = self.active.child
+
+            elif chr(key.c) == 'K':
+                if self.curRoot.child.parent != self.root:
+                    # set curRoot.Child to the first node in the outer list
+                    self.curRoot.child = self.curRoot.child.parent.parent.child
 
             elif chr(key.c) == '(':
                 self.active.nestChild()
@@ -223,11 +236,11 @@ class TreeEditor(object):
                 print self.yankBuffer
 
             elif key.vk == libtcod.KEY_LEFT or chr(key.c) == 'h':
-                if self.active.previous:
+                if self.active.previous and self.active.child != self.curRoot.child:
                     self.active = self.active.previous
 
             elif key.vk == libtcod.KEY_RIGHT or chr(key.c) == 'l':
-                if self.active.next:
+                if self.active.next and self.active.child != self.curRoot.child:
                     self.active = self.active.next
 
             elif key.vk == libtcod.KEY_DOWN or chr(key.c) == 'j':
@@ -235,7 +248,7 @@ class TreeEditor(object):
                     self.active = self.active.child
 
             elif key.vk == libtcod.KEY_UP or chr(key.c) == 'k':
-                if self.active.parent:
+                if self.active.parent and self.active.child != self.curRoot.child:
                     self.active = self.active.parent
 
     def draw(self, posx, posy):
@@ -251,7 +264,10 @@ class TreeEditor(object):
             if node.isSubNode():
                 if node.child.child == "=>":
                     pen.writeNL()
-                if node == self.active:
+                # check view
+                if node.child == self.active.child:
+                    bgcolour = libtcod.azure
+                elif node == self.active:
                     bgcolour = libtcod.azure
                 else:
                     bgcolour = parentCol
@@ -279,10 +295,10 @@ class TreeEditor(object):
 
                 drawr(node.next, parentCol)
 
-        if self.root.isSubNode():
-            drawr(self.root)
+        if self.curRoot.isSubNode():
+            drawr(self.curRoot)
         else:
-            pen.write(str(self.root.child))
+            pen.write(str(self.curRoot.child))
 
 
     def drawVert(self, posx, posy, levels):
@@ -320,7 +336,7 @@ class TreeEditor(object):
                     pen.write(' ', parentCol)
                 drawr(node.next, nesting, parentCol)
 
-        drawr(self.root, 0)
+        drawr(self.curRoot, 0)
 
 
 
