@@ -3,6 +3,8 @@ import TNode
 import Editors
 import reader
 import windowManager
+import thread
+import time
 
 #actual size of the window
 SCREEN_WIDTH = 80
@@ -24,7 +26,7 @@ libtcod.console_set_default_foreground(0, libtcod.white)
 
 
 rootNode = TNode.TNode()
-rootNode.setChild(TNode.createTreeFromSexp(reader.readFile("image")))
+rootNode.setChild(TNode.createTreeFromSexp(reader.loadFile("image")))
 
 #tnode = Dlist.TNode('henrietta')
 #rootNode.child = tnode
@@ -47,12 +49,28 @@ wm = windowManager.WindowManager(listEd)
 print "width is: ", libtcod.console_get_width(0)
 print "height is: ", libtcod.console_get_height(0)
 
+def print_time(threadName, delay):
+    count = 0
+    while count < 5:
+        time.sleep(delay)
+        count += 1
+        #print "%s: %s" % ( threadName, time.ctime(time.time()) )
+        libtcod.console_print(0, 0, 30, "%s: %s" % ( threadName, time.ctime(time.time())))
+        libtcod.console_flush()
+
 def getKeypress():
     key = libtcod.console_check_for_keypress()
     if key.c:
         return chr(key.c)
     else:
         return key.vk
+#
+#try:
+#    thread.start_new_thread( print_time, ("Thread-1", 1, ) )
+#except:
+#    print "Error: unable to start thread"
+
+#print_time ("Thread-1", 1, )
 
 while not libtcod.console_is_window_closed():
 

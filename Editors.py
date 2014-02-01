@@ -10,6 +10,10 @@ class CellEditor(object):
         self.content = list(str(content))
         self.index = 0
 
+    def getContent(self):
+        text = ''.join(self.content)
+        return reader.atom(text)
+
     def handle_key(self, key):
 
         if key.vk == libtcod.KEY_ENTER:
@@ -61,26 +65,34 @@ class TreeEditor(object):
         self.yankBuffer = None
         self.printingMode = 'horizontal'
 
+#    def writeImage(self):
+#
+#        f = open("image", 'w')
+#
+#        def writer(node):
+#            if node.isSubNode():
+#                f.write('(')
+#                writer(node.child)
+#                f.write(')')
+#            else:
+#                output = str(node.child)
+#                f.write(output)
+#
+#            if node.next:
+#                f.write(' ')
+#                writer(node.next)
+#
+#        if self.root.isSubNode():
+#            writer(self.root)
+#
+#        f.close()
+
     def writeImage(self):
 
+        pyObj = self.root.child.toPySexp()
+        text = reader.to_string(pyObj)
         f = open("image", 'w')
-
-        def writer(node):
-            if node.isSubNode():
-                f.write('(')
-                writer(node.child)
-                f.write(')')
-            else:
-                output = str(node.child)
-                f.write(output)
-
-            if node.next:
-                f.write(' ')
-                writer(node.next)
-
-        if self.root.isSubNode():
-            writer(self.root)
-
+        f.write(text)
         f.close()
 
     def loadImage(self):
@@ -96,7 +108,7 @@ class TreeEditor(object):
         if self.editing:
             finished = self.cellEditor.handle_key(key)
             if finished == 'END':
-                self.active.child = ''.join(self.cellEditor.content)
+                self.active.child = self.cellEditor.getContent()
                 self.editing = False
             elif finished == 'CANCEL':
                 #if self.active.element == '':
@@ -104,7 +116,7 @@ class TreeEditor(object):
 
                 self.editing = False
             elif finished == 'SPACE':
-                self.active.child = ''.join(self.cellEditor.content)
+                self.active.child = self.cellEditor.getContent()
 
                 self.active.insertAfter('')
                 self.active = self.active.next
@@ -113,7 +125,7 @@ class TreeEditor(object):
             elif finished == 'NEST':
                 print len(self.cellEditor.content)
                 if self.cellEditor.content:
-                    self.active.child = ''.join(self.cellEditor.content)
+                    self.active.child = self.cellEditor.getContent()
                     self.active.insertAfter('')
                     self.active = self.active.next
 
@@ -276,7 +288,8 @@ class TreeEditor(object):
                 drawr(node.child, bgcolour)
                 pen.write(')', bgcolour)
             elif node.child is not None:
-                output = str(node.child)
+                #output = str(node.child)
+                output = reader.to_string(node.child)
                 if node == self.active:
 
                     if self.editing:
