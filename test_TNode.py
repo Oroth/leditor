@@ -1,6 +1,7 @@
 from unittest import TestCase
 from TNode import TNode
 from TNode import createTreeFromSexp
+from TNode import copyTNode
 
 __author__ = 'chephren'
 
@@ -64,7 +65,45 @@ class TestTNode(TestCase):
 
         self.assertEqual(node1.toPySexp(), [5, [4, 7], 55])
 
+    def test_copyTNode(self):
+        tree = createTreeFromSexp([4])
+        newTree = copyTNode(tree)
+        self.assertEqual(newTree.toPySexp(), [4])
 
+    def test_copyTNode2(self):
+        tree = createTreeFromSexp([[4, 5]])
+        newTree = copyTNode(tree)
+        self.assertEqual(newTree.toPySexp(), [[4, 5]])
+
+    def test_copyTNode3(self):
+        tree = createTreeFromSexp([4, 5, 6])
+        newTree = copyTNode(tree)
+        self.assertEqual(newTree.toPySexp(), [4, 5, 6])
+
+    def test_copyTNodeRec1(self):
+        tree = createTreeFromSexp([4, [10]])
+        newTree = copyTNode(tree)
+        self.assertEqual(newTree.toPySexp(), [4, [10]])
+
+    def test_copyTNodeRec2(self):
+        tree = createTreeFromSexp([4, [10, 20]])
+        newTree = copyTNode(tree)
+        self.assertEqual(newTree.toPySexp(), [4, [10, 20]])
+
+    def test_copyTNodeRec2(self):
+        tree = createTreeFromSexp([[10, 20], 4])
+        newTree = copyTNode(tree)
+        self.assertEqual(newTree.toPySexp(), [[10, 20], 4])
+
+    def test_copyTNodeRec3(self):
+        tree = createTreeFromSexp([4, [10], [20, [101]]])
+        newTree = copyTNode(tree)
+        self.assertEqual(newTree.toPySexp(), [4, [10], [20, [101]]])
+
+    def test_copyTNodeRec4(self):
+        tree = createTreeFromSexp([[4], [10, 15], [20, [101, 202]]])
+        newTree = copyTNode(tree)
+        self.assertEqual(newTree.toPySexp(), [[4], [10, 15], [20, [101, 202]]])
 
     #def test_activeToPySexp(self):
     #    self.fail()
@@ -125,5 +164,5 @@ class TestTNode(TestCase):
 
         self.assertEqual(node1.toPySexp(), [5, 10])
 
-    def test_nestData(self):
-        self.fail()
+#    def test_nestData(self):
+#        self.fail()

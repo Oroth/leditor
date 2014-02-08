@@ -22,6 +22,25 @@ def createTreeFromSexp(sexp):
 
     return startNode
 
+def copyTNode(node):
+    startNode = None
+    lastNode = None
+
+
+    if node:
+        if isinstance(node, TNode):
+            for i in node:
+                if startNode:
+                    lastNode.insertAfter(copyTNode(i.child))
+                    lastNode = lastNode.next
+                else:
+                    startNode = TNode(copyTNode(i.child))
+                    lastNode = startNode
+        else:  #atom
+            return node
+
+    return startNode
+
 class TNode(object):
     def __init__(self, val=None, parent=None, prev=None, next=None):
         self.next = next
@@ -56,9 +75,7 @@ class TNode(object):
             return True
         return False
 
-    def calcValue(self):
-        if isinstance(self.child, int):
-            self.value = self.child
+
 
     def getAddress(self):
         ret = []

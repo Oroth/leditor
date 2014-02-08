@@ -82,33 +82,41 @@ class WindowManager(object):
                     self.active = self.active.next
                     self.winCmd = False
 
-            if chr(key.c) == 'k':
+            elif chr(key.c) == 'k':
                 if self.active.previous:
                     self.active = self.active.previous
                     self.winCmd = False
 
-            if chr(key.c) == 'o':
+            elif chr(key.c) == 'o':
                 newEd = Editors.TreeEditor(self.active.child.root, self.active.child.active)
                 self.addWindow(newEd)
                 self.active = self.active.next
                 self.winCmd = False
 
-            if chr(key.c) == 'd':
+            elif chr(key.c) == 'd':
                 oldAdd = self.active.getAddress()
                 self.active.removeSelf()
                 self.active = self.root.gotoNearestAddress(oldAdd)
                 self.winCmd = False
 
-            if chr(key.c) == 'w':
+            elif chr(key.c) == 'w':
                 if self.active.next:
                     self.active = self.active.next
                 else:
                     self.active = self.root
                 self.winCmd = False
 
+            elif key.vk == libtcod.KEY_ENTER:
+                newTree = TNode.copyTNode(self.active.child.active)
+                newEd = Editors.TreeEditor(newTree)
+                self.addWindow(newEd)
+                self.active = self.active.next
+                self.active.child.calcValue()
+                self.winCmd = False
 
-        elif chr(key.c) == 'w':
+        elif chr(key.c) == 'w' and key.lctrl:
             self.winCmd = True
+            print "windowing"
 
         else:
             return self.active.child.handleKeys(key)
