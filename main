@@ -42,7 +42,14 @@ listEd.curRoot = TNode.TNode()
 listEd.curRoot.child = listEd.root.child
 listEd.active = rootNode
 
+listEd2 = Editors.TreeEditor()
+listEd2.root = rootNode
+listEd2.curRoot = TNode.TNode()
+listEd2.curRoot.child = listEd.root.child
+listEd2.active = rootNode
+
 wm = windowManager.WindowManager(listEd)
+wm.addWindow(listEd2)
 
 #listEd.loadImage()
 

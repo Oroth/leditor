@@ -2,10 +2,13 @@ __author__ = 'chephren'
 import libtcodpy as libtcod
 
 def defaultBG():
-    libtcod.console_get_default_background(0)
+    return libtcod.console_get_default_background(0)
 
 def screenWidth():
-    libtcod.console_get_width(0)
+    return libtcod.console_get_width(0)
+
+def screenHeight():
+    return libtcod.console_get_height(0)
 
 def get_key(key):
     if key.vk == libtcod.KEY_CHAR:

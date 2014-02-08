@@ -85,7 +85,7 @@ def atom(token):
     'Numbers become numbers; #t and #f are booleans; "..." string; otherwise Symbol.'
     if token == '#t': return True
     elif token == '#f': return False
-    elif token[0] == '"': return token[1:-1].decode('string_escape')
+    elif isa(token, str) and token[0] == '"': return token[1:-1].decode('string_escape')
     try: return int(token)
     except ValueError:
         try: return float(token)

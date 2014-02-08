@@ -1,6 +1,7 @@
 __author__ = 'chephren'
 import TNode
 import utility
+import libtcodpy
 
 # interface
 
@@ -10,7 +11,7 @@ class Window(object):
         self.y = y
         self.width = width
         self.height = height
-        self.image = []
+        self.image = libtcodpy.console_new(width, height)
 
 class Column(object):
     def __init__(self, width, function):
@@ -33,9 +34,11 @@ class Column(object):
 
 class WindowManager(object):
     def __init__(self, initialFunc):
-        self.root = TNode.TNode(Column(utility.screenWidth(), initialFunc))
+        #self.root = TNode.TNode(Column(utility.screenWidth(), initialFunc))
+        self.root = TNode.TNode(initialFunc)
         self.active = self.root
         self.cols = 1
+        self.wins = 1
 
     def addCol(self):
         self.cols += 1
@@ -50,16 +53,29 @@ class WindowManager(object):
             iter.next.child.width = newWidth
             iter = iter.next
 
+    def addWindow(self, newFunc):
+        self.wins += 1
+        self.active.insertAfter(newFunc)
+
     def draw(self):
-        iter = self.root
-        iter.child.draw(0, 2)
+        curY = 0
+        yStep = utility.screenHeight() / self.wins
+
+        for i in self.root:
+            i.child.draw(0, curY)
+            curY += yStep
+            #libtcodpy.console_print_frame(0,0, 0, utility.screenWidth(), yStep - 1)
+            libtcodpy.console_hline(0, 0, yStep - 1, utility.screenWidth())
+
         #curx = iter.element.width
         #while iter.next:
             #iter.element.draw()
         #self.active.element.draw(0, 0)
 
     def handleKeys(self, key):
-        return self.active.child.function.handleKeys(key)
+        #return self.active.child.function.handleKeys(key)
+        #if key.vk = 'w'
+        return self.active.child.handleKeys(key)
 
 
     #def mainLoop(self):
