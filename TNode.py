@@ -76,6 +76,22 @@ class TNode(object):
         ret.insert(0, 0)  #because of root node...
         return ret
 
+    def getAddressFrom(self, start):
+        ret = []
+        iter = self
+
+        while iter.parent and iter != start:
+            curLevelLoc = 0
+            while iter.previous and iter != start:
+                curLevelLoc += 1
+                iter = iter.previous
+
+            ret.insert(0, curLevelLoc)
+            iter = iter.parent
+
+        #ret.insert(0, 0)  #because of root node...
+        return ret
+
     def gotoAddress(self, add):
 
         iter = self

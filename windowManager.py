@@ -88,8 +88,15 @@ class WindowManager(object):
                     self.winCmd = False
 
             if chr(key.c) == 'o':
-                newEd = Editors.TreeEditor(self.active.child.active)
+                newEd = Editors.TreeEditor(self.active.child.root, self.active.child.active)
                 self.addWindow(newEd)
+                self.active = self.active.next
+                self.winCmd = False
+
+            if chr(key.c) == 'd':
+                oldAdd = self.active.getAddress()
+                self.active.removeSelf()
+                self.active = self.root.gotoNearestAddress(oldAdd)
                 self.winCmd = False
 
             if chr(key.c) == 'w':
