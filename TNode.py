@@ -60,6 +60,60 @@ class TNode(object):
         if isinstance(self.child, int):
             self.value = self.child
 
+    def getAddress(self):
+        ret = []
+        iter = self
+
+        while iter.parent:
+            curLevelLoc = 0
+            while iter.previous:
+                curLevelLoc += 1
+                iter = iter.previous
+
+            ret.insert(0, curLevelLoc)
+            iter = iter.parent
+
+        ret.insert(0, 0)  #because of root node...
+        return ret
+
+    def gotoAddress(self, add):
+
+        iter = self
+        while add:
+            curDest = add.pop(0)
+            while curDest != 0:
+                if iter.next:
+                    iter = iter.next
+                    curDest -= 1
+                else: return None
+
+            # check if still have sublevels to follow and go to them if possible
+            if add:
+                if iter.isSubNode():
+                    iter = iter.child
+                else: return None
+
+        return iter.child
+
+    def gotoNearestAddress(self, add):
+        iter = self
+        while add:
+            curDest = add.pop(0)
+            while curDest != 0:
+                if iter.next:
+                    iter = iter.next
+                    curDest -= 1
+                else: return iter
+
+            # check if still have sublevels to follow and go to them if possible
+            if add:
+                if iter.isSubNode():
+                    iter = iter.child
+                else: return iter
+
+        return iter
+
+
     def insertBefore(self, element):
         newNode = TNode(element, self.parent, self.previous, self)
         if self.previous:

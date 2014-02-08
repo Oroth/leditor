@@ -1,7 +1,8 @@
 __author__ = 'chephren'
 import TNode
 import utility
-import libtcodpy
+import Editors
+import libtcodpy as libtcod
 
 # interface
 
@@ -11,7 +12,7 @@ class Window(object):
         self.y = y
         self.width = width
         self.height = height
-        self.image = libtcodpy.console_new(width, height)
+        self.image = libtcod.console_new(width, height)
 
 class Column(object):
     def __init__(self, width, function):
@@ -37,6 +38,7 @@ class WindowManager(object):
         #self.root = TNode.TNode(Column(utility.screenWidth(), initialFunc))
         self.root = TNode.TNode(initialFunc)
         self.active = self.root
+        self.winCmd = False
         self.cols = 1
         self.wins = 1
 
@@ -62,20 +64,47 @@ class WindowManager(object):
         yStep = utility.screenHeight() / self.wins
 
         for i in self.root:
-            i.child.draw(0, curY)
+            if i == self.active:
+                i.child.draw(0, curY, libtcod.azure)
+            else: i.child.draw(0, curY, libtcod.grey)
             curY += yStep
-            #libtcodpy.console_print_frame(0,0, 0, utility.screenWidth(), yStep - 1)
-            libtcodpy.console_hline(0, 0, yStep - 1, utility.screenWidth())
+            if i.next:
+                libtcod.console_hline(0, 0, curY - 1, utility.screenWidth())
 
-        #curx = iter.element.width
-        #while iter.next:
-            #iter.element.draw()
-        #self.active.element.draw(0, 0)
 
     def handleKeys(self, key):
         #return self.active.child.function.handleKeys(key)
-        #if key.vk = 'w'
-        return self.active.child.handleKeys(key)
+
+        if self.winCmd:
+
+            if chr(key.c) == 'j':
+                if self.active.next:
+                    self.active = self.active.next
+                    self.winCmd = False
+
+            if chr(key.c) == 'k':
+                if self.active.previous:
+                    self.active = self.active.previous
+                    self.winCmd = False
+
+            if chr(key.c) == 'o':
+                newEd = Editors.TreeEditor(self.active.child.active)
+                self.addWindow(newEd)
+                self.winCmd = False
+
+            if chr(key.c) == 'w':
+                if self.active.next:
+                    self.active = self.active.next
+                else:
+                    self.active = self.root
+                self.winCmd = False
+
+
+        elif chr(key.c) == 'w':
+            self.winCmd = True
+
+        else:
+            return self.active.child.handleKeys(key)
 
 
     #def mainLoop(self):

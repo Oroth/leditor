@@ -56,10 +56,12 @@ class CellEditor(object):
 
 
 class TreeEditor(object):
-    def __init__(self):
-        self.root = None
-        self.curRoot = None
-        self.active = None
+    def __init__(self, root):
+        self.root = root
+        self.curRoot = TNode.TNode()
+        self.curRoot.child = root.child
+        self.active = root
+        self.activeAddress = [0]
         self.editing = False
         self.cellEditor = None
         self.yankBuffer = None
@@ -135,6 +137,13 @@ class TreeEditor(object):
                 self.cellEditor = CellEditor(self.active.child)
         else:
 
+            # For the case when our active node gets deleted by another editor
+            # Not perfect, but will do for now
+            #if chr(key.c) == 't':
+            oldadd = self.active.getAddress()
+            #    print oldadd
+            self.active = self.root.gotoNearestAddress(oldadd)
+
             if key.vk == libtcod.KEY_ESCAPE:
                 self.writeImage()
                 return True  # exit Editor
@@ -162,13 +171,18 @@ class TreeEditor(object):
 
                     self.yankBuffer = self.active.activeToPySexp()
 
-                    if self.active.child == self.curRoot.child.child:
-                        newActive = self.active.removeSelf()
-                        self.curRoot.child = newActive.parent
-                    else:
-                        newActive = self.active.removeSelf()
+                    oldAdd = self.active.getAddress()
+                    print "oldAdd: ", oldAdd
+                    self.active.removeSelf()
+                    self.active = self.root.gotoNearestAddress(oldAdd)
+#                    if self.active.child == self.curRoot.child.child:
+#                        newActive = self.active.removeSelf()
+#                        self.curRoot.child = newActive.parent
+#                    else:
+#                        newActive = self.active.removeSelf()
+#
+#                    self.active = newActive
 
-                    self.active = newActive
 
                 # Deleting the last node
                 #if self.active == newActive:
@@ -236,6 +250,9 @@ class TreeEditor(object):
                 toInsert = TNode.createTreeFromSexp(self.yankBuffer)
                 self.active.insertAfter(toInsert)
 
+            elif chr(key.c) == 'R':
+                self.active = self.root
+
             elif chr(key.c) == 's':
                 if self.active.child:
                     self.editing = True
@@ -263,13 +280,14 @@ class TreeEditor(object):
                 if self.active.parent and self.active.child != self.curRoot.child:
                     self.active = self.active.parent
 
-    def draw(self, posx, posy):
+
+    def draw(self, posx, posy, hlcol):
         if self.printingMode == 'horizontal':
-            self.drawHorizontal(posx, posy)
+            self.drawHorizontal(posx, posy, hlcol)
         else:
             self.drawVert(posx, posy, 1)
 
-    def drawHorizontal(self, posx, posy):
+    def drawHorizontal(self, posx, posy, hlcol):
         pen = utility.Pen(posx, posy)
 
         def drawr(node, parentCol=libtcod.black):
@@ -278,9 +296,9 @@ class TreeEditor(object):
                     pen.writeNL()
                 # check view
                 if node.child == self.active.child:
-                    bgcolour = libtcod.azure
+                    bgcolour = hlcol
                 elif node == self.active:
-                    bgcolour = libtcod.azure
+                    bgcolour = hlcol
                 else:
                     bgcolour = parentCol
 
@@ -295,7 +313,7 @@ class TreeEditor(object):
                     if self.editing:
                         self.cellEditor.draw(pen)
                     else:
-                        pen.write(output, libtcod.azure)
+                        pen.write(output, hlcol)
 
                 else:
                     pen.write(output, parentCol)
