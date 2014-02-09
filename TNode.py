@@ -53,6 +53,8 @@ def copyTNodeAsNewTreeClass(node, newTreeClass):
                 else:
                     startNode = newTreeClass(copyTNodeAsNewTreeClass(i.child, newTreeClass))
                     lastNode = startNode
+
+                lastNode.evaled = i.evaled
         else:  #atom
             return node
 
@@ -66,7 +68,6 @@ class TNode(object):
         self.setChild(val)
 
         self.evaled = True
-
         self.displayValue = False
 
     def __iter__(self):

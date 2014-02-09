@@ -259,6 +259,11 @@ class TreeEditor(object):
                     self.active.evaled = False
                 else: self.active.evaled = True
 
+            elif chr(key.c) == '=':
+                if self.active.displayValue:
+                    self.active.displayValue = False
+                else: self.active.displayValue = True
+
             elif key.vk == libtcod.KEY_LEFT or chr(key.c) == 'h':
                 if self.active.previous and self.active != self.curRoot:
                     self.active = self.active.previous
@@ -307,9 +312,7 @@ class TreeEditor(object):
                 pen.write('(', bgcolour)
                 drawr(node.child, bgcolour)
                 pen.write(')', bgcolour)
-                if self.showValues:
-                    pen.write("=>", bgcolour)
-                    pen.write(reader.to_string(node.value), bgcolour)
+
             elif node.child is not None:
                 output = reader.to_string(node.child)
                 if node == self.active:
@@ -321,6 +324,10 @@ class TreeEditor(object):
 
                 else:
                     pen.write(output, parentCol)
+
+            if node.displayValue:
+                pen.write("=>", parentCol)
+                pen.write(reader.to_string(node.value), parentCol)
 
         def drawr(node, parentCol=libtcod.black):
             drawChild(node, parentCol)

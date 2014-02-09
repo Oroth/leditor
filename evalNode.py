@@ -26,7 +26,10 @@ def add_globals(env):
          'equal?':op.eq, 'eq?':op.is_, 'length':len, 'cons':lambda x,y:[x]+y,
          'car':lambda x:x[0],'cdr':lambda x:x[1:], 'append':op.add,
          'list':lambda *x:list(x), 'list?': lambda x:isa(x,list),
-         'null?':lambda x:x==[], 'symbol?':lambda x: isa(x, Symbol)})
+         'null?':lambda x:x==[], 'symbol?':lambda x: isa(x, Symbol)
+
+         #,'^':lambda *vars,*body: (lambda *args: eval(body, Env(vars, args, global_env)))
+        })
     return env
 
 global_env = add_globals(Env())
@@ -105,32 +108,47 @@ class EvalNode(TNode.TNode):
     def calcValue(self):
         self.value = self.eval()
 
-    def eval(self, env=global_env):
+    def eval(self, env=global_env, ignoreQuote=False):
 
-        self.calcEnv()
+        #self.calcEnv()
         x = self.child
-        env = self.env
 
-        if isa(x, Symbol):             # variable reference
+
+        if not self.evaled and not ignoreQuote:
+            ret = self.activeToPySexp()
+
+        elif isa(x, Symbol):             # variable reference
             ret = env.find(x)[x]
+            #self.displayValue = True
         elif not isa(x, TNode.TNode):         # constant literal
             ret = x
 
-        elif x.child == 'lambda':         # (lambda (var*) exp)
+        elif x.child == '^':         # (lambda (var*) exp)
             #(_, vars, exp) = x
-            vars = x.next.value       # assumes
-            exp = x.next.next.value
-            #new = EvalNode(x)
-            ret = lambda *args: self.eval(exp, Env(vars, args, env))
+            vars = x.next.eval()       # assumes it evaluates to a list
+            exp = x.next.next
+
+            ret = lambda *args: exp.eval(Env(vars, args, env), True)
+
+        elif x.child == 'let':
+            mapping = x.next.eval()
+            (vars, args) = zip(*mapping)
+            body = x.next.next
+
+            ret = body.eval(Env(vars, args, env))
 
         else:  # i.e. a Tnode
             childExpr = []
             for i in self.child:
-                i.calcValue()
-                childExpr.append(i.value)
+                #i.calcValue()
+                childExpr.append(i.eval(env))
 
             #exps = [eval(exp, env) for exp in childExpr]
             proc = childExpr.pop(0)
             ret = proc(*childExpr)
+            #self.displayValue = True
 
-        self.value = ret
+        if not ignoreQuote:
+            self.value = ret
+
+        return ret
