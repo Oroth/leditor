@@ -3,6 +3,7 @@ import TNode
 import utility
 import Editors
 import libtcodpy as libtcod
+import evalNode
 
 # interface
 
@@ -107,11 +108,13 @@ class WindowManager(object):
                 self.winCmd = False
 
             elif key.vk == libtcod.KEY_ENTER:
-                newTree = TNode.copyTNode(self.active.child.active)
+                newTree = TNode.copyTNodeAsNewTreeClass(self.active.child.active, evalNode.EvalNode)
                 newEd = Editors.TreeEditor(newTree)
+                newEd.showValues = True
+                newEd.root.calcValue2()
                 self.addWindow(newEd)
                 self.active = self.active.next
-                self.active.child.calcValue()
+                #self.active.child.root.calcValue2()    # need to think about the calling structure here
                 self.winCmd = False
 
         elif chr(key.c) == 'w' and key.lctrl:

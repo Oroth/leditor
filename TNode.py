@@ -26,7 +26,6 @@ def copyTNode(node):
     startNode = None
     lastNode = None
 
-
     if node:
         if isinstance(node, TNode):
             for i in node:
@@ -41,6 +40,24 @@ def copyTNode(node):
 
     return startNode
 
+def copyTNodeAsNewTreeClass(node, newTreeClass):
+    startNode = None
+    lastNode = None
+
+    if node:
+        if isinstance(node, TNode):
+            for i in node:
+                if startNode:
+                    lastNode.insertAfter(copyTNodeAsNewTreeClass(i.child, newTreeClass))
+                    lastNode = lastNode.next
+                else:
+                    startNode = newTreeClass(copyTNodeAsNewTreeClass(i.child, newTreeClass))
+                    lastNode = startNode
+        else:  #atom
+            return node
+
+    return startNode
+
 class TNode(object):
     def __init__(self, val=None, parent=None, prev=None, next=None):
         self.next = next
@@ -48,8 +65,7 @@ class TNode(object):
         self.parent = parent
         self.setChild(val)
 
-        self.value = None
-        self.env = None
+
         self.displayValue = False
 
     def __iter__(self):
@@ -148,7 +164,7 @@ class TNode(object):
 
 
     def insertBefore(self, element):
-        newNode = TNode(element, self.parent, self.previous, self)
+        newNode = self.__class__(element, self.parent, self.previous, self)
         if self.previous:
             self.previous.next = newNode
         elif self.parent:
@@ -156,7 +172,7 @@ class TNode(object):
         self.previous = newNode
 
     def insertAfter(self, element):
-        newNode = TNode(element, self.parent, prev=self, next=self.next)
+        newNode = self.__class__(element, self.parent, prev=self, next=self.next)
         if self.next:
             self.next.previous = newNode
         self.next = newNode
@@ -200,7 +216,7 @@ class TNode(object):
 
     # wrap the current data in brackets.
     def nestChild(self):
-        self.setChild(TNode(self.child, self))
+        self.setChild(self.__class__(self.child, self))
 
 
 
@@ -212,7 +228,7 @@ def isTNode(obj):
 
 class TNodeIterator(object):
     def __init__(self, start):
-        self.cur = TNode()
+        self.cur = start.__class__()
         self.cur.next = start
 
     def __iter__(self):

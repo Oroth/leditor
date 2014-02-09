@@ -70,6 +70,7 @@ class TreeEditor(object):
         self.cellEditor = None
         self.yankBuffer = None
         self.printingMode = 'horizontal'
+        self.showValues = False
 
 
     def writeImage(self):
@@ -259,6 +260,9 @@ class TreeEditor(object):
 
 
     def draw(self, posx, posy, hlcol):
+        if self.showValues:
+            self.root.calcValue2()
+
         if self.printingMode == 'horizontal':
             self.drawHorizontal(posx, posy, hlcol)
         else:
@@ -282,6 +286,9 @@ class TreeEditor(object):
                 pen.write('(', bgcolour)
                 drawr(node.child, bgcolour)
                 pen.write(')', bgcolour)
+                if self.showValues:
+                    pen.write("=>", bgcolour)
+                    pen.write(reader.to_string(node.value), bgcolour)
             elif node.child is not None:
                 output = reader.to_string(node.child)
                 if node == self.active:

@@ -3,7 +3,9 @@ import TNode
 
 isa = isinstance
 
-class Symbol(str): pass
+#class Symbol(str): pass
+Symbol = str
+
 
 class Env(dict):
     "An environment: a dict of {'var':val} pairs, with an outer Env."
@@ -27,13 +29,26 @@ def add_globals(env):
          'null?':lambda x:x==[], 'symbol?':lambda x: isa(x, Symbol)})
     return env
 
+global_env = add_globals(Env())
+
 class EvalNode(TNode.TNode):
 
+    def __init__(self, *args, **kwargs):
+        super(EvalNode, self).__init__(*args, **kwargs)
+
+        self.value = None
+        self.env = None
+
+    def calcEnv(self):
+        self.env = global_env
 
     def calcValue(self):
 
+        self.calcEnv()
         x = self.child
         env = self.env
+        ret = None
+
         if isa(x, Symbol):             # variable reference
             ret = env.find(x)[x]
         elif not isa(x, list):         # constant literal
@@ -61,5 +76,27 @@ class EvalNode(TNode.TNode):
             exps = [eval(exp, env) for exp in x]
             proc = exps.pop(0)
             ret = proc(*exps)
+
+        self.value = ret
+
+    def calcValue2(self):
+
+        self.calcEnv()
+        x = self.child
+        env = self.env
+
+        if isa(x, Symbol):             # variable reference
+            ret = env.find(x)[x]
+        elif not isa(x, TNode.TNode):         # constant literal
+            ret = x
+        else:  # i.e. a Tnode
+            childExpr = []
+            for i in self.child:
+                i.calcValue2()
+                childExpr.append(i.value)
+
+            #exps = [eval(exp, env) for exp in childExpr]
+            proc = childExpr.pop(0)
+            ret = proc(*childExpr)
 
         self.value = ret
