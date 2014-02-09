@@ -65,6 +65,7 @@ class TNode(object):
         self.parent = parent
         self.setChild(val)
 
+        self.evaled = True
 
         self.displayValue = False
 

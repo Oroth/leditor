@@ -39,8 +39,11 @@ class CellEditor(object):
             if self.content and self.index != len(self.content):
                 del self.content[self.index]
 
-        elif chr(key.c) == '(' or chr(key.c) == ')':
+        elif chr(key.c) == '(':
             return 'NEST'
+
+        elif chr(key.c) == ')':
+            return 'UNNEST'
 
         elif key.vk == libtcod.KEY_SPACE:
             #print 'space'
@@ -109,7 +112,6 @@ class TreeEditor(object):
                 self.cellEditor = CellEditor(self.active.child)
 
             elif finished == 'NEST':
-                print len(self.cellEditor.content)
                 if self.cellEditor.content:
                     self.active.child = self.cellEditor.getContent()
                     self.active.insertAfter('')
@@ -118,6 +120,16 @@ class TreeEditor(object):
                 # from 'o' command
                 self.active.nestChild()
                 self.active = self.active.child
+                self.cellEditor = CellEditor(self.active.child)
+
+            elif finished == 'UNNEST':
+                if self.cellEditor.content:
+                    self.active.child = self.cellEditor.getContent()
+                    if self.active.parent:
+                        self.active = self.active.parent
+                    self.active.insertAfter('')
+                    self.active = self.active.next
+
                 self.cellEditor = CellEditor(self.active.child)
         else:
 
@@ -242,6 +254,11 @@ class TreeEditor(object):
                 self.yankBuffer = self.active.activeToSexpr()
                 print self.yankBuffer
 
+            elif chr(key.c) == "'":
+                if self.active.evaled:
+                    self.active.evaled = False
+                else: self.active.evaled = True
+
             elif key.vk == libtcod.KEY_LEFT or chr(key.c) == 'h':
                 if self.active.previous and self.active != self.curRoot:
                     self.active = self.active.previous
@@ -261,7 +278,7 @@ class TreeEditor(object):
 
     def draw(self, posx, posy, hlcol):
         if self.showValues:
-            self.root.calcValue2()
+            self.root.calcValue()
 
         if self.printingMode == 'horizontal':
             self.drawHorizontal(posx, posy, hlcol)
@@ -272,6 +289,10 @@ class TreeEditor(object):
         pen = utility.Pen(posx, posy)
 
         def drawChild(node, parentCol=libtcod.black):
+
+            if not node.evaled:
+                pen.write("'", parentCol)
+
             if node.isSubNode():
                 if node.child == "=>":
                     pen.writeNL()

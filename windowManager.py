@@ -111,7 +111,7 @@ class WindowManager(object):
                 newTree = TNode.copyTNodeAsNewTreeClass(self.active.child.active, evalNode.EvalNode)
                 newEd = Editors.TreeEditor(newTree)
                 newEd.showValues = True
-                newEd.root.calcValue2()
+                newEd.root.calcValue()
                 self.addWindow(newEd)
                 self.active = self.active.next
                 #self.active.child.root.calcValue2()    # need to think about the calling structure here
