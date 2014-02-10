@@ -114,7 +114,15 @@ class WindowManager(object):
                 newEd.root.calcValue()
                 self.addWindow(newEd)
                 self.active = self.active.next
-                #self.active.child.root.calcValue2()    # need to think about the calling structure here
+                self.winCmd = False
+
+            elif chr(key.c) == '>':
+                newTree = TNode.copyTNodeAsNewTreeClass(self.active.child.active, evalNode.EvalNode)
+                newEd = Editors.TreeEditor(newTree)
+                newEd.showValues = True
+                newEd.root.calcValue()
+                self.addWindow(newEd)
+                self.active = self.active.next
                 self.winCmd = False
 
         elif chr(key.c) == 'w' and key.lctrl:

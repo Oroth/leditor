@@ -14,7 +14,12 @@ class Env(dict):
         self.outer = outer
     def find(self, var):
         "Find the innermost Env where var appears."
-        return self if var in self else self.outer.find(var)
+        if var in self:
+            return self
+        elif self.outer:
+            return self.outer.find(var)
+        else:
+            raise NameError, var
 
 def add_globals(env):
     "Add some Scheme standard procedures to an environment."
@@ -34,12 +39,12 @@ def add_globals(env):
 
 global_env = add_globals(Env())
 
-def vau(clos_env, vars, call_env_sym, body):
-    def closure(call_env, *args):
-        new_env = Env(zip(vars, args), clos_env)
-        new_env[sym] = call_env
-        return eval(body, new_env)
-    return closure
+#def vau(clos_env, vars, call_env_sym, body):
+#    def closure(call_env, *args):
+#        new_env = Env(zip(vars, args), clos_env)
+#        new_env[sym] = call_env
+#        return eval(body, new_env)
+#    return closure
 
 class Closure():
     def __init__(self, clos_env, vars, sym, body):
@@ -64,6 +69,7 @@ class EvalNode(TNode.TNode):
 
         self.value = None
         self.env = None
+        self.history = None
 
     def calcEnv(self):
         self.env = global_env
@@ -118,20 +124,28 @@ class EvalNode(TNode.TNode):
             ret = self.activeToPySexp()
 
         elif isa(x, Symbol):             # variable reference
-            ret = env.find(x)[x]
+            try:
+                ret = env.find(x)[x]
+            except NameError:
+                ret = "NameError"
             #self.displayValue = True
         elif not isa(x, TNode.TNode):         # constant literal
             ret = x
 
         elif x.child == '^':         # (lambda (var*) exp)
             #(_, vars, exp) = x
-            vars = x.next.eval()       # assumes it evaluates to a list
-            exp = x.next.next
+            vars = x.next.child.toPySexp()       # assumes it evaluates to a list
 
+            #exp = x.next.next
+            #ret = lambda *args: exp.eval(Env(vars, args, env), True)
+
+            #exp = x.next.next.child.toPySexp()
+            exp = TNode.copyTNodeAsNewTreeClass(x.next.next, EvalNode)
             ret = lambda *args: exp.eval(Env(vars, args, env), True)
+            self.history = exp
 
         elif x.child == 'let':
-            mapping = x.next.eval()
+            mapping = x.next.child.toPySexp()
             (vars, args) = zip(*mapping)
             body = x.next.next
 
@@ -145,7 +159,10 @@ class EvalNode(TNode.TNode):
 
             #exps = [eval(exp, env) for exp in childExpr]
             proc = childExpr.pop(0)
-            ret = proc(*childExpr)
+            if proc == "NameError":
+                ret = "Exception"
+            else:
+                ret = proc(*childExpr)
             #self.displayValue = True
 
         if not ignoreQuote:
