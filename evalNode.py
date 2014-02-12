@@ -111,8 +111,8 @@ class EvalNode(TNode.TNode):
 #
 #        self.value = ret
 
-    def calcValue(self):
-        self.value = self.eval()
+    def calcValue(self, env=global_env):
+        self.value = self.eval(env)
 
     def eval(self, env=global_env, ignoreQuote=False):
 
@@ -136,13 +136,25 @@ class EvalNode(TNode.TNode):
             #(_, vars, exp) = x
             vars = x.next.child.toPySexp()       # assumes it evaluates to a list
 
+            def constructLambda(*args):
+                exp = TNode.copyTNodeAsNewTreeClass(x.next.next, EvalNode)
+                if args and args[0] == 'inspect':
+                    return [exp, Env(vars, args[1:], env)]
+                else:
+                    return exp.eval(Env(vars, args, env), True)
+
+
             #exp = x.next.next
             #ret = lambda *args: exp.eval(Env(vars, args, env), True)
 
             #exp = x.next.next.child.toPySexp()
-            exp = TNode.copyTNodeAsNewTreeClass(x.next.next, EvalNode)
-            ret = lambda *args: exp.eval(Env(vars, args, env), True)
-            self.history = exp
+
+            #exp = TNode.copyTNodeAsNewTreeClass(x.next.next, EvalNode)
+            #ret = lambda *args: exp.eval(Env(vars, args, env), True)
+
+            ret = constructLambda
+
+            #self.history = exp
 
         elif x.child == 'let':
             mapping = x.next.child.toPySexp()

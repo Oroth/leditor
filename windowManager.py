@@ -95,10 +95,12 @@ class WindowManager(object):
                 self.winCmd = False
 
             elif chr(key.c) == 'd':
-                oldAdd = self.active.getAddress()
-                self.active.removeSelf()
-                self.active = self.root.gotoNearestAddress(oldAdd)
-                self.winCmd = False
+                if self.wins > 1:
+                    self.wins -= 1
+                    oldAdd = self.active.getAddress()
+                    self.active.removeSelf()
+                    self.active = self.root.gotoNearestAddress(oldAdd)
+                    self.winCmd = False
 
             elif chr(key.c) == 'w':
                 if self.active.next:
@@ -117,15 +119,26 @@ class WindowManager(object):
                 self.winCmd = False
 
             elif chr(key.c) == '>':
-                newTree = TNode.copyTNodeAsNewTreeClass(self.active.child.active, evalNode.EvalNode)
-                newEd = Editors.TreeEditor(newTree)
-                newEd.showValues = True
-                newEd.root.calcValue()
-                self.addWindow(newEd)
-                self.active = self.active.next
+                #newTree = TNode.copyTNodeAsNewTreeClass(self.active.child.active, evalNode.EvalNode)
+                activeNode = self.active.child.active
+
+                if activeNode.isSubNode():
+                    args = []
+                    if activeNode.child.next:
+                        for i in activeNode.child.next:
+                            args.append(i.value)
+
+                    #(newTree, env) = activeNode.child.value('inspect', activeNode.child.next.value)
+                    (newTree, env) = activeNode.child.value('inspect', *args)
+                    newEd = Editors.TreeEditor(newTree)
+                    #newEd.showValues = True
+                    #newEd.root.calcValue()
+                    newEd.root.eval(env)
+                    self.addWindow(newEd)
+                    self.active = self.active.next
                 self.winCmd = False
 
-        elif chr(key.c) == 'w' and key.lctrl:
+        elif chr(key.c) == 'w': #and key.lctrl:
             self.winCmd = True
             print "windowing"
 
