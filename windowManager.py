@@ -113,27 +113,30 @@ class WindowManager(object):
                 newTree = TNode.copyTNodeAsNewTreeClass(self.active.child.active, evalNode.EvalNode)
                 newEd = Editors.TreeEditor(newTree)
                 newEd.showValues = True
-                newEd.root.calcValue()
+                newEd.env = evalNode.global_env
+                newEd.root.calcValue(newEd.id)
                 self.addWindow(newEd)
                 self.active = self.active.next
                 self.winCmd = False
 
             elif chr(key.c) == '>':
                 #newTree = TNode.copyTNodeAsNewTreeClass(self.active.child.active, evalNode.EvalNode)
+                activeEd = self.active.child
                 activeNode = self.active.child.active
 
                 if activeNode.isSubNode():
                     args = []
                     if activeNode.child.next:
                         for i in activeNode.child.next:
-                            args.append(i.value)
+                            args.append(i.getValue(self.active.child.id))
 
-                    #(newTree, env) = activeNode.child.value('inspect', activeNode.child.next.value)
-                    (newTree, env) = activeNode.child.value('inspect', *args)
+
+                    (newTree, env) = activeNode.child.getValue(activeEd.id)('inspect', *args)
                     newEd = Editors.TreeEditor(newTree)
-                    #newEd.showValues = True
+                    newEd.showValues = True
+                    newEd.env = env
                     #newEd.root.calcValue()
-                    newEd.root.eval(env)
+                    newEd.root.eval(newEd.id, env)
                     self.addWindow(newEd)
                     self.active = self.active.next
                 self.winCmd = False

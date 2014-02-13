@@ -59,6 +59,8 @@ class CellEditor(object):
 
 
 class TreeEditor(object):
+    editors = 0
+
     def __init__(self, root, curRoot = None):
         self.root = root
 
@@ -74,6 +76,12 @@ class TreeEditor(object):
         self.yankBuffer = None
         self.printingMode = 'horizontal'
         self.showValues = False
+        self.env = None
+
+        self.id = TreeEditor.editors
+        TreeEditor.editors += 1
+
+
 
 
     def writeImage(self):
@@ -283,7 +291,7 @@ class TreeEditor(object):
 
     def draw(self, posx, posy, hlcol):
         if self.showValues:
-            self.root.calcValue()
+            self.root.calcValue(self.id, self.env)
 
         if self.printingMode == 'horizontal':
             self.drawHorizontal(posx, posy, hlcol)
@@ -327,7 +335,7 @@ class TreeEditor(object):
 
             if node.displayValue:
                 pen.write("=>", parentCol)
-                pen.write(reader.to_string(node.value), parentCol)
+                pen.write(reader.to_string(node.getValue(self.id)), parentCol)
 
         def drawr(node, parentCol=libtcod.black):
             drawChild(node, parentCol)

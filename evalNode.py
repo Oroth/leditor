@@ -71,6 +71,16 @@ class EvalNode(TNode.TNode):
         self.env = None
         self.history = None
 
+        self.value = {}
+
+    def setValue(self, id, val):
+        self.value[id] = val
+
+    def getValue(self, id):
+        if self.value.has_key(id):
+            return self.value[id]
+        else: return None
+
     def calcEnv(self):
         self.env = global_env
 
@@ -111,10 +121,11 @@ class EvalNode(TNode.TNode):
 #
 #        self.value = ret
 
-    def calcValue(self, env=global_env):
-        self.value = self.eval(env)
+    def calcValue(self, id, env=global_env):
+        #self.value = self.eval(env)
+        self.setValue(id, self.eval(id, env))
 
-    def eval(self, env=global_env, ignoreQuote=False):
+    def eval(self, id, env=global_env, memoize=True, ignoreQuote=False):
 
         #self.calcEnv()
         x = self.child
@@ -137,14 +148,18 @@ class EvalNode(TNode.TNode):
             vars = x.next.child.toPySexp()       # assumes it evaluates to a list
 
             def constructLambda(*args):
-                exp = TNode.copyTNodeAsNewTreeClass(x.next.next, EvalNode)
+                #exp = TNode.copyTNodeAsNewTreeClass(x.next.next, EvalNode)
+                exp = x.next.next
+
                 if args and args[0] == 'inspect':
                     return [exp, Env(vars, args[1:], env)]
                 else:
-                    return exp.eval(Env(vars, args, env), True)
+                    return exp.eval(id, Env(vars, args, env), False)
 
 
-            #exp = x.next.next
+
+
+
             #ret = lambda *args: exp.eval(Env(vars, args, env), True)
 
             #exp = x.next.next.child.toPySexp()
@@ -161,13 +176,13 @@ class EvalNode(TNode.TNode):
             (vars, args) = zip(*mapping)
             body = x.next.next
 
-            ret = body.eval(Env(vars, args, env))
+            ret = body.eval(id, Env(vars, args, env))
 
         else:  # i.e. a Tnode
             childExpr = []
             for i in self.child:
                 #i.calcValue()
-                childExpr.append(i.eval(env))
+                childExpr.append(i.eval(id, env, memoize))
 
             #exps = [eval(exp, env) for exp in childExpr]
             proc = childExpr.pop(0)
@@ -177,7 +192,7 @@ class EvalNode(TNode.TNode):
                 ret = proc(*childExpr)
             #self.displayValue = True
 
-        if not ignoreQuote:
-            self.value = ret
+        if memoize:
+            self.setValue(id, ret)
 
         return ret
