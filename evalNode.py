@@ -202,14 +202,25 @@ class EvalNode(TNode.TNode):
             #self.history = exp
 
         elif x.child == 'let':
-            mapping = x.next.child.toPySexp()
-            try:
-                (vars, args) = zip(*mapping)
-            except ValueError:
-                ret = LetSyntaxException(mapping)
-            else:
+            #mapping = x.next.child.toPySexp()
+
+            mapping = x.next.child
+
+            vars = []
+            valResults = []
+            for i in mapping:
+                vars.append(i.child.child)
+                val = i.child.next
+                valResults.append(val.eval(id, env))
+
+#            try:
+#                (vars, args) = zip(*mapping)
+#            except ValueError:
+#                ret = LetSyntaxException(mapping)
+
+
                 body = x.next.next
-                ret = body.eval(id, Env(vars, args, env))
+                ret = body.eval(id, Env(vars, valResults, env))
 
         else:  # i.e. a Tnode
             childExpr = []
