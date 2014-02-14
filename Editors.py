@@ -298,10 +298,10 @@ class TreeEditor(object):
         else:
             self.drawVert(posx, posy, 1)
 
-    def drawHorizontal(self, posx, posy, hlcol):
+    def drawHorizontal(self, posx, posy, hlcol, indent=True):
         pen = utility.Pen(posx, posy)
 
-        def drawChild(node, parentCol=libtcod.black):
+        def drawChild(node, nesting, parentCol=libtcod.black):
 
             if not node.evaled:
                 pen.write("'", parentCol)
@@ -312,13 +312,11 @@ class TreeEditor(object):
                     # check view
                 if node == self.active:
                     bgcolour = hlcol
-                elif node == self.active:
-                    bgcolour = hlcol
                 else:
                     bgcolour = parentCol
 
                 pen.write('(', bgcolour)
-                drawr(node.child, bgcolour)
+                drawr(node.child, nesting, bgcolour)
                 pen.write(')', bgcolour)
 
             elif node.child is not None:
@@ -337,19 +335,31 @@ class TreeEditor(object):
                 pen.write("=>", parentCol)
                 pen.write(reader.to_string(node.getValue(self.id)), parentCol)
 
-        def drawr(node, parentCol=libtcod.black):
-            drawChild(node, parentCol)
+        def drawr(node, nesting, parentCol=libtcod.black, reindent=False):
+            drawChild(node, nesting + 1, parentCol)
+            #reindent = False
+
+            if not node.previous and node.next:
+                for i in node.next:
+                    if i.isSubNode():
+                        reindent = True
+
 
             if node.next:
-                if node == self.active and self.editing:
+                if indent and reindent:
+                    pen.writeNL()
+                    pen.skip(2 * nesting, 0)
+
+                # try to avoid hiding the cursor in a cell editor
+                elif node == self.active and self.editing:
                     pen.skip(1, 0)
                 else:
                     pen.write(' ', parentCol)
 
-                drawr(node.next, parentCol)
+                drawr(node.next, nesting, parentCol, reindent)
 
         if self.curRoot.isSubNode():
-            drawChild(self.curRoot)
+            drawChild(self.curRoot, 1)
         else:
             pen.write(str(self.curRoot.child))
 
