@@ -27,6 +27,16 @@ class DivZeroException(EvalException):
         return "(DivZeroException)"
     pass
 
+class LetSyntaxException(EvalException):
+    def __str__(self):
+        return "(LetSyntaxException)"
+    pass
+
+class NonProcException(EvalException):
+    def __str__(self):
+        return "(NonProcException " + str(self.value) + ")"
+    pass
+
 class Env(dict):
     "An environment: a dict of {'var':val} pairs, with an outer Env."
     def __init__(self, parms=(), args=(), outer=None):
@@ -193,10 +203,13 @@ class EvalNode(TNode.TNode):
 
         elif x.child == 'let':
             mapping = x.next.child.toPySexp()
-            (vars, args) = zip(*mapping)
-            body = x.next.next
-
-            ret = body.eval(id, Env(vars, args, env))
+            try:
+                (vars, args) = zip(*mapping)
+            except ValueError:
+                ret = LetSyntaxException(mapping)
+            else:
+                body = x.next.next
+                ret = body.eval(id, Env(vars, args, env))
 
         else:  # i.e. a Tnode
             childExpr = []
@@ -210,10 +223,13 @@ class EvalNode(TNode.TNode):
                     break
             else:
                 proc = childExpr.pop(0)
-                try:
-                    ret = proc(*childExpr)
-                except ZeroDivisionError:
-                    ret = DivZeroException()
+                if hasattr(proc, '__call__'):
+                    try:
+                        ret = proc(*childExpr)
+                    except ZeroDivisionError:
+                        ret = DivZeroException()
+                else:
+                    ret = NonProcException(proc)
 
             #self.displayValue = True
 
