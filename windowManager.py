@@ -61,13 +61,14 @@ class WindowManager(object):
         self.active.insertAfter(newFunc)
 
     def draw(self):
+        maxX = utility.screenWidth()
         curY = 0
         yStep = utility.screenHeight() / self.wins
 
         for i in self.root:
             if i == self.active:
-                i.child.draw(0, curY, libtcod.azure)
-            else: i.child.draw(0, curY, libtcod.grey)
+                i.child.draw(0, curY, maxX, curY + yStep, libtcod.azure)
+            else: i.child.draw(0, curY, maxX, curY + yStep, libtcod.grey)
             curY += yStep
             if i.next:
                 libtcod.console_hline(0, 0, curY - 1, utility.screenWidth())

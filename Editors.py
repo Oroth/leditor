@@ -298,118 +298,119 @@ class TreeEditor(object):
                     self.active = self.active.parent
 
 
-    def draw(self, posx, posy, hlcol):
+    def draw(self, posx, posy, maxx, maxy, hlcol):
+
+        def drawHorizontal(posx, posy, hlcol, indent=True):
+            pen = utility.Pen(posx, posy, maxx, maxy)
+
+            def drawChild(node, nesting, parentCol=libtcod.black):
+
+                if not node.evaled:
+                    pen.write("'", parentCol)
+
+                if node.isSubNode():
+                    if node.child == "=>":
+                        pen.writeNL()
+                        # check view
+                    if node == self.active:
+                        bgcolour = hlcol
+                    else:
+                        bgcolour = parentCol
+
+                    pen.write('(', bgcolour)
+                    drawr(node.child, nesting, bgcolour)
+                    pen.write(')', bgcolour)
+
+                elif node.child is not None:
+                    output = reader.to_string(node.child)
+                    if node == self.active:
+
+                        if self.editing:
+                            self.cellEditor.draw(pen)
+                        else:
+                            pen.write(output, hlcol)
+
+                    else:
+                        pen.write(output, parentCol)
+
+                if node.displayValue:
+                    pen.write("=>", parentCol)
+                    pen.write(reader.to_string(node.getValue(self.id)), parentCol)
+
+            def drawr(node, nesting, parentCol=libtcod.black, reindent=False):
+                drawChild(node, nesting + 1, parentCol)
+                #reindent = False
+
+                if not node.previous and node.next:
+                    for i in node.next:
+                        if i.isSubNode():
+                            reindent = True
+
+
+                if node.next:
+                    if indent and reindent:
+                        pen.writeNL()
+                        #pen.skip(2 * nesting, 0)
+                        pen.write(' ' * (2 * nesting), parentCol)
+
+                    # try to avoid hiding the cursor in a cell editor
+                    elif node == self.active and self.editing:
+                        pen.skip(1, 0)
+                    else:
+                        pen.write(' ', parentCol)
+
+                    drawr(node.next, nesting, parentCol, reindent)
+
+            if self.curRoot.isSubNode():
+                drawChild(self.curRoot, 1)
+            else:
+                pen.write(str(self.curRoot.child))
+
+
+        def drawVert(posx, posy, levels):
+            pen = utility.Pen(posx, posy)
+
+            def drawr(node, nesting, parentCol=libtcod.black,):
+
+                if node.isSubNode():
+                    if node == self.active:
+                        bgcolour = libtcod.azure
+                    else:
+                        bgcolour = parentCol
+
+                    pen.write('(', bgcolour)
+                    drawr(node.child, nesting + 1, bgcolour)
+                    pen.write(')', bgcolour)
+                else:
+                    output = str(node.child)
+                    if node == self.active:
+
+                        if self.editing:
+                            self.cellEditor.draw(pen)
+                        else:
+                            pen.write(output, libtcod.azure)
+
+                    else:
+                        pen.write(output, parentCol)
+
+                if node.next:
+                    if nesting == levels:
+                        pen.writeNL()
+                    elif node == self.active and self.editing:
+                        pen.write(' ', libtcod.azure)
+                    else:
+                        pen.write(' ', parentCol)
+                    drawr(node.next, nesting, parentCol)
+
+            drawr(self.curRoot, 0)
+
         if self.showValues:
             self.root.calcValue(self.id, self.env)
 
-        if self.printingMode == 'horizontal':
-            self.drawHorizontal(posx, posy, hlcol)
-        else:
-            self.drawVert(posx, posy, 1)
-
-    def drawHorizontal(self, posx, posy, hlcol, indent=True):
-        pen = utility.Pen(posx, posy)
-
-        def drawChild(node, nesting, parentCol=libtcod.black):
-
-            if not node.evaled:
-                pen.write("'", parentCol)
-
-            if node.isSubNode():
-                if node.child == "=>":
-                    pen.writeNL()
-                    # check view
-                if node == self.active:
-                    bgcolour = hlcol
-                else:
-                    bgcolour = parentCol
-
-                pen.write('(', bgcolour)
-                drawr(node.child, nesting, bgcolour)
-                pen.write(')', bgcolour)
-
-            elif node.child is not None:
-                output = reader.to_string(node.child)
-                if node == self.active:
-
-                    if self.editing:
-                        self.cellEditor.draw(pen)
-                    else:
-                        pen.write(output, hlcol)
-
-                else:
-                    pen.write(output, parentCol)
-
-            if node.displayValue:
-                pen.write("=>", parentCol)
-                pen.write(reader.to_string(node.getValue(self.id)), parentCol)
-
-        def drawr(node, nesting, parentCol=libtcod.black, reindent=False):
-            drawChild(node, nesting + 1, parentCol)
-            #reindent = False
-
-            if not node.previous and node.next:
-                for i in node.next:
-                    if i.isSubNode():
-                        reindent = True
-
-
-            if node.next:
-                if indent and reindent:
-                    pen.writeNL()
-                    #pen.skip(2 * nesting, 0)
-                    pen.write(' ' * (2 * nesting), parentCol)
-
-                # try to avoid hiding the cursor in a cell editor
-                elif node == self.active and self.editing:
-                    pen.skip(1, 0)
-                else:
-                    pen.write(' ', parentCol)
-
-                drawr(node.next, nesting, parentCol, reindent)
-
-        if self.curRoot.isSubNode():
-            drawChild(self.curRoot, 1)
-        else:
-            pen.write(str(self.curRoot.child))
-
-
-    def drawVert(self, posx, posy, levels):
-        pen = utility.Pen(posx, posy)
-
-        def drawr(node, nesting, parentCol=libtcod.black,):
-
-            if node.isSubNode():
-                if node == self.active:
-                    bgcolour = libtcod.azure
-                else:
-                    bgcolour = parentCol
-
-                pen.write('(', bgcolour)
-                drawr(node.child, nesting + 1, bgcolour)
-                pen.write(')', bgcolour)
+        try:
+            if self.printingMode == 'horizontal':
+                drawHorizontal(posx, posy, hlcol)
             else:
-                output = str(node.child)
-                if node == self.active:
-
-                    if self.editing:
-                        self.cellEditor.draw(pen)
-                    else:
-                        pen.write(output, libtcod.azure)
-
-                else:
-                    pen.write(output, parentCol)
-
-            if node.next:
-                if nesting == levels:
-                    pen.writeNL()
-                elif node == self.active and self.editing:
-                    pen.write(' ', libtcod.azure)
-                else:
-                    pen.write(' ', parentCol)
-                drawr(node.next, nesting, parentCol)
-
-        drawr(self.curRoot, 0)
-
-
+                drawVert(posx, posy, 1)
+        except utility.windowBorderException: pass
 

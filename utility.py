@@ -16,6 +16,9 @@ def get_key(key):
     else:
         return key.vk
 
+class windowBorderException(Exception):
+    pass
+
 def cprint(x, y, fmt, bgcolour=defaultBG()):
     defaultbg = defaultBG()
     libtcod.console_set_default_background(0, bgcolour)
@@ -50,7 +53,7 @@ class Pen(object):
             cprint(self.x1, self.y1, input, bgcolour)
             self.x1 = len(input)
         else:
-            raise OverflowError
+            raise windowBorderException
 
     #def writeVert(self, input, bgcolour=defaultBG()):
 
@@ -64,7 +67,7 @@ class Pen(object):
         if self.y1 + 1 != self.y2:
             self.y1 += 1
             self.x1 = 0
-        else: raise OverflowError
+        else: raise windowBorderException
 
     def writeHL(self, input, bgcolour, index):
         self.write(input)
