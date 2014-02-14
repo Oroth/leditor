@@ -273,12 +273,21 @@ class TreeEditor(object):
                 else: self.active.displayValue = True
 
             elif key.vk == libtcod.KEY_LEFT or chr(key.c) == 'h':
-                if self.active.previous and self.active != self.curRoot:
-                    self.active = self.active.previous
+#                if self.active.previous and self.active != self.curRoot:
+#                    self.active = self.active.previous
+                try:
+                    self.active = self.active.getNextUpAlong('previous', self.curRoot)
+                except ValueError: pass
 
             elif key.vk == libtcod.KEY_RIGHT or chr(key.c) == 'l':
-                if self.active.next and self.active != self.curRoot:
-                    self.active = self.active.next
+#                if self.active != self.curRoot:
+#                    if self.active.next:
+#                        self.active = self.active.next
+#                    else:
+                try:
+                    self.active = self.active.getNextUpAlong('next', self.curRoot)
+                except ValueError: pass
+
 
             elif key.vk == libtcod.KEY_DOWN or chr(key.c) == 'j':
                 if self.active.isSubNode():
@@ -348,7 +357,8 @@ class TreeEditor(object):
             if node.next:
                 if indent and reindent:
                     pen.writeNL()
-                    pen.skip(2 * nesting, 0)
+                    #pen.skip(2 * nesting, 0)
+                    pen.write(' ' * (2 * nesting), parentCol)
 
                 # try to avoid hiding the cursor in a cell editor
                 elif node == self.active and self.editing:

@@ -164,6 +164,65 @@ class TNode(object):
 
         return iter
 
+    def getNextUpAlong(self, direction, root):
+        iter = self
+
+        if iter == root:
+            raise ValueError
+
+        while not getattr(iter, direction):
+            if iter.parent != root:
+                iter = iter.parent
+            else: raise ValueError
+
+        return getattr(iter, direction)
+
+    def getNearestAlong(self, direction, root):
+        iter = self
+        levels = 0
+        switchedLevels = False
+
+        if iter == root:
+            raise ValueError
+
+        while not getattr(iter, direction):
+            if iter.parent != root:
+                iter = iter.parent
+                levels += 1
+                switchedLevels = True
+            else: raise ValueError
+
+        iter = getattr(iter, direction)
+
+        #now descend
+        while levels != 0 and isinstance(iter.child, TNode):
+            iter = iter.child
+            levels -= 1
+
+        if direction == 'previous' and switchedLevels:
+            while iter.next:
+                iter = iter.next
+
+        return iter
+
+    def getAddressOffset(self, offset):
+
+        iter = self
+        while offset:
+            curDest = offset.pop(0)
+            while curDest != 0:
+                if iter.next:
+                    iter = iter.next
+                    curDest -= 1
+                else: return None
+
+            # check if still have sublevels to follow and go to them if possible
+            if offset:
+                if iter.isSubNode():
+                    iter = iter.child
+                else: return None
+
+        return iter.child
 
     def insertBefore(self, element):
         newNode = self.__class__(element, self.parent, self.previous, self)
