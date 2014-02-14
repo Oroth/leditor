@@ -32,6 +32,11 @@ class LetSyntaxException(EvalException):
         return "(LetSyntaxException)"
     pass
 
+class LambdaSyntaxException(EvalException):
+    def __str__(self):
+        return "(LambdaSyntaxException)"
+    pass
+
 class NonProcException(EvalException):
     def __str__(self):
         return "(NonProcException " + str(self.value) + ")"
@@ -174,53 +179,53 @@ class EvalNode(TNode.TNode):
             ret = x
 
         elif x.child == '^':         # (lambda (var*) exp)
-            #(_, vars, exp) = x
-            vars = x.next.child.toPySexp()       # assumes it evaluates to a list
 
-            def constructLambda(*args):
-                #exp = TNode.copyTNodeAsNewTreeClass(x.next.next, EvalNode)
-                exp = x.next.next
+            try:
+                vars = x.next.child.toPySexp()
+                #check if list of symbols:
 
-                if args and args[0] == 'inspect':
-                    return [exp, Env(vars, args[1:], env)]
-                else:
-                    return exp.eval(id, Env(vars, args, env), False)
+                def constructLambda(*args):
+                    #exp = TNode.copyTNodeAsNewTreeClass(x.next.next, EvalNode)
+                    exp = x.next.next
+                    if not exp:
+                        raise LambdaSyntaxException("NoBody")
 
+                    if args and args[0] == 'inspect':
+                        return [exp, Env(vars, args[1:], env)]
+                    else:
+                        return exp.eval(id, Env(vars, args, env), False)
 
+            except AttributeError:
+                ret = LambdaSyntaxException("Err")
+            except LambdaSyntaxException as err:
+                ret = err
 
+            else:
+                ret = constructLambda
 
-
-            #ret = lambda *args: exp.eval(Env(vars, args, env), True)
-
-            #exp = x.next.next.child.toPySexp()
-
-            #exp = TNode.copyTNodeAsNewTreeClass(x.next.next, EvalNode)
-            #ret = lambda *args: exp.eval(Env(vars, args, env), True)
-
-            ret = constructLambda
-
-            #self.history = exp
 
         elif x.child == 'let':
-            #mapping = x.next.child.toPySexp()
-
-            mapping = x.next.child
+#            if not isa(mapping, TNode):
+#                ret = LetSyntaxException("Bad-Var-Syntax")
 
             vars = []
             valResults = []
-            for i in mapping:
-                vars.append(i.child.child)
-                val = i.child.next
-                valResults.append(val.eval(id, env))
 
-#            try:
-#                (vars, args) = zip(*mapping)
-#            except ValueError:
-#                ret = LetSyntaxException(mapping)
+            try:
+                mapping = x.next.child
+                for i in mapping:
+                    vars.append(i.child.child)
+                    val = i.child.next
+                    valResults.append(val.eval(id, env))
+            except AttributeError:
+                ret = LetSyntaxException("Bad-Var-Syntax")
 
-
+            else:
                 body = x.next.next
-                ret = body.eval(id, Env(vars, valResults, env))
+                if body:
+                    ret = body.eval(id, Env(vars, valResults, env))
+                else:
+                    ret = LetSyntaxException("NoBody")
 
         else:  # i.e. a Tnode
             childExpr = []

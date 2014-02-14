@@ -207,7 +207,7 @@ class TreeEditor(object):
                     self.active = self.active.previous
                     self.cellEditor = CellEditor(self.active.child)
 
-            elif chr(key.c) == 'G':
+            elif chr(key.c) == 'J':
                 if self.active.isSubNode():
                     self.curRoot = self.active
 
@@ -215,6 +215,11 @@ class TreeEditor(object):
                 if self.curRoot.parent:
                     # set curRoot to the first node in the outer list
                     self.curRoot = self.curRoot.parent
+
+            elif chr(key.c) == 'L':
+                if self.curRoot.next:
+                    self.curRoot = self.curRoot.next
+                    self.active = self.curRoot
 
             elif chr(key.c) == '(':
                 self.active.nestChild()
