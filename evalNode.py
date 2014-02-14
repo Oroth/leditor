@@ -6,6 +6,26 @@ isa = isinstance
 #class Symbol(str): pass
 Symbol = str
 
+class EvalException(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return "(EvalException " + self.value + ")"
+#    def __repr__(self):
+#        return ["Err:", self.value]
+
+class LookUpException(EvalException):
+    def __str__(self):
+        return "(LookUpException " + self.value + ")"
+    pass
+
+class DivZeroException(EvalException):
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        return "(DivZeroException)"
+    pass
 
 class Env(dict):
     "An environment: a dict of {'var':val} pairs, with an outer Env."
@@ -19,7 +39,7 @@ class Env(dict):
         elif self.outer:
             return self.outer.find(var)
         else:
-            raise NameError, var
+            raise LookUpException(var)
 
 def add_globals(env):
     "Add some Scheme standard procedures to an environment."
@@ -129,7 +149,7 @@ class EvalNode(TNode.TNode):
 
         #self.calcEnv()
         x = self.child
-
+        ret = None
 
         if not self.evaled and not ignoreQuote:
             ret = self.activeToPySexp()
@@ -137,8 +157,8 @@ class EvalNode(TNode.TNode):
         elif isa(x, Symbol):             # variable reference
             try:
                 ret = env.find(x)[x]
-            except NameError:
-                ret = "NameError"
+            except EvalException as ex:
+                ret = ex
             #self.displayValue = True
         elif not isa(x, TNode.TNode):         # constant literal
             ret = x
@@ -181,15 +201,20 @@ class EvalNode(TNode.TNode):
         else:  # i.e. a Tnode
             childExpr = []
             for i in self.child:
-                #i.calcValue()
                 childExpr.append(i.eval(id, env, memoize))
 
             #exps = [eval(exp, env) for exp in childExpr]
-            proc = childExpr.pop(0)
-            if proc == "NameError":
-                ret = "Exception"
+            for i in childExpr:
+                if isinstance(i, LookUpException):
+                    ret = i
+                    break
             else:
-                ret = proc(*childExpr)
+                proc = childExpr.pop(0)
+                try:
+                    ret = proc(*childExpr)
+                except ZeroDivisionError:
+                    ret = DivZeroException()
+
             #self.displayValue = True
 
         if memoize:
