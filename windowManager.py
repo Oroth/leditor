@@ -35,13 +35,22 @@ class Column(object):
 
 
 class WindowManager(object):
-    def __init__(self, initialFunc):
+    def __init__(self, ImageRoot):
         #self.root = TNode.TNode(Column(utility.screenWidth(), initialFunc))
-        self.root = TNode.TNode(initialFunc)
+
+        code = ImageRoot.child.next.next
+        listEd = Editors.TreeEditor(code)
+
+        self.ImageRoot = ImageRoot
+        self.root = TNode.TNode(listEd)
         self.active = self.root
         self.winCmd = False
         self.cols = 1
         self.wins = 1
+
+    def parse_memory(root):
+        editor = root.child.next.child
+        code = editor.next
 
     def addCol(self):
         self.cols += 1

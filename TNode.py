@@ -8,7 +8,7 @@ def createTreeFromSexp(sexp):
     startNode = None
     lastNode = None
 
-    if sexp:
+    if sexp is not None:
         if isList(sexp):
             for i in sexp:
                 if startNode:

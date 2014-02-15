@@ -184,12 +184,11 @@ class EvalNode(TNode.TNode):
                 vars = x.next.child.toPySexp()
                 #check if list of symbols:
 
-                def constructLambda(*args):
-                    #exp = TNode.copyTNodeAsNewTreeClass(x.next.next, EvalNode)
-                    exp = x.next.next
-                    if not exp:
-                        raise LambdaSyntaxException("NoBody")
+                exp = x.next.next
+                if not exp:
+                    raise LambdaSyntaxException("NoBody")
 
+                def constructLambda(*args):
                     if args and args[0] == 'inspect':
                         return [exp, Env(vars, args[1:], env)]
                     else:

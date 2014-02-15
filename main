@@ -1,9 +1,7 @@
 import libtcodpy as libtcod
 import TNode
-import Editors
 import reader
 import windowManager
-import thread
 import time
 
 #import peak.
@@ -30,33 +28,13 @@ libtcod.console_set_default_foreground(0, libtcod.white)
 rootNode = TNode.TNode()
 rootNode.setChild(TNode.createTreeFromSexp(reader.loadFile("image")))
 
-#tnode = Dlist.TNode('henrietta')
-#rootNode.child = tnode
-#tnode.parent = rootNode
-#tnode.append('piesinthesky')
-#tnode.append('halleluhah-tara')
-#tnode.append('somebody-punch-me')
-#tnode.append("salmon")
+wm = windowManager.WindowManager(rootNode)
 
-listEd = Editors.TreeEditor(rootNode)
-#listEd.root = rootNode
-#listEd.curRoot = TNode.TNode()
-#listEd.curRoot.child = listEd.root.child
-#listEd.active = rootNode
-
-#listEd2 = Editors.TreeEditor(rootNode)
-#listEd2.root = rootNode
-#listEd2.curRoot = TNode.TNode()
-#listEd2.curRoot.child = listEd.root.child
-#listEd2.active = rootNode
-
-wm = windowManager.WindowManager(listEd)
-#wm.addWindow(listEd2)
-
-#listEd.loadImage()
 
 print "width is: ", libtcod.console_get_width(0)
 print "height is: ", libtcod.console_get_height(0)
+
+
 
 def print_time(threadName, delay):
     count = 0
@@ -73,24 +51,15 @@ def getKeypress():
         return chr(key.c)
     else:
         return key.vk
-#
-#try:
-#    thread.start_new_thread( print_time, ("Thread-1", 1, ) )
-#except:
-#    print "Error: unable to start thread"
-
-#print_time ("Thread-1", 1, )
 
 while not libtcod.console_is_window_closed():
 
     libtcod.console_clear(0)
-    #listEd.draw(0, 0)
     wm.draw()
     libtcod.console_flush()
 
     #handle keys and exit game if needed
     key = libtcod.console_check_for_keypress()
-    #exit = listEd.handleKeys(key)
     exit = wm.handleKeys(key)
     if exit:
         break
