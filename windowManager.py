@@ -4,6 +4,7 @@ import utility
 import Editors
 import libtcodpy as libtcod
 import evalNode
+import reader
 
 # interface
 
@@ -51,6 +52,14 @@ class WindowManager(object):
     def parse_memory(root):
         editor = root.child.next.child
         code = editor.next
+
+    def writeImage(self):
+
+        pyObj = self.ImageRoot.child.toPySexp()
+        text = reader.to_string(pyObj)
+        f = open("image", 'w')
+        f.write(text)
+        f.close()
 
     def addCol(self):
         self.cols += 1
@@ -156,7 +165,11 @@ class WindowManager(object):
             print "windowing"
 
         else:
-            return self.active.child.handleKeys(key)
+            result = self.active.child.handleKeys(key)
+            if result == 'ESC':
+                self.writeImage()
+                return True
+            else: return False
 
 
     #def mainLoop(self):

@@ -84,13 +84,7 @@ class TreeEditor(object):
 
 
 
-    def writeImage(self):
 
-        pyObj = self.root.child.toPySexp()
-        text = reader.to_string(pyObj)
-        f = open("image", 'w')
-        f.write(text)
-        f.close()
 
     def loadImage(self):
 
@@ -150,8 +144,7 @@ class TreeEditor(object):
             self.active = self.curRoot.gotoNearestAddress(oldadd)
 
             if key.vk == libtcod.KEY_ESCAPE:
-                self.writeImage()
-                return True  # exit Editor
+                return 'ESC'  # exit Editor
 
             # evaluate the current context
             elif key.vk == libtcod.KEY_ENTER:
