@@ -144,7 +144,7 @@ class TNode(object):
                     iter = iter.child
                 else: return None
 
-        return iter.child
+        return iter
 
     def gotoNearestAddress(self, add):
         iter = self

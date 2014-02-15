@@ -39,19 +39,40 @@ class WindowManager(object):
     def __init__(self, ImageRoot):
         #self.root = TNode.TNode(Column(utility.screenWidth(), initialFunc))
 
+        #editor = ImageRoot.child.next.child
         code = ImageRoot.child.next.next
         listEd = Editors.TreeEditor(code)
 
         self.ImageRoot = ImageRoot
-        self.root = TNode.TNode(listEd)
+
+        #self.root = TNode.TNode(listEd)
+        self.root = self.parse_memory(ImageRoot)
         self.active = self.root
         self.winCmd = False
         self.cols = 1
         self.wins = 1
 
-    def parse_memory(root):
+    def parse_memory(self, root):
         editor = root.child.next.child
-        code = editor.next
+        code = root.child.next.next
+
+        edId = editor.next.child
+        edAddNode = editor.next.next.child
+        edAdd = edAddNode.next.child
+        edAddPy = edAdd.toPySexp()
+        print edAddPy
+
+        edCurNode = editor.next.next.next.child
+        edCur = edCurNode.next.child
+        edCurPy = edCur.toPySexp()
+        print "edCurPy", edCurPy
+
+        actCode = root.gotoAddress(edAddPy)
+
+
+        listEd = Editors.TreeEditor(root, actCode, edCurPy)
+
+        return TNode.TNode(listEd)
 
     def writeImage(self):
 

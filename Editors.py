@@ -61,7 +61,7 @@ class CellEditor(object):
 class TreeEditor(object):
     editors = 0
 
-    def __init__(self, root, curRoot = None):
+    def __init__(self, root, curRoot = None, cursor = None):
         self.root = root
 
         if curRoot:
@@ -69,8 +69,12 @@ class TreeEditor(object):
         else:
             self.curRoot = self.root
 
-        self.active = self.curRoot
-        self.activeAddress = [0]
+        if cursor:
+            self.active = curRoot.gotoNearestAddress(cursor)
+            self.activeAddress = cursor
+        else:
+            self.active = self.curRoot
+            self.activeAddress = [0]
         self.editing = False
         self.cellEditor = None
         self.yankBuffer = None
