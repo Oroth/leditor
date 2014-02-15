@@ -31,7 +31,15 @@ class Graph(object):
     def updateCells(self):
         for layer in self.graph:
             for item in layer:
-                layer[item].updateValue()
+                for dep in layer[item].deps:
+                    if dep.dirty:
+                        layer[item].updateValue()
+                        break
+
+        # clean all cells
+        for layer in self.graph:
+            for item in layer:
+                layer[item].dirty = False
 
 class Cell(object):
     cells = 0
@@ -40,9 +48,11 @@ class Cell(object):
         self.formula = formula
         #self.value = value  # can be a lambda
         self.deps = deps
-        self.dirty = False
+        self.dirty = True
         self.weight = 0
         self.value = None
+        self.updateValue()
+        # should make it so it is automatically updated.
 
         self._id = Cell.cells
         Cell.cells += 1
@@ -59,6 +69,11 @@ class Cell(object):
         if self.value != oldValue:
             self.dirty = True
 
+    #more of a test method
+    def modifySelf(self, newFormula):
+        self.formula = newFormula
+        self.updateValue()
+
     def __repr__(self):
         return str(self.value)
 
@@ -74,6 +89,15 @@ class Cell(object):
     def __div__(self, val):
         return self.value / val
 
+    def __radd__(self, val):
+        return self.value + val
+    def __rsub__(self, val):
+        return val - self.value
+    def __rmul__(self, val):
+        return self.value * val
+    def __rdiv__(self, val):
+        return val / self.value
+
 
 
 graph = Graph()
@@ -82,8 +106,8 @@ graph = Graph()
 
 cell = Cell(5)
 cell2 = Cell(lambda : cell + 7, [cell])
-cell3 = Cell(lambda : cell + cell2.value, [cell, cell2])
-cell4 = Cell(lambda : cell + cell2.value + 9, [cell, cell2])
+cell3 = Cell(lambda : cell + cell2, [cell, cell2])
+cell4 = Cell(lambda : cell + cell2 + 9, [cell, cell2])
 
 graph.updateCells()
 
@@ -92,7 +116,8 @@ print cell2.value
 print cell3
 print cell4
 
-cell = Cell(lambda : 7)
+#cell = Cell(lambda : 7)
+cell.modifySelf(101)
 graph.updateCells()
 
 print cell.value
