@@ -103,24 +103,3 @@ class Cell(object):
 graph = Graph()
 
 
-
-cell = Cell(5)
-cell2 = Cell(lambda : cell + 7, [cell])
-cell3 = Cell(lambda : cell + cell2, [cell, cell2])
-cell4 = Cell(lambda : cell + cell2 + 9, [cell, cell2])
-
-graph.updateCells()
-
-print cell.value
-print cell2.value
-print cell3
-print cell4
-
-#cell = Cell(lambda : 7)
-cell.modifySelf(101)
-graph.updateCells()
-
-print cell.value
-print cell2.value
-print cell3
-print cell4

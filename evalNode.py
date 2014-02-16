@@ -1,5 +1,6 @@
 __author__ = 'chephren'
 import TNode
+from Cells import Cell
 
 isa = isinstance
 
