@@ -34,6 +34,26 @@ class Column(object):
         if result:
             return True
 
+class evalIOHandler(object):
+    def __init__(self, funcTree):
+        self.tree = funcTree
+        self.keyHistory = []
+        self.output = ''
+        self.function = None
+
+    def handleKeys(self, key):
+        if key.c != 0:
+            self.keyHistory.append(chr(key.c))
+            self.tree.calcValue(0)
+            self.function = self.tree.value[0]
+            self.output = self.function(int(chr(key.c)))
+            return False
+
+
+    def draw(self, posx, posy, maxx, maxy, hlcol=None):
+        pen = utility.Pen(posx, posy, maxx, maxy)
+        pen.write(str(self.output))
+
 
 class WindowManager(object):
     def __init__(self, ImageRoot):
@@ -147,6 +167,15 @@ class WindowManager(object):
                     self.active = self.active.next
                 else:
                     self.active = self.root
+                self.winCmd = False
+
+            # run a function like a program
+            elif key.vk == libtcod.KEY_SPACE:
+                newTree = TNode.copyTNodeAsNewTreeClass(self.active.child.active, evalNode.EvalNode)
+                newTree.calcValue(0)
+                prog = evalIOHandler(newTree)
+                self.addWindow(prog)
+                self.active = self.active.next
                 self.winCmd = False
 
             elif key.vk == libtcod.KEY_ENTER:

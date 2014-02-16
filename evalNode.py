@@ -43,6 +43,11 @@ class NonProcException(EvalException):
         return "(NonProcException " + str(self.value) + ")"
     pass
 
+class TypeException(EvalException):
+    def __str__(self):
+        return "(TypeException " + str(self.value) + ")"
+    pass
+
 class Env(dict):
     "An environment: a dict of {'var':val} pairs, with an outer Env."
     def __init__(self, parms=(), args=(), outer=None):
@@ -244,6 +249,8 @@ class EvalNode(TNode.TNode):
                         ret = proc(*childExpr)
                     except ZeroDivisionError:
                         ret = DivZeroException()
+                    except TypeError:
+                        ret = TypeException(childExpr)
                 else:
                     ret = NonProcException(proc)
 
@@ -253,3 +260,5 @@ class EvalNode(TNode.TNode):
             self.setValue(id, ret)
 
         return ret
+
+
