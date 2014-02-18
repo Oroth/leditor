@@ -202,6 +202,8 @@ class WindowManager(object):
 
                     (newTree, env) = activeNode.child.getValue(activeEd.id)('inspect', *args)
                     newEd = Editors.TreeEditor(newTree)
+                    newEd.context = activeNode.child
+                    newEd.contextParent = activeEd.id
                     newEd.showValues = True
                     newEd.env = env
                     #newEd.root.calcValue()

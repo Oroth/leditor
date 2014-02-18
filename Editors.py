@@ -81,6 +81,7 @@ class TreeEditor(object):
         self.printingMode = 'horizontal'
         self.showValues = False
         self.env = None
+        self.context = None
 
         self.id = TreeEditor.editors
         TreeEditor.editors += 1
@@ -407,6 +408,14 @@ class TreeEditor(object):
             drawr(self.curRoot, 0)
 
         if self.showValues:
+            if self.context:
+                args = []
+                if self.context.next:
+                    for i in self.context.next:
+                        args.append(i.getValue(self.contextParent))
+                (newTree, env) = self.context.getValue(self.contextParent)('inspect', *args)
+                self.env = env
+
             self.root.calcValue(self.id, self.env)
 
         try:
