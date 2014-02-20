@@ -14,9 +14,59 @@ class TestTNode(TestCase):
 
     def test_next(self):
         tree = createTreeFromSexp([11, 15, 17])
-        c = Cursor(tree, [0])
-        c = c.next()
+        c = Cursor(tree, [0]).next()
         self.assertEqual(c.get().child, 15)
+
+
+    def test_next2(self):
+        tree = createTreeFromSexp([11, 15, 17, 19])
+        c = Cursor(tree, [0]).next().next()
+        self.assertEqual(c.get().child, 17)
+
+    def test_next3(self):
+        tree = createTreeFromSexp([11, 15, [101, 202], 17])
+        c = Cursor(tree, [2, 0]).next()
+        self.assertEqual(c.get().child, 202)
+
+    def test_prev(self):
+        tree = createTreeFromSexp([11, 15, 17])
+        c = Cursor(tree, [2]).prev()
+        self.assertEqual(c.get().child, 15)
+
+    def test_prev2(self):
+        tree = createTreeFromSexp([11, 15, 17, 19])
+        c = Cursor(tree, [3]).prev().prev()
+        self.assertEqual(c.get().child, 15)
+
+    def test_prev3(self):
+        tree = createTreeFromSexp([11, 15, [101, 202], 17])
+        c = Cursor(tree, [2, 1]).prev()
+        self.assertEqual(c.get().child, 101)
+
+    def test_up(self):
+        tree = createTreeFromSexp([11, 15, [55, 66], 19])
+        c = Cursor(tree, [2, 1]).up()
+        self.assertEqual(c.get().child.toPySexp(), [55, 66])
+
+    def test_up2(self):
+        tree = createTreeFromSexp([11, [101, 404, [1100, 2200, 3300]], 19])
+        c = Cursor(tree, [1, 2, 0]).up().up()
+        self.assertEqual(c.get().child.toPySexp(), [101, 404, [1100, 2200, 3300]])
+
+#    def test_up3(self):
+#        tree = createTreeFromSexp([11, 15, [101, 202], 17])
+#        c = Cursor(tree, [2, 1]).prev()
+#        self.assertEqual(c.get().child, 101)
+
+    def test_child(self):
+        tree = createTreeFromSexp([11, 15, [55, 66], 19])
+        c = Cursor(tree, [2]).child()
+        self.assertEqual(c.get().child, 55)
+
+    def test_child2(self):
+        tree = createTreeFromSexp([11, [101, 404, [1100, 2200, 3300]], 19])
+        c = Cursor(tree, [1]).child().next().next().child()
+        self.assertEqual(c.get().child, 1100)
 
     def test_createTree(self):
         tree = createTreeFromSexp(22)

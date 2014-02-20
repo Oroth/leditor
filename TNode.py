@@ -76,26 +76,25 @@ class Cursor(object):
 
     def next(self):
         if self.active.next:
-            newAddress = []
-            if len(self.address) > 1:
-                newAddress = self.address[0:-2].append(self.address[-1] + 1)
-            else:
-                newAddress.append(self.address[0] + 1)
+            newAddress = list(self.address)
+            newAddress[-1] += 1
             return Cursor(self.root, newAddress, self.active.next)
 
     def prev(self):
         if self.address[-1] > 0:
-            newAddress = self.address[0:-2].append(self.address[-1] - 1)
+            newAddress = list(self.address)
+            newAddress[-1] -= 1
             return Cursor(self.root, newAddress)
 
     def up(self):
         if len(self.address) > 1:
-            newAddress = self.address[0:-2]
+            newAddress = self.address[0:-1]
             return Cursor(self.root, newAddress)
 
     def child(self):
-        if self.active.child:
-            newAddress = self.address[0:-1].append(0)
+        if self.active.isSubNode():
+            newAddress = list(self.address)
+            newAddress.append(0)
             return Cursor(self.root, newAddress, self.active.child)
 
 
