@@ -2,10 +2,21 @@ from unittest import TestCase
 from TNode import TNode
 from TNode import createTreeFromSexp
 from TNode import copyTNode
+from TNode import Cursor
 
 __author__ = 'chephren'
 
+class TestCursor(TestCase):
+    pass
+
+
 class TestTNode(TestCase):
+
+    def test_next(self):
+        tree = createTreeFromSexp([11, 15, 17])
+        c = Cursor(tree, [0])
+        c = c.next()
+        self.assertEqual(c.get().child, 15)
 
     def test_createTree(self):
         tree = createTreeFromSexp(22)

@@ -60,6 +60,45 @@ def copyTNodeAsNewTreeClass(node, newTreeClass):
 
     return startNode
 
+class Cursor(object):
+    def __init__(self, root, startAddress=[0], start=None):
+        self.root = root
+        print "startAddress: ", startAddress
+        self.address = list(startAddress)
+        #self.address = list([0])
+        if start:
+            self.active = start
+        else:
+            self.active = root.gotoAddress(startAddress)
+
+    def get(self):
+        return self.active
+
+    def next(self):
+        if self.active.next:
+            newAddress = []
+            if len(self.address) > 1:
+                newAddress = self.address[0:-2].append(self.address[-1] + 1)
+            else:
+                newAddress.append(self.address[0] + 1)
+            return Cursor(self.root, newAddress, self.active.next)
+
+    def prev(self):
+        if self.address[-1] > 0:
+            newAddress = self.address[0:-2].append(self.address[-1] - 1)
+            return Cursor(self.root, newAddress)
+
+    def up(self):
+        if len(self.address) > 1:
+            newAddress = self.address[0:-2]
+            return Cursor(self.root, newAddress)
+
+    def child(self):
+        if self.active.child:
+            newAddress = self.address[0:-1].append(0)
+            return Cursor(self.root, newAddress, self.active.child)
+
+
 class TNode(object):
     def __init__(self, val=None, parent=None, prev=None, next=None):
         self.next = next
@@ -223,6 +262,8 @@ class TNode(object):
                 else: return None
 
         return iter.child
+
+
 
     def insertBefore(self, element):
         newNode = self.__class__(element, self.parent, self.previous, self)

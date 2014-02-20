@@ -283,10 +283,6 @@ class TreeEditor(object):
                 except ValueError: pass
 
             elif key.vk == libtcod.KEY_RIGHT or chr(key.c) == 'l':
-#                if self.active != self.curRoot:
-#                    if self.active.next:
-#                        self.active = self.active.next
-#                    else:
                 try:
                     self.active = self.active.getNextUpAlong('next', self.curRoot)
                 except ValueError: pass
