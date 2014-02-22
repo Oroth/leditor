@@ -223,13 +223,20 @@ class TNode(object):
         self.next = next
         self.previous = prev
         self.parent = parent
-        self.setChild(val)
+
+        if isList(val):
+            self.child = createTreeFromSexp(val)
+        else:
+            self.child = val
 
         self.evaled = True
         self.displayValue = False
 
     def __iter__(self):
         return TNodeIterator(self)
+
+    def __str__(self):
+        return "TNode ", str(self.child)
 
     def toPySexp(self):
         ret = list()

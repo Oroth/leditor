@@ -103,6 +103,11 @@ class TreeEditor(object):
         output = reader.read(buf)
         print output
 
+    def cursorReplace(self, value):
+        self.curRoot = TNode.replaceAdd(self.curRoot, self.cursor.address, value)
+        self.cursor = TNode.Cursor(self.curRoot, self.cursor.address)
+
+
     def handleKeys(self, key):
 
         if self.editing:
@@ -119,22 +124,21 @@ class TreeEditor(object):
 
                 self.editing = False
             elif finished == 'SPACE':
-                self.active.child = self.cellEditor.getContent()
-
-                self.active.insertAfter('')
-                self.active = self.active.next
-                self.cellEditor = CellEditor(self.active.child)
+                self.curRoot = TNode.replaceAdd(self.curRoot, self.cursor.address, self.cellEditor.getContent())
+                self.curRoot = TNode.appendAdd(self.curRoot, self.cursor.address, '')
+                self.cursor = TNode.Cursor(self.curRoot, self.cursor.address).next()
+                self.cellEditor = CellEditor(self.cursor.active.child)
 
             elif finished == 'NEST':
                 if self.cellEditor.content:
-                    self.active.child = self.cellEditor.getContent()
-                    self.active.insertAfter('')
-                    self.active = self.active.next
+                    self.curRoot = TNode.replaceAdd(self.curRoot, self.cursor.address, self.cellEditor.getContent())
+                    self.curRoot = TNode.appendAdd(self.curRoot, self.cursor.address, [''])
+                    self.cursor = TNode.Cursor(self.curRoot, self.cursor.address).next().child()
+                else:
+                    self.curRoot = TNode.replaceAdd(self.curRoot, self.cursor.address, [''])
+                    self.cursor = TNode.Cursor(self.curRoot, self.cursor.address).child()
 
-                # from 'o' command
-                self.active.nestChild()
-                self.active = self.active.child
-                self.cellEditor = CellEditor(self.active.child)
+                self.cellEditor = CellEditor(self.cursor.active.child)
 
             elif finished == 'UNNEST':
                 if self.cellEditor.content:
@@ -173,16 +177,15 @@ class TreeEditor(object):
                 print "evaluating"
 
             elif chr(key.c) == 'd':
-                if self.active != self.root:
-                    #The root node
+                if self.cursor.active != self.root:
                     if self.cursor.active == self.curRoot:
                         # set curRoot.Child to the first node in the outer list
                         self.curRoot = self.curRoot.parent
 
-                    self.yankBuffer = self.cursor.active.activeToPySexp()
+                    self.yankBuffer = self.cursor.childToPySexp()
 
                     self.curRoot = TNode.deleteAdd(self.curRoot, self.cursor.address)
-                    self.cursor = TNode(self.curRoot, self.cursor.address)
+                    self.cursor = TNode.Cursor(self.curRoot, self.cursor.address)
 
 
             elif chr(key.c) == 'c':
@@ -231,21 +234,22 @@ class TreeEditor(object):
 
 
             elif chr(key.c) == 'o':
-                if self.active != self.curRoot:
+                if self.cursor.active != self.curRoot:
                     self.editing = True
-                    self.active.insertAfter('')
-                    self.active = self.active.next
-                    self.active.nestChild()
-                    self.active = self.active.child
-                    self.cellEditor = CellEditor(self.active.child)
+#                    self.active.insertAfter('')
+#                    self.active = self.active.next
+#                    self.active.nestChild()
+#                    self.active = self.active.child
+                    self.curRoot = TNode.appendAdd(self.curRoot, self.cursor.address, [''])
+                    self.cursor = TNode.Cursor(self.curRoot, self.cursor.address).next().child()
+                    self.cellEditor = CellEditor(self.cursor.active.child)
 
             elif chr(key.c) == 'O':
-                self.editing = True
-                self.active.insertBefore('')
-                self.active = self.active.previous
-                self.active.nestChild()
-                self.active = self.active.child
-                self.cellEditor = CellEditor(self.active.child)
+                if self.cursor.active != self.curRoot:
+                    self.editing = True
+                    self.curRoot = TNode.insertAdd(self.curRoot, self.cursor.address, [''])
+                    self.cursor = TNode.Cursor(self.curRoot, self.cursor.address).prev().child()
+                    self.cellEditor = CellEditor(self.cursor.active.child)
 
             elif chr(key.c) == 'm':
                 if self.printingMode == 'horizontal':
@@ -291,14 +295,12 @@ class TreeEditor(object):
                 try:
                     #self.active = self.active.getNextUpAlong('next', self.curRoot)
                     self.cursor = self.cursor.next()
-                    print self.cursor.active.getAddressFrom(self.curRoot)
                 except ValueError: pass
 
 
             elif key.vk == libtcod.KEY_DOWN or chr(key.c) == 'j':
                 if self.cursor.onSubNode():
                     self.cursor = self.cursor.child()
-                    print self.cursor.active.getAddressFrom(self.curRoot)
 
 
             elif key.vk == libtcod.KEY_UP or chr(key.c) == 'k':

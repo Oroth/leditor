@@ -224,6 +224,10 @@ class TestFunctional(TestCase):
 
 class TestTNode(TestCase):
 
+    def test_TNode(self):
+        node1 = TNode([1, 2, 3])
+        self.assertEqual(node1.toPySexp(), [[1, 2, 3]])
+
     def test_toPySexp(self):
         node1 = TNode(5)
         self.assertEqual(node1.toPySexp(), [5])
