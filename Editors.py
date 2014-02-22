@@ -69,12 +69,15 @@ class TreeEditor(object):
         else:
             self.curRoot = self.root
 
-        if cursor:
-            self.active = curRoot.gotoNearestAddress(cursor)
-            self.activeAddress = cursor
-        else:
-            self.active = self.curRoot
-            self.activeAddress = [0]
+#        if cursor:
+#            self.active = curRoot.gotoNearestAddress(cursor)
+#            self.activeAddress = cursor
+#        else:
+#            self.active = self.curRoot
+#            self.activeAddress = [0]
+
+        self.cursor = TNode.Cursor(self.curRoot, [0])
+
         self.editing = False
         self.cellEditor = None
         self.yankBuffer = None
@@ -87,7 +90,8 @@ class TreeEditor(object):
         TreeEditor.editors += 1
 
 
-
+    #def active(self):
+        #return self.cursor.active
 
 
 
@@ -142,11 +146,12 @@ class TreeEditor(object):
 
             # For the case when our active node gets deleted by another editor
             # Not perfect, but will do for now
-            #if chr(key.c) == 't':
-            oldadd = self.active.getAddressFrom(self.curRoot)
-            oldadd.insert(0, 0)
+
+            #oldadd = self.active.getAddressFrom(self.curRoot)
+            #oldadd.insert(0, 0)
             #    print oldadd
-            self.active = self.curRoot.gotoNearestAddress(oldadd)
+            #self.active = self.curRoot.gotoNearestAddress(oldadd)
+            self.cursor = self.cursor.refreshToNearest()
 
             if key.vk == libtcod.KEY_ESCAPE:
                 return 'ESC'  # exit Editor
@@ -192,10 +197,14 @@ class TreeEditor(object):
                     self.cellEditor = CellEditor(self.active.child)
 
             elif chr(key.c) == 'a':
-                if self.active != self.curRoot:
+                if self.cursor.active != self.curRoot:
                     self.editing = True
-                    self.active.insertAfter('')
-                    self.active = self.active.next
+                    #self.active.insertAfter('')
+
+                    TNode.copyTNodeToAdd(self.root, self.cursor.Address)
+                    TNode.cons('', self.cursor.next())
+
+                    self.cursor = self.cursor.next()
                     self.cellEditor = CellEditor(self.active.child)
 
             elif chr(key.c) == 'i':
@@ -276,25 +285,28 @@ class TreeEditor(object):
                 else: self.active.displayValue = True
 
             elif key.vk == libtcod.KEY_LEFT or chr(key.c) == 'h':
-#                if self.active.previous and self.active != self.curRoot:
-#                    self.active = self.active.previous
                 try:
-                    self.active = self.active.getNextUpAlong('previous', self.curRoot)
+                    self.cursor = self.cursor.prev()
                 except ValueError: pass
 
             elif key.vk == libtcod.KEY_RIGHT or chr(key.c) == 'l':
                 try:
-                    self.active = self.active.getNextUpAlong('next', self.curRoot)
+                    #self.active = self.active.getNextUpAlong('next', self.curRoot)
+                    self.cursor = self.cursor.next()
+                    print self.cursor.active.getAddressFrom(self.curRoot)
                 except ValueError: pass
 
 
             elif key.vk == libtcod.KEY_DOWN or chr(key.c) == 'j':
-                if self.active.isSubNode():
-                    self.active = self.active.child
+                if self.cursor.onSubNode():
+                    self.cursor = self.cursor.child()
+                    print self.cursor.active.getAddressFrom(self.curRoot)
+
 
             elif key.vk == libtcod.KEY_UP or chr(key.c) == 'k':
-                if self.active.parent and self.active != self.curRoot:
-                    self.active = self.active.parent
+                try:
+                    self.cursor = self.cursor.up()
+                except ValueError: pass
 
 
     def draw(self, posx, posy, maxx, maxy, hlcol):
@@ -311,7 +323,7 @@ class TreeEditor(object):
                     if node.child == "=>":
                         pen.writeNL()
                         # check view
-                    if node == self.active:
+                    if node == self.cursor.active:
                         bgcolour = hlcol
                     else:
                         bgcolour = parentCol
@@ -322,7 +334,7 @@ class TreeEditor(object):
 
                 elif node.child is not None:
                     output = reader.to_string(node.child)
-                    if node == self.active:
+                    if node == self.cursor.active:
 
                         if self.editing:
                             self.cellEditor.draw(pen)
@@ -353,7 +365,7 @@ class TreeEditor(object):
                         pen.write(' ' * (2 * nesting), parentCol)
 
                     # try to avoid hiding the cursor in a cell editor
-                    elif node == self.active and self.editing:
+                    elif node == self.cursor.active and self.editing:
                         pen.skip(1, 0)
                     else:
                         pen.write(' ', parentCol)

@@ -40,6 +40,44 @@ def copyTNode(node):
 
     return startNode
 
+# new. purely functional
+# copies only the minimum number
+def copyTNodeToInd(node, i):
+    if i != 0:
+        return cons(node.child, copyTNodeToInd(node.next, i - 1))
+    else:
+        return TNode(node.child)
+
+def copyTNodeToAdd(node, add):
+    newAdd = add[1:]
+    newDest = add[0]
+    return copyTNodeToAdd2(node, newAdd, newDest)
+
+def copyTNodeToAdd2(node, add, curDest):
+
+    if curDest != 0:
+        return cons(node.child, copyTNodeToAdd2(node.next, add, curDest - 1))
+    elif add:
+        newAdd = add[1:]
+        newDest = add[0]
+        return copyTNodeToAdd2(node.child, newAdd, newDest)
+    else:
+        return TNode(node.child)
+
+def append(node1, node2):
+    if not node1:
+        return node2
+    else:
+        cons(node1.child, append(node1.next, node2))
+
+
+
+def cons(value, cdr):
+    car = TNode(value)
+    car.next = cdr
+    return car
+
+
 def copyTNodeAsNewTreeClass(node, newTreeClass):
     startNode = None
     lastNode = None
@@ -63,7 +101,7 @@ def copyTNodeAsNewTreeClass(node, newTreeClass):
 class Cursor(object):
     def __init__(self, root, startAddress=[0], start=None):
         self.root = root
-        print "startAddress: ", startAddress
+        #print "startAddress: ", startAddress
         self.address = list(startAddress)
         #self.address = list([0])
         if start:
@@ -74,28 +112,47 @@ class Cursor(object):
     def get(self):
         return self.active
 
+    def refreshToNearest(self):
+        return self.root.gotoNearestAddress(self.address)
+
+    def onSubNode(self):
+        return self.active.isSubNode()
+
+    def insertAfter(self, value):
+        newFrame = copyTNode(self.root)
+        c = Cursor(newFrame, self.address)
+        c.active.insertAfter('')
+
     def next(self):
         if self.active.next:
             newAddress = list(self.address)
             newAddress[-1] += 1
             return Cursor(self.root, newAddress, self.active.next)
+        else:
+            raise ValueError
 
     def prev(self):
         if self.address[-1] > 0:
             newAddress = list(self.address)
             newAddress[-1] -= 1
             return Cursor(self.root, newAddress)
+        else:
+            raise ValueError
 
     def up(self):
         if len(self.address) > 1:
             newAddress = self.address[0:-1]
             return Cursor(self.root, newAddress)
+        else:
+            raise ValueError
 
     def child(self):
         if self.active.isSubNode():
             newAddress = list(self.address)
             newAddress.append(0)
             return Cursor(self.root, newAddress, self.active.child)
+        else:
+            return self.active.child  # the value
 
 
 class TNode(object):
@@ -186,21 +243,24 @@ class TNode(object):
 
     def gotoNearestAddress(self, add):
         iter = self
+        newAdd = []
         while add:
             curDest = add.pop(0)
+            newAdd.append(0)
             while curDest != 0:
                 if iter.next:
                     iter = iter.next
                     curDest -= 1
-                else: return iter
+                    newAdd[-1] += 1
+                else: return Cursor(self, newAdd, iter)
 
             # check if still have sublevels to follow and go to them if possible
             if add:
                 if iter.isSubNode():
                     iter = iter.child
-                else: return iter
+                else: return Cursor(self, newAdd, iter)
 
-        return iter
+        return Cursor(self, newAdd, iter)
 
     def getNextUpAlong(self, direction, root):
         iter = self
@@ -262,7 +322,24 @@ class TNode(object):
 
         return iter.child
 
-
+#    def slice(self, address):
+#
+#        startNode = None
+#        lastNode = None
+#
+#        if self:
+#            if isinstance(node, TNode):
+#                for i in node:
+#                    if startNode:
+#                        lastNode.insertAfter(copyTNode(i.child))
+#                        lastNode = lastNode.next
+#                    else:
+#                        startNode = TNode(copyTNode(i.child))
+#                        lastNode = startNode
+#            else:  #atom
+#                return node
+#
+#        return startNode
 
     def insertBefore(self, element):
         newNode = self.__class__(element, self.parent, self.previous, self)
@@ -281,9 +358,9 @@ class TNode(object):
     def setChild(self, newChild):
         self.child = newChild
 
-        if isTNode(newChild):
-            for i in self.child:
-                i.parent = self
+#        if isTNode(newChild):
+#            for i in self.child:
+#                i.parent = self
 
     def insertNodeAfter(self, node):
         if self.next:

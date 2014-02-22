@@ -68,6 +68,16 @@ class TestTNode(TestCase):
         c = Cursor(tree, [1]).child().next().next().child()
         self.assertEqual(c.get().child, 1100)
 
+    def test_refreshToNearest(self):
+        tree = createTreeFromSexp([11, [101, 404, [1100, 2200, 3300]], 19])
+        c = Cursor(tree, [1])
+        self.assertEqual(c.get().child.toPySexp(), [101, 404, [1100, 2200, 3300]])
+
+    def test_refreshToNearest2(self):
+        tree = createTreeFromSexp([11, [101, 404, [1100, 2200, 3300]], 19])
+        c = Cursor(tree, [1, 0])
+        self.assertEqual(c.get().child, 101)
+
     def test_createTree(self):
         tree = createTreeFromSexp(22)
         self.assertEqual(tree, 22)

@@ -57,15 +57,9 @@ class evalIOHandler(object):
 
 class WindowManager(object):
     def __init__(self, ImageRoot):
-        #self.root = TNode.TNode(Column(utility.screenWidth(), initialFunc))
-
-        #editor = ImageRoot.child.next.child
-        code = ImageRoot.child.next.next
-        listEd = Editors.TreeEditor(code)
-
         self.ImageRoot = ImageRoot
 
-        #self.root = TNode.TNode(listEd)
+        # root of windows
         self.root = self.parse_memory(ImageRoot)
         self.active = self.root
         self.winCmd = False
