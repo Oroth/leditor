@@ -48,21 +48,38 @@ def copyTNodeToInd(node, i):
     else:
         return TNode(node.child)
 
-def copyTNodeToAdd(node, add):
+def opAtAdd(node, add, op):
+    def opAtAdd2(node, add, curDest):
+        if curDest != 0:
+            return cons(node.child, opAtAdd2(node.next, add, curDest - 1))
+        elif add:
+            newAdd = add[1:]
+            newDest = add[0]
+            return cons(opAtAdd2(node.child, newAdd, newDest), node.next)
+        else:
+            return op(node)
+
     newAdd = add[1:]
     newDest = add[0]
-    return copyTNodeToAdd2(node, newAdd, newDest)
+    return opAtAdd2(node, newAdd, newDest)
 
-def copyTNodeToAdd2(node, add, curDest):
+def insertAdd(node, add, value):
+    return opAtAdd(node, add, lambda addNode: cons(value, addNode))
 
-    if curDest != 0:
-        return cons(node.child, copyTNodeToAdd2(node.next, add, curDest - 1))
-    elif add:
-        newAdd = add[1:]
-        newDest = add[0]
-        return copyTNodeToAdd2(node.child, newAdd, newDest)
-    else:
-        return TNode(node.child)
+def appendAdd(node, add, value):
+    return opAtAdd(node, add, lambda addNode: cons(addNode.child, cons(value, addNode.next)))
+
+def deleteAdd(node, add):
+    return opAtAdd(node, add, lambda addNode: addNode.next)
+
+def replaceAdd(node, add, value):
+    return opAtAdd(node, add, lambda addNode: cons(value, addNode.next))
+
+def copyToAdd(node, add):
+    return opAtAdd(node, add, lambda addNode: TNode(node.child))
+
+def nestAdd(node, add):
+    return opAtAdd(node, add, lambda addNode: cons(addNode, addNode.next))
 
 def append(node1, node2):
     if not node1:
@@ -70,7 +87,50 @@ def append(node1, node2):
     else:
         cons(node1.child, append(node1.next, node2))
 
+#def insertAdd(node, add, value):
+#    def insertAdd2(node, add, curDest):
+#        if curDest != 0:
+#            return cons(node.child, insertAdd2(node.next, add, curDest - 1))
+#        elif add:
+#            newAdd = add[1:]
+#            newDest = add[0]
+#            return cons(insertAdd2(node.child, newAdd, newDest), node.next)
+#        else:
+#            return cons(value, node)
+#
+#    newAdd = add[1:]
+#    newDest = add[0]
+#    return insertAdd2(node, newAdd, newDest)
 
+#def deleteAdd(node, add):
+#    def deleteAdd2(node, add, curDest):
+#        if curDest != 0:
+#            return cons(node.child, deleteAdd2(node.next, add, curDest - 1))
+#        elif add:
+#            newAdd = add[1:]
+#            newDest = add[0]
+#            return cons(deleteAdd2(node.child, newAdd, newDest), node.next)
+#        else:
+#            return node.next
+#
+#    newAdd = add[1:]
+#    newDest = add[0]
+#    return deleteAdd2(node, newAdd, newDest)
+#
+#def replaceAdd(node, add, value):
+#    def replaceAdd2(node, add, curDest):
+#        if curDest != 0:
+#            return cons(node.child, replaceAdd2(node.next, add, curDest - 1))
+#        elif add:
+#            newAdd = add[1:]
+#            newDest = add[0]
+#            return cons(replaceAdd2(node.child, newAdd, newDest), node.next)
+#        else:
+#            return cons(value, node.next)
+#
+#    newAdd = add[1:]
+#    newDest = add[0]
+#    return replaceAdd2(node, newAdd, newDest)
 
 def cons(value, cdr):
     car = TNode(value)
@@ -117,6 +177,9 @@ class Cursor(object):
 
     def onSubNode(self):
         return self.active.isSubNode()
+
+    def childToPySexp(self):
+        return self.active.activeToPySexp()
 
     def insertAfter(self, value):
         newFrame = copyTNode(self.root)
@@ -362,35 +425,35 @@ class TNode(object):
 #            for i in self.child:
 #                i.parent = self
 
-    def insertNodeAfter(self, node):
-        if self.next:
-            self.next.previous = node
-            node.next = self.next
-        self.next = node
-        node.previous = self
-        node.parent = self.parent
+#    def insertNodeAfter(self, node):
+#        if self.next:
+#            self.next.previous = node
+#            node.next = self.next
+#        self.next = node
+#        node.previous = self
+#        node.parent = self.parent
 
 
     # Removes the current element and returns the new active node.
     # The new active node will be the next in sequence if one exists. Otherwise it will be the previous
     # and failing that it will return the parent.
-    def removeSelf(self):
-        if self.previous is None:
-            if self.next:
-                self.parent.child = self.next
-            else:
-                self.child = None
-        else:
-            self.previous.next = self.next
-
-        if self.next:
-            self.next.previous = self.previous
-            return self.next
-
-        if self.previous:
-            return self.previous
-
-        return self
+#    def removeSelf(self):
+#        if self.previous is None:
+#            if self.next:
+#                self.parent.child = self.next
+#            else:
+#                self.child = None
+#        else:
+#            self.previous.next = self.next
+#
+#        if self.next:
+#            self.next.previous = self.previous
+#            return self.next
+#
+#        if self.previous:
+#            return self.previous
+#
+#        return self
 
     # wrap the current data in brackets.
     def nestChild(self):

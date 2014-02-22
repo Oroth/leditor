@@ -108,7 +108,10 @@ class TreeEditor(object):
         if self.editing:
             finished = self.cellEditor.handle_key(key)
             if finished == 'END':
-                self.active.child = self.cellEditor.getContent()
+                #self.active.child = self.cellEditor.getContent()
+                self.curRoot = TNode.replaceAdd(self.curRoot, self.cursor.address, self.cellEditor.getContent())
+                self.cursor = TNode.Cursor(self.curRoot, self.cursor.address)
+                print self.curRoot.toPySexp()
                 self.editing = False
             elif finished == 'CANCEL':
                 #if self.active.element == '':
@@ -172,23 +175,14 @@ class TreeEditor(object):
             elif chr(key.c) == 'd':
                 if self.active != self.root:
                     #The root node
-                    if self.active == self.curRoot:
+                    if self.cursor.active == self.curRoot:
                         # set curRoot.Child to the first node in the outer list
                         self.curRoot = self.curRoot.parent
 
-                    self.yankBuffer = self.active.activeToPySexp()
+                    self.yankBuffer = self.cursor.active.activeToPySexp()
 
-                    oldAdd = self.active.getAddress()
-                    print "oldAdd: ", oldAdd
-                    self.active.removeSelf()
-                    self.active = self.root.gotoNearestAddress(oldAdd)
-#                    if self.active.child == self.curRoot.child.child:
-#                        newActive = self.active.removeSelf()
-#                        self.curRoot.child = newActive.parent
-#                    else:
-#                        newActive = self.active.removeSelf()
-#
-#                    self.active = newActive
+                    self.curRoot = TNode.deleteAdd(self.curRoot, self.cursor.address)
+                    self.cursor = TNode(self.curRoot, self.cursor.address)
 
 
             elif chr(key.c) == 'c':
@@ -201,17 +195,21 @@ class TreeEditor(object):
                     self.editing = True
                     #self.active.insertAfter('')
 
-                    TNode.copyTNodeToAdd(self.root, self.cursor.Address)
-                    TNode.cons('', self.cursor.next())
+                    self.curRoot = TNode.appendAdd(self.curRoot, self.cursor.address, '')
 
-                    self.cursor = self.cursor.next()
-                    self.cellEditor = CellEditor(self.active.child)
+                    # Need to think about how to sync with other editors, e.g.
+                    # return the new list and recreate the editor with new root and old cursor address
+
+                    self.cursor = TNode.Cursor(self.curRoot, self.cursor.address).next()
+                    self.cellEditor = CellEditor(self.cursor.active.child)
 
             elif chr(key.c) == 'i':
                 if self.active != self.curRoot:    # maybe the correct behaviour is to sub and ins
                     self.editing = True
-                    self.active.insertBefore('')
-                    self.active = self.active.previous
+#                    self.active.insertBefore('')
+#                    self.active = self.active.previous
+                    self.curRoot = TNode.appendAdd(self.curRoot, self.cursor.address, '')
+                    self.cursor = TNode.Cursor(self.curRoot, self.cursor.address).next()
                     self.cellEditor = CellEditor(self.active.child)
 
             elif chr(key.c) == 'J':
