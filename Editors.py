@@ -4,6 +4,8 @@ import utility
 import reader
 import interp
 import TNode
+import copy
+from TNode import Cursor
 
 class CellEditor(object):
     def __init__(self, content):
@@ -61,13 +63,15 @@ class CellEditor(object):
 class TreeEditor(object):
     editors = 0
 
-    def __init__(self, root, curRoot = None, cursor = None):
-        self.root = root
-
-        if curRoot:
-            self.curRoot = curRoot
-        else:
-            self.curRoot = self.root
+    def __init__(self, rootCursor, cursor = None):
+        self.rootCursor = rootCursor
+        self.curRoot = rootCursor.active  # a shortcut i guess.
+#        self.root = root
+#
+#        if curRoot:
+#            self.curRoot = curRoot
+#        else:
+#            self.curRoot = self.root
 
 #        if cursor:
 #            self.active = curRoot.gotoNearestAddress(cursor)
@@ -76,7 +80,8 @@ class TreeEditor(object):
 #            self.active = self.curRoot
 #            self.activeAddress = [0]
 
-        self.cursor = TNode.Cursor(self.curRoot, [0])
+        self.cursor = Cursor(self.curRoot, [0])
+        #self.active = self.cursor.active
 
         self.editing = False
         self.cellEditor = None
@@ -90,22 +95,20 @@ class TreeEditor(object):
         TreeEditor.editors += 1
 
 
-    #def active(self):
-        #return self.cursor.active
-
-
-
-    def loadImage(self):
-
-        f = open("image", 'r')
-        buf = f.read()
-
-        output = reader.read(buf)
-        print output
-
     def cursorReplace(self, value):
-        self.curRoot = TNode.replaceAdd(self.curRoot, self.cursor.address, value)
-        self.cursor = TNode.Cursor(self.curRoot, self.cursor.address)
+        newRoot = TNode.replaceAdd(self.curRoot, self.cursor.address, value)
+        newCur = TNode.Cursor(newRoot, self.cursor.address)
+        return newRoot, newCur
+
+
+    def transform(self, *propValueList):
+        newSelf = copy.copy(self)
+        #changes = []
+        for (prop, val) in propValueList:
+            setattr(newSelf, prop, val)
+        return newSelf
+
+
 
 
     def handleKeys(self, key):
@@ -154,10 +157,6 @@ class TreeEditor(object):
             # For the case when our active node gets deleted by another editor
             # Not perfect, but will do for now
 
-            #oldadd = self.active.getAddressFrom(self.curRoot)
-            #oldadd.insert(0, 0)
-            #    print oldadd
-            #self.active = self.curRoot.gotoNearestAddress(oldadd)
             self.cursor = self.cursor.refreshToNearest()
 
             if key.vk == libtcod.KEY_ESCAPE:
@@ -177,7 +176,7 @@ class TreeEditor(object):
                 print "evaluating"
 
             elif chr(key.c) == 'd':
-                if self.cursor.active != self.root:
+                if self.cursor.active != self.rootCursor.root:
                     if self.cursor.active == self.curRoot:
                         # set curRoot.Child to the first node in the outer list
                         self.curRoot = self.curRoot.parent
@@ -240,6 +239,13 @@ class TreeEditor(object):
 #                    self.active = self.active.next
 #                    self.active.nestChild()
 #                    self.active = self.active.child
+                    # return self.transform('curRoot', self.appendAdd(['']),
+                    # 'cursor', self.cursor.next().child()
+                    # 'cellEditor', CellEditor(self.cursor...
+                    # okay try again
+                    # newRoot, newCur = cursorAppend([''])
+                    # newCur = Cursor(newRoot, self.cursor.address).next().child()
+                    # return self.transform('curRoot', newRoot, 'cursor', newCur, 'cellEditor', '')
                     self.curRoot = TNode.appendAdd(self.curRoot, self.cursor.address, [''])
                     self.cursor = TNode.Cursor(self.curRoot, self.cursor.address).next().child()
                     self.cellEditor = CellEditor(self.cursor.active.child)
@@ -307,6 +313,8 @@ class TreeEditor(object):
                 try:
                     self.cursor = self.cursor.up()
                 except ValueError: pass
+
+        return self
 
 
     def draw(self, posx, posy, maxx, maxy, hlcol):

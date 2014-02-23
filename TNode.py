@@ -4,6 +4,21 @@ import reader
 def isList(lst):
     return isinstance(lst, list)
 
+def transform(obj, property, func):
+    newObj = obj.copy()
+    newProp = func(getattr(newObj, property))
+    setattr(newObj, property, newProp)
+    return newObj
+
+def transformList(obj, *propFuncList):
+    newObj = obj.copy()
+    #(propList, funcList) = zip(*propFuncList)
+    for (prop, func) in propFuncList:
+        newProp = func(getattr(newObj, prop))
+        setattr(newObj, prop, newProp)
+
+    return newObj
+
 def createTreeFromSexp(sexp):
     startNode = None
     lastNode = None
@@ -21,6 +36,8 @@ def createTreeFromSexp(sexp):
             return sexp
 
     return startNode
+
+
 
 def copyTNode(node):
     startNode = None

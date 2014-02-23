@@ -1,5 +1,6 @@
 __author__ = 'chephren'
 import TNode
+from TNode import Cursor, replaceAdd
 import utility
 import Editors
 import libtcodpy as libtcod
@@ -61,7 +62,8 @@ class WindowManager(object):
 
         # root of windows
         self.root = self.parse_memory(ImageRoot)
-        self.active = self.root
+        #self.active = self.root
+        self.cursor = Cursor(self.root, [0])
         self.winCmd = False
         self.cols = 1
         self.wins = 1
@@ -81,10 +83,12 @@ class WindowManager(object):
         edCurPy = edCur.toPySexp()
         print "edCurPy", edCurPy
 
-        actCode = root.gotoAddress(edAddPy)
+#        actCode = root.gotoAddress(edAddPy)
+#        listEd = Editors.TreeEditor(root, actCode, edCurPy)
 
 
-        listEd = Editors.TreeEditor(root, actCode, edCurPy)
+        curs = Cursor(root, edAddPy)
+        listEd = Editors.TreeEditor(curs)
 
         return TNode.TNode(listEd)
 
@@ -119,7 +123,7 @@ class WindowManager(object):
         yStep = utility.screenHeight() / self.wins
 
         for i in self.root:
-            if i == self.active:
+            if i == self.cursor.active:
                 i.child.draw(0, curY, maxX, curY + yStep, libtcod.azure)
             else: i.child.draw(0, curY, maxX, curY + yStep, libtcod.grey)
             curY += yStep
@@ -157,10 +161,9 @@ class WindowManager(object):
                     self.winCmd = False
 
             elif chr(key.c) == 'w':
-                if self.active.next:
-                    self.active = self.active.next
-                else:
-                    self.active = self.root
+                try:
+                    self.cursor = self.cursor.next()
+                except ValueError: pass
                 self.winCmd = False
 
             # run a function like a program
@@ -211,7 +214,12 @@ class WindowManager(object):
             print "windowing"
 
         else:
-            result = self.active.child.handleKeys(key)
+            result = self.cursor.active.child.handleKeys(key)
+            # or result returns a listEd with possibly changed curRoot, cursor, and curRootCursor
+            if self.cursor.active.child.curRoot != result.curRoot:
+                self.imageRoot = replaceAdd(self.imageRoot, result.curRootCursor, result.curRoot)
+
+            self.root = replaceAdd(self.root, self.cursor.address, result) # cursorReplace
             if result == 'ESC':
                 self.writeImage()
                 return True
