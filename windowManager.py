@@ -220,6 +220,7 @@ class WindowManager(object):
                 self.imageRoot = replaceAdd(self.imageRoot, result.curRootCursor, result.curRoot)
 
             self.root = replaceAdd(self.root, self.cursor.address, result) # cursorReplace
+            self.cursor = Cursor(self.root, self.cursor.address)
             if result == 'ESC':
                 self.writeImage()
                 return True

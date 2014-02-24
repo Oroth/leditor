@@ -215,13 +215,26 @@ class TreeEditor(object):
                     self.cellEditor = CellEditor(self.active.child)
 
             elif chr(key.c) == 'J':
-                if self.active.isSubNode():
-                    self.curRoot = self.active
+                if self.cursor.onSubNode():
+                    #newList = list(self.rootCursor.address)
+                   # newList.append(self.cursor.address)
+                    self.rootCursor = Cursor(self.rootCursor.root,
+                        self.rootCursor.address + self.cursor.address[1:])
+                    self.curRoot = self.rootCursor.active
+                    self.cursor = Cursor(self.curRoot, [0])
 
             elif chr(key.c) == 'K':
-                if self.curRoot.parent:
+                try:
                     # set curRoot to the first node in the outer list
-                    self.curRoot = self.curRoot.parent
+                    cursorPos = self.rootCursor.address[-1:]
+                    self.rootCursor = self.rootCursor.up()
+                    self.curRoot = self.rootCursor.active
+                    print cursorPos + self.cursor.address
+                    self.cursor = Cursor(self.curRoot, [0]+ cursorPos + self.cursor.address[1:])
+
+                    #refresh cursor...
+                except ValueError: pass
+
 
             elif chr(key.c) == 'L':
                 if self.curRoot.next:
@@ -301,6 +314,7 @@ class TreeEditor(object):
                 try:
                     #self.active = self.active.getNextUpAlong('next', self.curRoot)
                     self.cursor = self.cursor.next()
+                    #return self.transform('cursor', self.cursor.next())
                 except ValueError: pass
 
 
