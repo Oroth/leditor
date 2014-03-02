@@ -18,7 +18,7 @@ class TestCursor(TestCase):
 
     def test_next3(self):
         c = Cursor(self.tree, [3, 0]).next()
-        self.assertEqual(c.childToPySexp(), [101, 202])
+        self.assertEqual(c.cursorToPySexp(), [101, 202])
 
     def test_prev(self):
         c = Cursor(self.tree, [2]).prev()
@@ -34,11 +34,11 @@ class TestCursor(TestCase):
 
     def test_up(self):
         c = Cursor(self.tree, [3, 1]).up()
-        self.assertEqual(c.childToPySexp(), [11, [101, 202], 33])
+        self.assertEqual(c.cursorToPySexp(), [11, [101, 202], 33])
 
     def test_up2(self):
         c = Cursor(self.tree, [3, 2, 0]).up().up()
-        self.assertEqual(c.childToPySexp(), [11, [101, 202], 33])
+        self.assertEqual(c.cursorToPySexp(), [11, [101, 202], 33])
 
     #    def test_up3(self):
     #        tree = createTreeFromSexp([11, 15, [101, 202], 17])
@@ -166,6 +166,10 @@ class TestFunctional(TestCase):
     def test_replace12(self):
         newTree = replaceAdd(self.tree2, [2, 2], 5)
         self.assertEqual(newTree.toPySexp(), [1, 2, [11, 22, 5], 3, 4])
+
+    def test_replaceRec(self):
+        newTree = replaceAdd(self.tree2, [2, 2], self.tree1)
+        self.assertEqual(newTree.toPySexp(), [1, 2, [11, 22, [1, 2, 3, 4]], 3, 4])
 
     def test_replace13(self):
         newTree = replaceAdd(self.tree3, [2, 2, 0], 5)
@@ -304,26 +308,6 @@ class TestTNode(TestCase):
         node1.insertAfter(15)
 
         self.assertEquals(node1.toPySexp(), [5, 15, 10])
-
-    def test_removeSelf(self):
-        node1 = TNode(5)
-        node1.insertAfter(10)
-
-        node1.next.removeSelf()
-
-        self.assertEqual(node1.toPySexp(), [5])
-
-    def test_removeSelf2(self):
-        node1 = TNode(5)
-        node1.insertAfter(10)
-        node1.insertAfter(15)
-
-        node1.next.removeSelf()
-
-        self.assertEqual(node1.toPySexp(), [5, 10])
-
-#    def test_nestData(self):
-#        self.fail()
 
 
 if __name__ == '__main__':

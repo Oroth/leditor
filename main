@@ -60,6 +60,13 @@ while not libtcod.console_is_window_closed():
 
     #handle keys and exit game if needed
     key = libtcod.console_check_for_keypress()
-    exit = wm.handleKeys(key)
-    if exit:
+
+    result = wm.handleKeys(key)
+    if result:
+        wm = result
+    else:
         break
+
+#    exit = wm.handleKeys(key)
+#    if exit:
+#        break

@@ -4,8 +4,7 @@ import utility
 import reader
 import interp
 import TNode
-import copy
-from TNode import Cursor
+
 
 class CellEditor(object):
     def __init__(self, content):
@@ -60,33 +59,18 @@ class CellEditor(object):
         pen.writeHL(''.join(self.content), libtcod.azure, self.index)
 
 
-class TreeEditor(object):
+class TreeEditor(TNode.FuncObject):
     editors = 0
 
-    def __init__(self, rootCursor, cursor = None):
-        self.rootCursor = rootCursor
-        self.curRoot = rootCursor.active  # a shortcut i guess.
-#        self.root = root
-#
-#        if curRoot:
-#            self.curRoot = curRoot
-#        else:
-#            self.curRoot = self.root
-
-#        if cursor:
-#            self.active = curRoot.gotoNearestAddress(cursor)
-#            self.activeAddress = cursor
-#        else:
-#            self.active = self.curRoot
-#            self.activeAddress = [0]
-
-        self.cursor = Cursor(self.curRoot, [0])
-        #self.active = self.cursor.active
+    def __init__(self, root, rootCursorAdd=[0], cursorAdd=[0]):
+        self.root = root
+        self.buffer = TNode.Buffer(root, rootCursorAdd, cursorAdd)
 
         self.editing = False
         self.cellEditor = None
         self.yankBuffer = None
         self.printingMode = 'horizontal'
+        self.updateUndo = False
         self.showValues = False
         self.env = None
         self.context = None
@@ -95,53 +79,62 @@ class TreeEditor(object):
         TreeEditor.editors += 1
 
 
-    def cursorReplace(self, value):
-        newRoot = TNode.replaceAdd(self.curRoot, self.cursor.address, value)
-        newCur = TNode.Cursor(newRoot, self.cursor.address)
-        return newRoot, newCur
+#    def update(self, prop, val):
+#        newSelf = copy.copy(self)
+#        setattr(newSelf, prop, val)
+#        return newSelf
+#
+#    def updateList(self, *propValueList):
+#        newSelf = copy.copy(self)
+#        #changes = []
+#        for (prop, val) in propValueList:
+#            old = getattr(newSelf, prop)
+#            setattr(newSelf, prop, val)
+#        return newSelf
 
-
-    def transform(self, *propValueList):
-        newSelf = copy.copy(self)
-        #changes = []
-        for (prop, val) in propValueList:
-            setattr(newSelf, prop, val)
-        return newSelf
-
-
-
+    def syncWithImage(self, newImageRoot):
+        if newImageRoot != self.buffer.root:
+            return self.update('buffer', self.buffer.syncToNewRoot(newImageRoot))
+        else:
+            return self
 
     def handleKeys(self, key):
+        self.updateUndo = False
 
         if self.editing:
             finished = self.cellEditor.handle_key(key)
             if finished == 'END':
-                #self.active.child = self.cellEditor.getContent()
-                self.curRoot = TNode.replaceAdd(self.curRoot, self.cursor.address, self.cellEditor.getContent())
-                self.cursor = TNode.Cursor(self.curRoot, self.cursor.address)
-                print self.curRoot.toPySexp()
-                self.editing = False
+                return self.updateList(
+                    ('buffer', self.buffer.replaceAtCursor(self.cellEditor.getContent())),
+                    ('editing', False),
+                    ('updateUndo', True))
+
             elif finished == 'CANCEL':
                 #if self.active.element == '':
                     #delete self
+                return self.updateList(
+                    ('buffer', self.buffer.deleteAtCursor()),
+                    ('editing', False)
+                )
 
-                self.editing = False
             elif finished == 'SPACE':
-                self.curRoot = TNode.replaceAdd(self.curRoot, self.cursor.address, self.cellEditor.getContent())
-                self.curRoot = TNode.appendAdd(self.curRoot, self.cursor.address, '')
-                self.cursor = TNode.Cursor(self.curRoot, self.cursor.address).next()
-                self.cellEditor = CellEditor(self.cursor.active.child)
+                ## ideal: self.buffer.spliceAtCursor([self.cellEditor.getContent(), ''], [1])
+                newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent())
+                newBuff2 = newBuff.appendAtCursor('').curNext()
+                return self.updateList(
+                    ('buffer', newBuff2),
+                    ('cellEditor', CellEditor('')))
 
             elif finished == 'NEST':
                 if self.cellEditor.content:
-                    self.curRoot = TNode.replaceAdd(self.curRoot, self.cursor.address, self.cellEditor.getContent())
-                    self.curRoot = TNode.appendAdd(self.curRoot, self.cursor.address, [''])
-                    self.cursor = TNode.Cursor(self.curRoot, self.cursor.address).next().child()
+                    newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent())
+                    newBuff2 = newBuff.appendAtCursor(['']).curNext().curChild()
                 else:
-                    self.curRoot = TNode.replaceAdd(self.curRoot, self.cursor.address, [''])
-                    self.cursor = TNode.Cursor(self.curRoot, self.cursor.address).child()
+                    newBuff2 = self.buffer.replaceAtCursor(['']).child()
 
-                self.cellEditor = CellEditor(self.cursor.active.child)
+                return self.updateList(
+                    ('buffer', newBuff2),
+                    ('cellEditor', CellEditor('')))
 
             elif finished == 'UNNEST':
                 if self.cellEditor.content:
@@ -157,7 +150,7 @@ class TreeEditor(object):
             # For the case when our active node gets deleted by another editor
             # Not perfect, but will do for now
 
-            self.cursor = self.cursor.refreshToNearest()
+            #self.cursor = self.cursor.refreshToNearest()
 
             if key.vk == libtcod.KEY_ESCAPE:
                 return 'ESC'  # exit Editor
@@ -176,63 +169,42 @@ class TreeEditor(object):
                 print "evaluating"
 
             elif chr(key.c) == 'd':
-                if self.cursor.active != self.rootCursor.root:
-                    if self.cursor.active == self.curRoot:
-                        # set curRoot.Child to the first node in the outer list
-                        self.curRoot = self.curRoot.parent
-
-                    self.yankBuffer = self.cursor.childToPySexp()
-
-                    self.curRoot = TNode.deleteAdd(self.curRoot, self.cursor.address)
-                    self.cursor = TNode.Cursor(self.curRoot, self.cursor.address)
-
+                if self.buffer.cursor != self.buffer.root:
+                    #self.yankBuffer = self.buffer.childToPySexp()
+                    return self.updateList(
+                        ('buffer', self.buffer.deleteAtCursor()),
+                        ('yankBuffer', self.buffer.cursorToPySexp()),
+                        ('updateUndo', True))
 
             elif chr(key.c) == 'c':
-                if not self.active.isSubNode():
-                    self.editing = True
-                    self.cellEditor = CellEditor(self.active.child)
+                if not self.buffer.onSubNode():
+                    return self.updateList(
+                        ('cellEditor', CellEditor(self.buffer.cursor.child)),
+                        ('editing', True))
 
             elif chr(key.c) == 'a':
-                if self.cursor.active != self.curRoot:
-                    self.editing = True
-                    #self.active.insertAfter('')
-
-                    self.curRoot = TNode.appendAdd(self.curRoot, self.cursor.address, '')
-
-                    # Need to think about how to sync with other editors, e.g.
-                    # return the new list and recreate the editor with new root and old cursor address
-
-                    self.cursor = TNode.Cursor(self.curRoot, self.cursor.address).next()
-                    self.cellEditor = CellEditor(self.cursor.active.child)
+                if self.buffer.cursor != self.buffer.view:
+                    newBuff = self.buffer.appendAtCursor('').curNext()
+                    return self.updateList(
+                        ('buffer', newBuff),
+                        ('cellEditor', CellEditor('')),
+                        ('editing', True))
 
             elif chr(key.c) == 'i':
-                if self.active != self.curRoot:    # maybe the correct behaviour is to sub and ins
-                    self.editing = True
-#                    self.active.insertBefore('')
-#                    self.active = self.active.previous
-                    self.curRoot = TNode.appendAdd(self.curRoot, self.cursor.address, '')
-                    self.cursor = TNode.Cursor(self.curRoot, self.cursor.address).next()
-                    self.cellEditor = CellEditor(self.active.child)
+                if self.buffer.cursor != self.buffer.view:    # maybe the correct behaviour is to sub and ins
+                    newBuff = self.buffer.insertAtCursor('').curPrev()
+                    return self.updateList(
+                        ('buffer', newBuff),
+                        ('cellEditor', CellEditor('')),
+                        ('editing', True))
 
             elif chr(key.c) == 'J':
-                if self.cursor.onSubNode():
-                    #newList = list(self.rootCursor.address)
-                   # newList.append(self.cursor.address)
-                    self.rootCursor = Cursor(self.rootCursor.root,
-                        self.rootCursor.address + self.cursor.address[1:])
-                    self.curRoot = self.rootCursor.active
-                    self.cursor = Cursor(self.curRoot, [0])
+                if self.buffer.onSubNode():
+                    return self.update('buffer', self.buffer.viewToCursor())
 
             elif chr(key.c) == 'K':
                 try:
-                    # set curRoot to the first node in the outer list
-                    cursorPos = self.rootCursor.address[-1:]
-                    self.rootCursor = self.rootCursor.up()
-                    self.curRoot = self.rootCursor.active
-                    print cursorPos + self.cursor.address
-                    self.cursor = Cursor(self.curRoot, [0]+ cursorPos + self.cursor.address[1:])
-
-                    #refresh cursor...
+                    return self.update('buffer', self.buffer.viewUp())
                 except ValueError: pass
 
 
@@ -242,33 +214,24 @@ class TreeEditor(object):
                     self.active = self.curRoot
 
             elif chr(key.c) == '(':
-                self.active.nestChild()
+                self.buffer.nestCursor()
 
 
             elif chr(key.c) == 'o':
-                if self.cursor.active != self.curRoot:
-                    self.editing = True
-#                    self.active.insertAfter('')
-#                    self.active = self.active.next
-#                    self.active.nestChild()
-#                    self.active = self.active.child
-                    # return self.transform('curRoot', self.appendAdd(['']),
-                    # 'cursor', self.cursor.next().child()
-                    # 'cellEditor', CellEditor(self.cursor...
-                    # okay try again
-                    # newRoot, newCur = cursorAppend([''])
-                    # newCur = Cursor(newRoot, self.cursor.address).next().child()
-                    # return self.transform('curRoot', newRoot, 'cursor', newCur, 'cellEditor', '')
-                    self.curRoot = TNode.appendAdd(self.curRoot, self.cursor.address, [''])
-                    self.cursor = TNode.Cursor(self.curRoot, self.cursor.address).next().child()
-                    self.cellEditor = CellEditor(self.cursor.active.child)
+                if self.buffer.cursor != self.buffer.view:
+                    newBuff = self.buffer.appendAtCursor(['']).curNext().curChild()
+                    return self.updateList(
+                        ('buffer', newBuff),
+                        ('cellEditor', CellEditor('')),
+                        ('editing', True))
 
             elif chr(key.c) == 'O':
-                if self.cursor.active != self.curRoot:
-                    self.editing = True
-                    self.curRoot = TNode.insertAdd(self.curRoot, self.cursor.address, [''])
-                    self.cursor = TNode.Cursor(self.curRoot, self.cursor.address).prev().child()
-                    self.cellEditor = CellEditor(self.cursor.active.child)
+                if self.buffer.cursor != self.buffer.view:
+                    newBuff = self.buffer.insertAtCursor(['']).curPrev().curChild()
+                    return self.updateList(
+                        ('buffer', newBuff),
+                        ('cellEditor', CellEditor('')),
+                        ('editing', True))
 
             elif chr(key.c) == 'm':
                 if self.printingMode == 'horizontal':
@@ -279,20 +242,23 @@ class TreeEditor(object):
 
             elif chr(key.c) == 'p':
                 toInsert = TNode.createTreeFromSexp(self.yankBuffer)
-                self.active.insertAfter(toInsert)
+                return self.updateList(
+                    ('buffer', self.buffer.appendAtCursor(toInsert)),
+                    ('updateUndo', True))
 
             elif chr(key.c) == 'R':
                 self.active = self.curRoot
 
             elif chr(key.c) == 's':
-                if self.active.child:
-                    self.editing = True
-                    self.cellEditor = CellEditor('')
-                #otherwise delete and replace
+                return self.updateList(
+                    ('cellEditor', CellEditor('')),
+                    ('editing', True))
 
+            elif chr(key.c) == 'u':
+                return "UNDO"
 
             elif chr(key.c) == 'y':
-                self.yankBuffer = self.active.activeToSexpr()
+                self.yankBuffer = self.buffer.cursor.activeToSexpr()
                 print self.yankBuffer
 
             elif chr(key.c) == "'":
@@ -301,31 +267,33 @@ class TreeEditor(object):
                 else: self.active.evaled = True
 
             elif chr(key.c) == '=':
-                if self.active.displayValue:
-                    self.active.displayValue = False
-                else: self.active.displayValue = True
+                if self.buffer.cursor.displayValue:
+                    self.buffer.cursor.displayValue = False
+                else: self.buffer.cursor.displayValue = True
 
             elif key.vk == libtcod.KEY_LEFT or chr(key.c) == 'h':
                 try:
-                    self.cursor = self.cursor.prev()
+                    newBuff = self.buffer.curPrev()
+                    return self.update('buffer', newBuff)
                 except ValueError: pass
 
             elif key.vk == libtcod.KEY_RIGHT or chr(key.c) == 'l':
                 try:
-                    #self.active = self.active.getNextUpAlong('next', self.curRoot)
-                    self.cursor = self.cursor.next()
-                    #return self.transform('cursor', self.cursor.next())
+                    newBuff = self.buffer.curNext()
+                    return self.update('buffer', newBuff)
                 except ValueError: pass
 
 
             elif key.vk == libtcod.KEY_DOWN or chr(key.c) == 'j':
-                if self.cursor.onSubNode():
-                    self.cursor = self.cursor.child()
+                if self.buffer.onSubNode():
+                    newBuff = self.buffer.curChild()
+                    return self.update('buffer', newBuff)
 
 
             elif key.vk == libtcod.KEY_UP or chr(key.c) == 'k':
                 try:
-                    self.cursor = self.cursor.up()
+                    newBuff = self.buffer.curUp()
+                    return self.update('buffer', newBuff)
                 except ValueError: pass
 
         return self
@@ -345,7 +313,7 @@ class TreeEditor(object):
                     if node.child == "=>":
                         pen.writeNL()
                         # check view
-                    if node == self.cursor.active:
+                    if node == self.buffer.cursor:
                         bgcolour = hlcol
                     else:
                         bgcolour = parentCol
@@ -356,7 +324,7 @@ class TreeEditor(object):
 
                 elif node.child is not None:
                     output = reader.to_string(node.child)
-                    if node == self.cursor.active:
+                    if node == self.buffer.cursor:
 
                         if self.editing:
                             self.cellEditor.draw(pen)
@@ -387,15 +355,15 @@ class TreeEditor(object):
                         pen.write(' ' * (2 * nesting), parentCol)
 
                     # try to avoid hiding the cursor in a cell editor
-                    elif node == self.cursor.active and self.editing:
+                    elif node == self.buffer.cursor and self.editing:
                         pen.skip(1, 0)
                     else:
                         pen.write(' ', parentCol)
 
                     drawr(node.next, nesting, parentCol, reindent)
 
-            if self.curRoot.isSubNode():
-                drawChild(self.curRoot, 1)
+            if self.buffer.view.isSubNode():
+                drawChild(self.buffer.view, 1)
             else:
                 pen.write(str(self.curRoot.child))
 

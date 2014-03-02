@@ -1,6 +1,6 @@
 __author__ = 'chephren'
 import TNode
-from TNode import Cursor, replaceAdd
+from TNode import cons, Buffer
 import utility
 import Editors
 import libtcodpy as libtcod
@@ -16,6 +16,7 @@ class Window(object):
         self.width = width
         self.height = height
         self.image = libtcod.console_new(width, height)
+
 
 class Column(object):
     def __init__(self, width, function):
@@ -56,17 +57,19 @@ class evalIOHandler(object):
         pen.write(str(self.output))
 
 
-class WindowManager(object):
+class WindowManager(TNode.FuncObject):
     def __init__(self, ImageRoot):
         self.ImageRoot = ImageRoot
 
         # root of windows
-        self.root = self.parse_memory(ImageRoot)
+        winRoot = TNode.TNode(self.parse_memory(ImageRoot))
+        self.winTree = Buffer(winRoot, [0], [0, 0])
         #self.active = self.root
-        self.cursor = Cursor(self.root, [0])
+        #self.winCursor = Cursor(self.winRoot, [0])
         self.winCmd = False
         self.cols = 1
         self.wins = 1
+        self.hist = ImageRoot
 
     def parse_memory(self, root):
         editor = root.child.next.child
@@ -86,9 +89,9 @@ class WindowManager(object):
 #        actCode = root.gotoAddress(edAddPy)
 #        listEd = Editors.TreeEditor(root, actCode, edCurPy)
 
-
-        curs = Cursor(root, edAddPy)
-        listEd = Editors.TreeEditor(curs)
+#        curs = Cursor(root, edAddPy)
+#        listEd = Editors.TreeEditor(curs, edAddPy)
+        listEd = Editors.TreeEditor(root, edAddPy)
 
         return TNode.TNode(listEd)
 
@@ -100,30 +103,31 @@ class WindowManager(object):
         f.write(text)
         f.close()
 
-    def addCol(self):
-        self.cols += 1
-        newWidth = utility.screenWidth() / self.cols
-        #need to readjust all columns..
-        self.active.insertAfter(newWidth)
-        self.active = self.active.next
-
-        iter = self.root
-        iter.child.width = newWidth
-        while iter.next:
-            iter.next.child.width = newWidth
-            iter = iter.next
+#    def addCol(self):
+#        self.cols += 1
+#        newWidth = utility.screenWidth() / self.cols
+#        #need to readjust all columns..
+#        self.active.insertAfter(newWidth)
+#        self.active = self.active.next
+#
+#        iter = self.winRoot
+#        iter.child.width = newWidth
+#        while iter.next:
+#            iter.next.child.width = newWidth
+#            iter = iter.next
 
     def addWindow(self, newFunc):
         self.wins += 1
-        self.active.insertAfter(newFunc)
+        newWinTree = self.winTree.appendAtCursor(newFunc).curNext()
+        return newWinTree
 
     def draw(self):
         maxX = utility.screenWidth()
         curY = 0
         yStep = utility.screenHeight() / self.wins
 
-        for i in self.root:
-            if i == self.cursor.active:
+        for i in self.winTree.root.child:
+            if i == self.winTree.cursor:
                 i.child.draw(0, curY, maxX, curY + yStep, libtcod.azure)
             else: i.child.draw(0, curY, maxX, curY + yStep, libtcod.grey)
             curY += yStep
@@ -137,34 +141,53 @@ class WindowManager(object):
         if self.winCmd:
 
             if chr(key.c) == 'j':
-                if self.active.next:
-                    self.active = self.active.next
-                    self.winCmd = False
+                try:
+                    return self.updateList(
+                        ('winTree', self.winTree.curNext()),
+                        ('winCmd', False))
+                except ValueError: pass
 
             elif chr(key.c) == 'k':
-                if self.active.previous:
-                    self.active = self.active.previous
-                    self.winCmd = False
+                try:
+                    return self.updateList(
+                        ('winTree', self.winTree.curPrev()),
+                        ('winCmd', False))
+                except ValueError: pass
 
             elif chr(key.c) == 'o':
-                newEd = Editors.TreeEditor(self.active.child.root, self.active.child.active)
-                self.addWindow(newEd)
-                self.active = self.active.next
-                self.winCmd = False
+                #abomination
+                #cursorToView
+                curAdd = self.winTree.cursor.child.buffer.cursorAdd
+                viewAdd = self.winTree.cursor.child.buffer.viewAdd
+                newEd = Editors.TreeEditor(self.ImageRoot, viewAdd + curAdd[1:])
+                newWinTree = self.addWindow(newEd)
+                return self.updateList(
+                    ('winTree', newWinTree),
+                    ('winCmd', False)
+                )
+
 
             elif chr(key.c) == 'd':
                 if self.wins > 1:
-                    self.wins -= 1
-                    oldAdd = self.active.getAddress()
-                    self.active.removeSelf()
-                    self.active = self.root.gotoNearestAddress(oldAdd)
-                    self.winCmd = False
+                    return self.updateList(
+                        ('winTree', self.winTree.deleteAtCursor()),
+                        ('wins', self.wins - 1))
+
+
+            elif chr(key.c) == 'u':
+                if self.hist.next:
+                    self.ImageRoot = self.hist.next
+                    self.hist = self.hist.next
 
             elif chr(key.c) == 'w':
                 try:
-                    self.cursor = self.cursor.next()
-                except ValueError: pass
-                self.winCmd = False
+                    next = self.winTree.curNext()
+                except ValueError:
+                    next = self.winTree.cursorToStart()
+
+                return self.updateList(
+                    ('buffer', next),
+                    ('winCmd', False))
 
             # run a function like a program
             elif key.vk == libtcod.KEY_SPACE:
@@ -214,18 +237,34 @@ class WindowManager(object):
             print "windowing"
 
         else:
-            result = self.cursor.active.child.handleKeys(key)
-            # or result returns a listEd with possibly changed curRoot, cursor, and curRootCursor
-            if self.cursor.active.child.curRoot != result.curRoot:
-                self.imageRoot = replaceAdd(self.imageRoot, result.curRootCursor, result.curRoot)
-
-            self.root = replaceAdd(self.root, self.cursor.address, result) # cursorReplace
-            self.cursor = Cursor(self.root, self.cursor.address)
+            result = self.winTree.cursor.child.handleKeys(key)
+            #print "result ", result
             if result == 'ESC':
                 self.writeImage()
-                return True
-            else: return False
+                return False
 
+            if result == 'UNDO':
+                if self.hist.next:
+                    self.ImageRoot = self.hist.next
+                    self.hist = self.hist.next
 
-    #def mainLoop(self):
+            else:
+                self.winTree = self.winTree.replaceAtCursor(result)
+
+                if self.ImageRoot != result.buffer.root:
+                    self.ImageRoot = result.buffer.root
+                    if result.updateUndo:
+                        self.hist = cons(self.ImageRoot.child, self.hist)
+                    #print "hist", self.hist.child.toPySexp()
+
+            # need to sync all Editors to the newTree
+            for i in self.winTree.root.child:
+                i.child = i.child.syncWithImage(self.ImageRoot)
+            #functional: map(self.winTree.root.child .syncWithImage)
+
+            return self
+            #return self.update('winTree', self.winTree.replaceAtCursor(result))
+
+        return self
+
 

@@ -1,5 +1,24 @@
 __author__ = 'chephren'
 import reader
+import copy
+
+
+class FuncObject(object):
+    def update(self, prop, val):
+        newSelf = copy.copy(self)
+        setattr(newSelf, prop, val)
+        return newSelf
+
+    def updateList(self, *propValueList):
+        newSelf = copy.copy(self)
+        #changes = []
+        for (prop, val) in propValueList:
+            if not hasattr(newSelf, prop):
+                raise AttributeError
+            #old = getattr(newSelf, prop)
+            setattr(newSelf, prop, val)
+        return newSelf
+
 
 def isList(lst):
     return isinstance(lst, list)
@@ -104,50 +123,6 @@ def append(node1, node2):
     else:
         cons(node1.child, append(node1.next, node2))
 
-#def insertAdd(node, add, value):
-#    def insertAdd2(node, add, curDest):
-#        if curDest != 0:
-#            return cons(node.child, insertAdd2(node.next, add, curDest - 1))
-#        elif add:
-#            newAdd = add[1:]
-#            newDest = add[0]
-#            return cons(insertAdd2(node.child, newAdd, newDest), node.next)
-#        else:
-#            return cons(value, node)
-#
-#    newAdd = add[1:]
-#    newDest = add[0]
-#    return insertAdd2(node, newAdd, newDest)
-
-#def deleteAdd(node, add):
-#    def deleteAdd2(node, add, curDest):
-#        if curDest != 0:
-#            return cons(node.child, deleteAdd2(node.next, add, curDest - 1))
-#        elif add:
-#            newAdd = add[1:]
-#            newDest = add[0]
-#            return cons(deleteAdd2(node.child, newAdd, newDest), node.next)
-#        else:
-#            return node.next
-#
-#    newAdd = add[1:]
-#    newDest = add[0]
-#    return deleteAdd2(node, newAdd, newDest)
-#
-#def replaceAdd(node, add, value):
-#    def replaceAdd2(node, add, curDest):
-#        if curDest != 0:
-#            return cons(node.child, replaceAdd2(node.next, add, curDest - 1))
-#        elif add:
-#            newAdd = add[1:]
-#            newDest = add[0]
-#            return cons(replaceAdd2(node.child, newAdd, newDest), node.next)
-#        else:
-#            return cons(value, node.next)
-#
-#    newAdd = add[1:]
-#    newDest = add[0]
-#    return replaceAdd2(node, newAdd, newDest)
 
 def cons(value, cdr):
     car = TNode(value)
@@ -235,6 +210,117 @@ class Cursor(object):
             return self.active.child  # the value
 
 
+class Buffer(FuncObject):
+    def __init__(self, root, viewAdd=[0], cursorAdd=[0]):
+        self.root = root
+        self.view, self.viewAdd = self.root.gotoNearestAddress(viewAdd)
+        self.cursor, self.cursorAdd = self.view.gotoNearestAddress(cursorAdd)
+
+#    def update(self, *propValueList):
+#        newSelf = copy.copy(self)
+#        #changes = []
+#        for (prop, val) in propValueList:
+#            setattr(newSelf, prop, val)
+#        return newSelf
+
+    def onSubNode(self):
+        return self.cursor.isSubNode()
+
+    def cursorToPySexp(self):
+        return self.cursor.activeToPySexp()
+
+    def syncToNewRoot(self, newRoot):
+        return Buffer(newRoot, self.viewAdd, self.cursorAdd)
+
+    def opAtCursor(self, op, value=None):
+        if value:
+            newView = op(self.view, self.cursorAdd, value)
+        else:
+            newView = op(self.view, self.cursorAdd)
+        newImage = replaceAdd(self.root, self.viewAdd, newView.child)
+        return Buffer(newImage, self.viewAdd, self.cursorAdd)
+
+#    def appendAtCursor(self, value):
+#        return self.opAtCursor(appendAdd, value)
+
+    def appendAtCursor(self, value):
+        newView = appendAdd(self.view, self.cursorAdd, value)
+        newImage = replaceAdd(self.root, self.viewAdd, newView.child)
+        newBuffer = Buffer(newImage, self.viewAdd, self.cursorAdd)
+        return newBuffer
+
+    def insertAtCursor(self, value):
+        newView = insertAdd(self.view, self.cursorAdd, value)
+        newImage = replaceAdd(self.root, self.viewAdd, newView.child)
+        newCursorAdd = list(self.cursorAdd)
+        newCursorAdd[-1] += 1
+        return Buffer(newImage, self.viewAdd, newCursorAdd)
+
+    def deleteAtCursor(self):
+        newBuff = self
+        if self.cursor == self.view:
+            newBuff = self.viewUp()
+        newView = deleteAdd(newBuff.view, newBuff.cursorAdd)
+        newImage = replaceAdd(newBuff.root, newBuff.viewAdd, newView.child)
+        return Buffer(newImage, newBuff.viewAdd, newBuff.cursorAdd)
+
+    def replaceAtCursor(self, value):
+        newView = replaceAdd(self.view, self.cursorAdd, value)
+        newImage = replaceAdd(self.root, self.viewAdd, newView.child)
+        return Buffer(newImage, self.viewAdd, self.cursorAdd)
+
+    def nestCursor(self):
+        newView = nestAdd(self.view, self.cursorAdd)
+        newImage = replaceAdd(self.root, self.viewAdd, newView.child)
+        return Buffer(newImage, self.viewAdd, self.cursorAdd)
+
+    def viewUp(self):
+        # from curUp
+        if len(self.viewAdd) > 1:
+            newViewAddress = self.viewAdd[0:-1]
+        else:
+            raise ValueError
+
+        # new cursor address will be prefixed by the last step in the address to the old view
+        newCursorAddress = [0] + self.viewAdd[-1:] + self.cursorAdd[1:]
+        return Buffer(self.root, newViewAddress, newCursorAddress)
+
+    def viewToCursor(self):
+        newViewAddress = self.viewAdd + self.cursorAdd[1:]
+        return Buffer(self.root, newViewAddress)
+
+    def curNext(self):
+        if self.cursor.next:
+            newAddress = list(self.cursorAdd)
+            newAddress[-1] += 1
+            return self.updateList(('cursorAdd', newAddress), ('cursor', self.cursor.next))
+        else:
+            raise ValueError
+
+    def curPrev(self):
+        if self.cursorAdd[-1] > 0:
+            newAddress = list(self.cursorAdd)
+            newAddress[-1] -= 1
+            return Buffer(self.root, self.viewAdd, newAddress)
+        else:
+            raise ValueError
+
+    def curUp(self):
+        if len(self.cursorAdd) > 1:
+            newAddress = self.cursorAdd[0:-1]
+            return Buffer(self.root, self.viewAdd, newAddress)
+        else:
+            raise ValueError
+
+    def curChild(self):
+        if self.cursor.isSubNode():
+            newAddress = list(self.cursorAdd)
+            newAddress.append(0)
+            return self.updateList(('cursorAdd', newAddress), ('cursor', self.cursor.child))
+        else:
+            return self.cursor.child  # the value
+
+
 class TNode(object):
     def __init__(self, val=None, parent=None, prev=None, next=None):
         self.next = next
@@ -253,7 +339,10 @@ class TNode(object):
         return TNodeIterator(self)
 
     def __str__(self):
-        return "TNode ", str(self.child)
+        if self.isSubNode():
+            return "<TNode ...>"
+        else:
+            return "<TNode " + str(self.child) + ">"
 
     def toPySexp(self):
         ret = list()
@@ -277,40 +366,40 @@ class TNode(object):
 
 
 
-    def getAddress(self):
-        ret = []
-        iter = self
+#    def getAddress(self):
+#        ret = []
+#        iter = self
+#
+#        while iter.parent:
+#            curLevelLoc = 0
+#            while iter.previous:
+#                curLevelLoc += 1
+#                iter = iter.previous
+#
+#            ret.insert(0, curLevelLoc)
+#            iter = iter.parent
+#
+#        ret.insert(0, 0)  #because of root node...
+#        return ret
+#
+#    def getAddressFrom(self, start):
+#        ret = []
+#        iter = self
+#
+#        while iter.parent and iter != start:
+#            curLevelLoc = 0
+#            while iter.previous and iter != start:
+#                curLevelLoc += 1
+#                iter = iter.previous
+#
+#            ret.insert(0, curLevelLoc)
+#            iter = iter.parent
+#
+#        #ret.insert(0, 0)  #because of root node...
+#        return ret
 
-        while iter.parent:
-            curLevelLoc = 0
-            while iter.previous:
-                curLevelLoc += 1
-                iter = iter.previous
-
-            ret.insert(0, curLevelLoc)
-            iter = iter.parent
-
-        ret.insert(0, 0)  #because of root node...
-        return ret
-
-    def getAddressFrom(self, start):
-        ret = []
-        iter = self
-
-        while iter.parent and iter != start:
-            curLevelLoc = 0
-            while iter.previous and iter != start:
-                curLevelLoc += 1
-                iter = iter.previous
-
-            ret.insert(0, curLevelLoc)
-            iter = iter.parent
-
-        #ret.insert(0, 0)  #because of root node...
-        return ret
-
-    def gotoAddress(self, add):
-
+    def gotoAddress(self, address):
+        add = list(address)
         iter = self
         while add:
             curDest = add.pop(0)
@@ -328,7 +417,8 @@ class TNode(object):
 
         return iter
 
-    def gotoNearestAddress(self, add):
+    def gotoNearestAddress(self, address):
+        add = list(address)
         iter = self
         newAdd = []
         while add:
@@ -339,15 +429,15 @@ class TNode(object):
                     iter = iter.next
                     curDest -= 1
                     newAdd[-1] += 1
-                else: return Cursor(self, newAdd, iter)
+                else: return (iter, newAdd)
 
             # check if still have sublevels to follow and go to them if possible
             if add:
                 if iter.isSubNode():
                     iter = iter.child
-                else: return Cursor(self, newAdd, iter)
+                else: return (iter, newAdd)
 
-        return Cursor(self, newAdd, iter)
+        return (iter, newAdd)
 
     def getNextUpAlong(self, direction, root):
         iter = self
@@ -445,41 +535,6 @@ class TNode(object):
     def setChild(self, newChild):
         self.child = newChild
 
-#        if isTNode(newChild):
-#            for i in self.child:
-#                i.parent = self
-
-#    def insertNodeAfter(self, node):
-#        if self.next:
-#            self.next.previous = node
-#            node.next = self.next
-#        self.next = node
-#        node.previous = self
-#        node.parent = self.parent
-
-
-    # Removes the current element and returns the new active node.
-    # The new active node will be the next in sequence if one exists. Otherwise it will be the previous
-    # and failing that it will return the parent.
-#    def removeSelf(self):
-#        if self.previous is None:
-#            if self.next:
-#                self.parent.child = self.next
-#            else:
-#                self.child = None
-#        else:
-#            self.previous.next = self.next
-#
-#        if self.next:
-#            self.next.previous = self.previous
-#            return self.next
-#
-#        if self.previous:
-#            return self.previous
-#
-#        return self
-
-    # wrap the current data in brackets.
     def nestChild(self):
         self.setChild(self.__class__(self.child, self))
 
