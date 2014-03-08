@@ -150,64 +150,64 @@ def copyTNodeAsNewTreeClass(node, newTreeClass):
 
     return startNode
 
-class Cursor(object):
-    def __init__(self, root, startAddress=[0], start=None):
-        self.root = root
-        #print "startAddress: ", startAddress
-        self.address = list(startAddress)
-        #self.address = list([0])
-        if start:
-            self.active = start
-        else:
-            self.active = root.gotoAddress(startAddress)
-
-    def get(self):
-        return self.active
-
-    def refreshToNearest(self):
-        return self.root.gotoNearestAddress(self.address)
-
-    def onSubNode(self):
-        return self.active.isSubNode()
-
-    def childToPySexp(self):
-        return self.active.activeToPySexp()
-
-    def insertAfter(self, value):
-        newFrame = copyTNode(self.root)
-        c = Cursor(newFrame, self.address)
-        c.active.insertAfter('')
-
-    def next(self):
-        if self.active.next:
-            newAddress = list(self.address)
-            newAddress[-1] += 1
-            return Cursor(self.root, newAddress, self.active.next)
-        else:
-            raise ValueError
-
-    def prev(self):
-        if self.address[-1] > 0:
-            newAddress = list(self.address)
-            newAddress[-1] -= 1
-            return Cursor(self.root, newAddress)
-        else:
-            raise ValueError
-
-    def up(self):
-        if len(self.address) > 1:
-            newAddress = self.address[0:-1]
-            return Cursor(self.root, newAddress)
-        else:
-            raise ValueError
-
-    def child(self):
-        if self.active.isSubNode():
-            newAddress = list(self.address)
-            newAddress.append(0)
-            return Cursor(self.root, newAddress, self.active.child)
-        else:
-            return self.active.child  # the value
+#class Cursor(object):
+#    def __init__(self, root, startAddress=[0], start=None):
+#        self.root = root
+#        #print "startAddress: ", startAddress
+#        self.address = list(startAddress)
+#        #self.address = list([0])
+#        if start:
+#            self.active = start
+#        else:
+#            self.active = root.gotoAddress(startAddress)
+#
+#    def get(self):
+#        return self.active
+#
+#    def refreshToNearest(self):
+#        return self.root.gotoNearestAddress(self.address)
+#
+#    def onSubNode(self):
+#        return self.active.isSubNode()
+#
+#    def childToPySexp(self):
+#        return self.active.activeToPySexp()
+#
+#    def insertAfter(self, value):
+#        newFrame = copyTNode(self.root)
+#        c = Cursor(newFrame, self.address)
+#        c.active.insertAfter('')
+#
+#    def next(self):
+#        if self.active.next:
+#            newAddress = list(self.address)
+#            newAddress[-1] += 1
+#            return Cursor(self.root, newAddress, self.active.next)
+#        else:
+#            raise ValueError
+#
+#    def prev(self):
+#        if self.address[-1] > 0:
+#            newAddress = list(self.address)
+#            newAddress[-1] -= 1
+#            return Cursor(self.root, newAddress)
+#        else:
+#            raise ValueError
+#
+#    def up(self):
+#        if len(self.address) > 1:
+#            newAddress = self.address[0:-1]
+#            return Cursor(self.root, newAddress)
+#        else:
+#            raise ValueError
+#
+#    def child(self):
+#        if self.active.isSubNode():
+#            newAddress = list(self.address)
+#            newAddress.append(0)
+#            return Cursor(self.root, newAddress, self.active.child)
+#        else:
+#            return self.active.child  # the value
 
 
 class Buffer(FuncObject):
@@ -216,18 +216,17 @@ class Buffer(FuncObject):
         self.view, self.viewAdd = self.root.gotoNearestAddress(viewAdd)
         self.cursor, self.cursorAdd = self.view.gotoNearestAddress(cursorAdd)
 
-#    def update(self, *propValueList):
-#        newSelf = copy.copy(self)
-#        #changes = []
-#        for (prop, val) in propValueList:
-#            setattr(newSelf, prop, val)
-#        return newSelf
-
     def onSubNode(self):
         return self.cursor.isSubNode()
 
     def cursorToPySexp(self):
         return self.cursor.activeToPySexp()
+
+    def cursorToFirst(self):
+        return self.updateList(
+            ('cursor', self.view.child),
+            ('cursorAdd', [0, 0])     # actually want first in thing
+        )
 
     def syncToNewRoot(self, newRoot):
         return Buffer(newRoot, self.viewAdd, self.cursorAdd)
@@ -297,6 +296,13 @@ class Buffer(FuncObject):
         else:
             raise ValueError
 
+    def curNextUpAlong(self):
+        cur = self
+        while not cur.cursor.next:
+            cur = cur.curUp()
+
+        return cur.curNext()
+
     def curPrev(self):
         if self.cursorAdd[-1] > 0:
             newAddress = list(self.cursorAdd)
@@ -304,6 +310,14 @@ class Buffer(FuncObject):
             return Buffer(self.root, self.viewAdd, newAddress)
         else:
             raise ValueError
+
+    def curPrevUpAlong(self):
+        cur = self
+
+        while not cur.cursorAdd[-1] > 0:
+            cur = cur.curUp()
+
+        return cur.curPrev()
 
     def curUp(self):
         if len(self.cursorAdd) > 1:
@@ -439,46 +453,48 @@ class TNode(object):
 
         return (iter, newAdd)
 
-    def getNextUpAlong(self, direction, root):
-        iter = self
 
-        if iter == root:
-            raise ValueError
 
-        while not getattr(iter, direction):
-            if iter.parent != root:
-                iter = iter.parent
-            else: raise ValueError
-
-        return getattr(iter, direction)
-
-    def getNearestAlong(self, direction, root):
-        iter = self
-        levels = 0
-        switchedLevels = False
-
-        if iter == root:
-            raise ValueError
-
-        while not getattr(iter, direction):
-            if iter.parent != root:
-                iter = iter.parent
-                levels += 1
-                switchedLevels = True
-            else: raise ValueError
-
-        iter = getattr(iter, direction)
-
-        #now descend
-        while levels != 0 and isinstance(iter.child, TNode):
-            iter = iter.child
-            levels -= 1
-
-        if direction == 'previous' and switchedLevels:
-            while iter.next:
-                iter = iter.next
-
-        return iter
+#    def getNextUpAlong(self, direction, root):
+#        iter = self
+#
+#        if iter == root:
+#            raise ValueError
+#
+#        while not getattr(iter, direction):
+#            if iter.parent != root:
+#                iter = iter.parent
+#            else: raise ValueError
+#
+#        return getattr(iter, direction)
+#
+#    def getNearestAlong(self, direction, root):
+#        iter = self
+#        levels = 0
+#        switchedLevels = False
+#
+#        if iter == root:
+#            raise ValueError
+#
+#        while not getattr(iter, direction):
+#            if iter.parent != root:
+#                iter = iter.parent
+#                levels += 1
+#                switchedLevels = True
+#            else: raise ValueError
+#
+#        iter = getattr(iter, direction)
+#
+#        #now descend
+#        while levels != 0 and isinstance(iter.child, TNode):
+#            iter = iter.child
+#            levels -= 1
+#
+#        if direction == 'previous' and switchedLevels:
+#            while iter.next:
+#                iter = iter.next
+#
+#        return iter
 
     def getAddressOffset(self, offset):
 

@@ -70,6 +70,7 @@ class TreeEditor(TNode.FuncObject):
         self.cellEditor = None
         self.yankBuffer = None
         self.printingMode = 'horizontal'
+        self.syncWithRoot = True
         self.updateUndo = False
         self.showValues = False
         self.env = None
@@ -365,7 +366,7 @@ class TreeEditor(TNode.FuncObject):
             if self.buffer.view.isSubNode():
                 drawChild(self.buffer.view, 1)
             else:
-                pen.write(str(self.curRoot.child))
+                pen.write(str(self.buffer.view.child))
 
 
         def drawVert(posx, posy, levels):

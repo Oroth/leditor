@@ -183,10 +183,10 @@ class WindowManager(TNode.FuncObject):
                 try:
                     next = self.winTree.curNext()
                 except ValueError:
-                    next = self.winTree.cursorToStart()
+                    next = self.winTree.cursorToFirst()
 
                 return self.updateList(
-                    ('buffer', next),
+                    ('winTree', next),
                     ('winCmd', False))
 
             # run a function like a program
@@ -199,38 +199,50 @@ class WindowManager(TNode.FuncObject):
                 self.winCmd = False
 
             elif key.vk == libtcod.KEY_ENTER:
-                newTree = TNode.copyTNodeAsNewTreeClass(self.active.child.active, evalNode.EvalNode)
+                curEd = self.winTree.cursor.child
+                curNode = curEd.buffer.cursor
+#                curAdd = curEd.buffer.cursorAdd
+#                viewAdd = curEd.buffer.viewAdd
+                newTree = TNode.copyTNodeAsNewTreeClass(curNode, evalNode.EvalNode)
                 newEd = Editors.TreeEditor(newTree)
                 newEd.showValues = True
+                newEd.syncWithRoot = False
                 newEd.env = evalNode.global_env
-                newEd.root.calcValue(newEd.id)
-                self.addWindow(newEd)
-                self.active = self.active.next
-                self.winCmd = False
+                newEd.buffer.root.calcValue(newEd.id)
+
+                newWinTree = self.addWindow(newEd)
+                return self.updateList(
+                    ('winTree', newWinTree),
+                    ('winCmd', False))
 
             elif chr(key.c) == '>':
+                curEd = self.winTree.cursor.child
+                curNode = curEd.buffer.cursor
                 #newTree = TNode.copyTNodeAsNewTreeClass(self.active.child.active, evalNode.EvalNode)
-                activeEd = self.active.child
-                activeNode = self.active.child.active
+                #activeEd = self.active.child
+                #activeNode = self.active.child.active
 
-                if activeNode.isSubNode():
+                if curNode.isSubNode():
                     args = []
-                    if activeNode.child.next:
-                        for i in activeNode.child.next:
-                            args.append(i.getValue(self.active.child.id))
+                    if curNode.child.next:
+                        for i in curNode.child.next:
+                            args.append(i.getValue(curEd.id))
 
 
-                    (newTree, env) = activeNode.child.getValue(activeEd.id)('inspect', *args)
+                    (newTree, env) = curNode.child.getValue(curEd.id)('inspect', *args)
                     newEd = Editors.TreeEditor(newTree)
-                    newEd.context = activeNode.child
-                    newEd.contextParent = activeEd.id
+                    newEd.context = curNode.child
+                    newEd.contextParent = curEd.id
                     newEd.showValues = True
                     newEd.env = env
+                    newEd.syncWithRoot = False
                     #newEd.root.calcValue()
-                    newEd.root.eval(newEd.id, env)
-                    self.addWindow(newEd)
-                    self.active = self.active.next
-                self.winCmd = False
+                    newEd.buffer.root.eval(newEd.id, env)
+
+                    newWinTree = self.addWindow(newEd)
+                    return self.updateList(
+                        ('winTree', newWinTree),
+                        ('winCmd', False))
 
         elif chr(key.c) == 'w': #and key.lctrl:
             self.winCmd = True
@@ -251,7 +263,7 @@ class WindowManager(TNode.FuncObject):
             else:
                 self.winTree = self.winTree.replaceAtCursor(result)
 
-                if self.ImageRoot != result.buffer.root:
+                if result.syncWithRoot and self.ImageRoot != result.buffer.root:
                     self.ImageRoot = result.buffer.root
                     if result.updateUndo:
                         self.hist = cons(self.ImageRoot.child, self.hist)
@@ -259,12 +271,14 @@ class WindowManager(TNode.FuncObject):
 
             # need to sync all Editors to the newTree
             for i in self.winTree.root.child:
-                i.child = i.child.syncWithImage(self.ImageRoot)
+                if i.child.syncWithRoot:
+                    i.child = i.child.syncWithImage(self.ImageRoot)
             #functional: map(self.winTree.root.child .syncWithImage)
 
             return self
             #return self.update('winTree', self.winTree.replaceAtCursor(result))
 
         return self
+        #return self.update('winCmd', False)
 
 
