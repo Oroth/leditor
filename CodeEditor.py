@@ -242,7 +242,7 @@ class CodeEditor(Editors.TreeEditor):
                 drawChild(node, nesting + 1, parentCol)
                 #reindent = False
 
-                if not node.previous and node.next and node.next.next:
+                if node.next and node.next.next:
                     for i in node.next:
                         if i.isSubNode():
                             reindent = True

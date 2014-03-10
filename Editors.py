@@ -268,13 +268,13 @@ class TreeEditor(TNode.FuncObject):
 
             elif key.vk == libtcod.KEY_LEFT or chr(key.c) == 'h':
                 try:
-                    newBuff = self.buffer.curPrev()
+                    newBuff = self.buffer.curPrevUpAlong()
                     return self.update('buffer', newBuff)
                 except ValueError: pass
 
             elif key.vk == libtcod.KEY_RIGHT or chr(key.c) == 'l':
                 try:
-                    newBuff = self.buffer.curNext()
+                    newBuff = self.buffer.curNextUpAlong()
                     return self.update('buffer', newBuff)
                 except ValueError: pass
 

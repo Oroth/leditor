@@ -87,11 +87,12 @@ def copyTNodeToInd(node, i):
 def opAtAdd(node, add, op):
     def opAtAdd2(node, add, curDest):
         if curDest != 0:
-            return cons(node.child, opAtAdd2(node.next, add, curDest - 1))
+            return join(node, opAtAdd2(node.next, add, curDest - 1))
         elif add:
             newAdd = add[1:]
             newDest = add[0]
-            return cons(opAtAdd2(node.child, newAdd, newDest), node.next)
+            #return cons(opAtAdd2(node.child, newAdd, newDest), node.next)
+            return TNode(opAtAdd2(node.child, newAdd, newDest), node.nodeID, node.next)
         else:
             return op(node)
 
@@ -103,13 +104,14 @@ def insertAdd(node, add, value):
     return opAtAdd(node, add, lambda addNode: cons(value, addNode))
 
 def appendAdd(node, add, value):
-    return opAtAdd(node, add, lambda addNode: cons(addNode.child, cons(value, addNode.next)))
+    return opAtAdd(node, add, lambda addNode: join(addNode, cons(value, addNode.next)))
 
 def deleteAdd(node, add):
     return opAtAdd(node, add, lambda addNode: addNode.next)
 
 def replaceAdd(node, add, value):
-    return opAtAdd(node, add, lambda addNode: cons(value, addNode.next))
+    #return opAtAdd(node, add, lambda addNode: cons(value, addNode.next))
+    return opAtAdd(node, add, lambda addNode: TNode(value, addNode.nodeID, addNode.next))
 
 def copyToAdd(node, add):
     return opAtAdd(node, add, lambda addNode: TNode(node.child))
