@@ -129,6 +129,11 @@ def cons(value, cdr):
     car.next = cdr
     return car
 
+def join(node1, node2):
+    car = TNode(node1.child, node1.nodeID)
+    car.next = node2
+    return car
+
 
 def copyTNodeAsNewTreeClass(node, newTreeClass):
     startNode = None
@@ -336,10 +341,11 @@ class Buffer(FuncObject):
 
 
 class TNode(object):
-    def __init__(self, val=None, parent=None, prev=None, next=None):
+    __nodes__ = 0
+    def __init__(self, val=None, id=None, next=None):
         self.next = next
-        self.previous = prev
-        self.parent = parent
+#        self.previous = prev
+#        self.parent = parent
 
         if isList(val):
             self.child = createTreeFromSexp(val)
@@ -349,6 +355,12 @@ class TNode(object):
         self.evaled = True
         self.displayValue = False
 
+        if not id:
+            self.nodeID = TNode.__nodes__
+            TNode.__nodes__ += 1
+        else:
+            self.nodeID = id
+
     def __iter__(self):
         return TNodeIterator(self)
 
@@ -357,6 +369,14 @@ class TNode(object):
             return "<TNode ...>"
         else:
             return "<TNode " + str(self.child) + ">"
+
+    def __hash__(self):
+        return hash(self.nodeID)
+
+    def __eq__(self, other):
+        if isinstance(other, TNode):
+            return self.nodeID == other.nodeID
+        else: return False
 
     def toPySexp(self):
         ret = list()
@@ -534,16 +554,16 @@ class TNode(object):
 #
 #        return startNode
 
-    def insertBefore(self, element):
-        newNode = self.__class__(element, self.parent, self.previous, self)
-        if self.previous:
-            self.previous.next = newNode
-        elif self.parent:
-            self.parent.child = newNode
-        self.previous = newNode
+#    def insertBefore(self, element):
+#        newNode = self.__class__(element, self.parent, self.previous, self)
+#        if self.previous:
+#            self.previous.next = newNode
+#        elif self.parent:
+#            self.parent.child = newNode
+#        self.previous = newNode
 
     def insertAfter(self, element):
-        newNode = self.__class__(element, self.parent, prev=self, next=self.next)
+        newNode = self.__class__(element, next=self.next)
         if self.next:
             self.next.previous = newNode
         self.next = newNode

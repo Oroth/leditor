@@ -48,19 +48,19 @@ class TypeException(EvalException):
         return "(TypeException " + str(self.value) + ")"
     pass
 
-class Env(dict):
-    "An environment: a dict of {'var':val} pairs, with an outer Env."
-    def __init__(self, parms=(), args=(), outer=None):
-        self.update(zip(parms,args))
-        self.outer = outer
-    def find(self, var):
-        "Find the innermost Env where var appears."
-        if var in self:
-            return self
-        elif self.outer:
-            return self.outer.find(var)
-        else:
-            raise LookUpException(var)
+#class Env(dict):
+#    "An environment: a dict of {'var':val} pairs, with an outer Env."
+#    def __init__(self, parms=(), args=(), outer=None):
+#        self.update(zip(parms,args))
+#        self.outer = outer
+#    def find(self, var):
+#        "Find the innermost Env where var appears."
+#        if var in self:
+#            return self
+#        elif self.outer:
+#            return self.outer.find(var)
+#        else:
+#            raise LookUpException(var)
 
 def add_globals(env):
     "Add some Scheme standard procedures to an environment."
@@ -78,7 +78,7 @@ def add_globals(env):
         })
     return env
 
-global_env = add_globals(Env())
+#global_env = add_globals(Env())
 
 #def vau(clos_env, vars, call_env_sym, body):
 #    def closure(call_env, *args):
@@ -87,21 +87,21 @@ global_env = add_globals(Env())
 #        return eval(body, new_env)
 #    return closure
 
-class Closure():
-    def __init__(self, clos_env, vars, sym, body):
-        self.clos_env = clos_env
-        self.vars = vars
-        self.sym = sym
-        self.body = body
-
-    def __call__(self, call_env, *args):
-        new_env = Env(zip(self.vars, args), self.clos_env)
-        new_env[self.sym] = call_env
-        if not 'self' in args: new_env['self'] = self #safe recursion
-        return eval(self.body, new_env)
-
-    def __repr__(self):
-        return "vau (%s)"%(','.join(self.vars),)
+#class Closure():
+#    def __init__(self, clos_env, vars, sym, body):
+#        self.clos_env = clos_env
+#        self.vars = vars
+#        self.sym = sym
+#        self.body = body
+#
+#    def __call__(self, call_env, *args):
+#        new_env = Env(zip(self.vars, args), self.clos_env)
+#        new_env[self.sym] = call_env
+#        if not 'self' in args: new_env['self'] = self #safe recursion
+#        return eval(self.body, new_env)
+#
+#    def __repr__(self):
+#        return "vau (%s)"%(','.join(self.vars),)
 
 class EvalNode(TNode.TNode):
 

@@ -4,6 +4,7 @@ import utility
 import reader
 import interp
 import TNode
+#import evalNode
 
 
 class CellEditor(object):
@@ -73,25 +74,13 @@ class TreeEditor(TNode.FuncObject):
         self.syncWithRoot = True
         self.updateUndo = False
         self.showValues = False
-        self.env = None
-        self.context = None
+#        self.env = None
+#        self.context = None
+        self.revealedNodes = {}
 
         self.id = TreeEditor.editors
         TreeEditor.editors += 1
 
-
-#    def update(self, prop, val):
-#        newSelf = copy.copy(self)
-#        setattr(newSelf, prop, val)
-#        return newSelf
-#
-#    def updateList(self, *propValueList):
-#        newSelf = copy.copy(self)
-#        #changes = []
-#        for (prop, val) in propValueList:
-#            old = getattr(newSelf, prop)
-#            setattr(newSelf, prop, val)
-#        return newSelf
 
     def syncWithImage(self, newImageRoot):
         if newImageRoot != self.buffer.root:
@@ -160,11 +149,11 @@ class TreeEditor(TNode.FuncObject):
             elif key.vk == libtcod.KEY_ENTER:
 
                 sexpToEval = self.active.activeToPySexp()
-                evalResult = interp.eval(sexpToEval)
+                #evalResult = interp.eval(sexpToEval)
 
-                self.active.nestChild()
-                self.active.child.insertAfter(TNode.createTreeFromSexp(evalResult))
-                self.active.child.insertBefore("=>")  #needs to go after as will change child
+                #self.active.nestChild()
+                #self.active.child.insertAfter(TNode.createTreeFromSexp(evalResult))
+                #self.active.child.insertBefore("=>")  #needs to go after as will change child
 
             elif key.vk == 'x' and key.lctrl:
                 print "evaluating"
@@ -268,9 +257,14 @@ class TreeEditor(TNode.FuncObject):
                 else: self.active.evaled = True
 
             elif chr(key.c) == '=':
-                if self.buffer.cursor.displayValue:
-                    self.buffer.cursor.displayValue = False
-                else: self.buffer.cursor.displayValue = True
+                #return self.update()
+                if self.buffer.cursor in self.revealedNodes:
+                    self.revealedNodes[self.buffer.cursor] = not(self.revealedNodes[self.buffer.cursor])
+                else:
+                    self.revealedNodes[self.buffer.cursor] = True
+#                if self.buffer.cursor.displayValue:
+#                    self.buffer.cursor.displayValue = False
+#                else: self.buffer.cursor.displayValue = True
 
             elif key.vk == libtcod.KEY_LEFT or chr(key.c) == 'h':
                 try:
@@ -335,7 +329,8 @@ class TreeEditor(TNode.FuncObject):
                     else:
                         pen.write(output, parentCol)
 
-                if node.displayValue:
+                #if node.displayValue:
+                if node in self.revealedNodes:
                     pen.write("=>", parentCol)
                     pen.write(reader.to_string(node.getValue(self.id)), parentCol)
 
@@ -343,7 +338,7 @@ class TreeEditor(TNode.FuncObject):
                 drawChild(node, nesting + 1, parentCol)
                 #reindent = False
 
-                if not node.previous and node.next and node.next.next:
+                if node.next and node.next.next:
                     for i in node.next:
                         if i.isSubNode():
                             reindent = True
@@ -406,16 +401,16 @@ class TreeEditor(TNode.FuncObject):
 
             drawr(self.curRoot, 0)
 
-        if self.showValues:
-            if self.context:
-                args = []
-                if self.context.next:
-                    for i in self.context.next:
-                        args.append(i.getValue(self.contextParent))
-                (newTree, env) = self.context.getValue(self.contextParent)('inspect', *args)
-                self.env = env
-
-            self.root.calcValue(self.id, self.env)
+#        if self.showValues:
+#            if self.context:
+#                args = []
+#                if self.context.next:
+#                    for i in self.context.next:
+#                        args.append(i.getValue(self.contextParent))
+#                (newTree, env) = self.context.getValue(self.contextParent)('inspect', *args)
+#                self.env = env
+#
+#            self.root.calcValue(self.id, self.env)
 
         try:
             if self.printingMode == 'horizontal':
@@ -423,4 +418,5 @@ class TreeEditor(TNode.FuncObject):
             else:
                 drawVert(posx, posy, 1)
         except utility.windowBorderException: pass
+
 

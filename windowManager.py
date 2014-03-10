@@ -4,8 +4,9 @@ from TNode import cons, Buffer
 import utility
 import Editors
 import libtcodpy as libtcod
-import evalNode
+#import evalNode
 import reader
+import CodeEditor
 
 # interface
 
@@ -201,14 +202,16 @@ class WindowManager(TNode.FuncObject):
             elif key.vk == libtcod.KEY_ENTER:
                 curEd = self.winTree.cursor.child
                 curNode = curEd.buffer.cursor
-#                curAdd = curEd.buffer.cursorAdd
-#                viewAdd = curEd.buffer.viewAdd
-                newTree = TNode.copyTNodeAsNewTreeClass(curNode, evalNode.EvalNode)
-                newEd = Editors.TreeEditor(newTree)
-                newEd.showValues = True
+                curAdd = curEd.buffer.cursorAdd
+                viewAdd = curEd.buffer.viewAdd
+                newEd = CodeEditor.CodeEditor(self.ImageRoot, viewAdd + curAdd[1:])
+                #newTree = TNode.copyTNodeAsNewTreeClass(curNode, evalNode.EvalNode)
+                #newEd = Editors.TreeEditor(newTree)
+                #newEd.showValues = True
                 newEd.syncWithRoot = False
-                newEd.env = evalNode.global_env
-                newEd.buffer.root.calcValue(newEd.id)
+                newEd.env = CodeEditor.global_env
+                newEd.evalBuffer()
+                #newEd.value.calcValue(newEd.id)
 
                 newWinTree = self.addWindow(newEd)
                 return self.updateList(
