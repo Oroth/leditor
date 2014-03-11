@@ -156,9 +156,8 @@ class WindowManager(TNode.FuncObject):
             elif chr(key.c) == 'o':
                 #abomination
                 #cursorToView
-                curAdd = self.winTree.cursor.child.buffer.cursorAdd
-                viewAdd = self.winTree.cursor.child.buffer.viewAdd
-                newEd = Editors.TreeEditor(self.ImageRoot, viewAdd + curAdd[1:])
+                curEd = self.winTree.cursor.child
+                newEd = Editors.TreeEditor(self.ImageRoot, curEd.buffer.rootToCursorAdd())
                 newWinTree = self.addWindow(newEd)
                 return self.updateList(
                     ('winTree', newWinTree),
@@ -201,11 +200,11 @@ class WindowManager(TNode.FuncObject):
                 curNode = curEd.buffer.cursor
                 curAdd = curEd.buffer.cursorAdd
                 viewAdd = curEd.buffer.viewAdd
-                newEd = CodeEditor.CodeEditor(self.ImageRoot, viewAdd + curAdd[1:])
+                newEd = CodeEditor.CodeEditor(self.ImageRoot, curEd.buffer.rootToCursorAdd())
                 #newTree = TNode.copyTNodeAsNewTreeClass(curNode, evalNode.EvalNode)
                 #newEd = Editors.TreeEditor(newTree)
                 #newEd.showValues = True
-                newEd.syncWithRoot = False
+                #newEd.syncWithRoot = False
                 newEd.env = CodeEditor.global_env
                 newEd.evalBuffer()
                 #newEd.value.calcValue(newEd.id)
@@ -236,12 +235,13 @@ class WindowManager(TNode.FuncObject):
 
                     #(newTree, env) = curNode.child.getValue(curEd.id)('inspect', *args)
                     (newTree, env) = curEd.nodeValues[curNode.child]('inspect', *args)
-                    newEd = CodeEditor.CodeEditor(newTree)
+                    #newEd = CodeEditor.CodeEditor(newTree)
+                    newEd = CodeEditor.CodeEditor(newTree.root, newTree.rootToCursorAdd())
                     newEd.context = curNode.child
                     newEd.contextParent = curEd.id    # not really needed?
                     newEd.showValues = True
                     newEd.env = env
-                    newEd.syncWithRoot = False
+                    #newEd.syncWithRoot = False
                     #newEd.root.calcValue()
                     #newEd.buffer.root.eval(newEd.id, env)
                     newEd.evalBuffer()

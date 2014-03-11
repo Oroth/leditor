@@ -238,6 +238,9 @@ class Buffer(FuncObject):
     def syncToNewRoot(self, newRoot):
         return Buffer(newRoot, self.viewAdd, self.cursorAdd)
 
+    def rootToCursorAdd(self):
+        return self.viewAdd + self.cursorAdd[1:]
+
     def opAtCursor(self, op, value=None):
         if value:
             newView = op(self.view, self.cursorAdd, value)

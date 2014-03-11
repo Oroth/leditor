@@ -94,40 +94,43 @@ class CodeEditor(Editors.TreeEditor):
         self.nodeValues = {}
 
     def evalBuffer(self):
-        self.eval(self.buffer.view, self.env)
+        #self.eval(self.buffer, self.env)
+        self.eval(TNode.Buffer(self.buffer.root, self.buffer.viewAdd), self.env)
 
-    def eval(self, expr, env=global_env, memoize=True):
+    def eval(self, exprBuf, env=global_env, memoize=True):
         #self.calcEnv()
-        x = expr.child
+        #x = expr.child
+        exprChild = exprBuf.curChild()
         ret = None
 
 #        if not self.evaled and not ignoreQuote:
 #            ret = self.activeToPySexp()
 
-        if isa(x, Symbol):             # variable reference
+        if isa(exprChild, Symbol):             # variable reference
             try:
-                ret = env.find(x)[x]
+                ret = env.find(exprChild)[exprChild]
             except EvalException as ex:
                 ret = ex
                 #self.displayValue = True
-        elif not isa(x, TNode.TNode):         # constant literal
-            ret = x
+        elif not isa(exprChild, TNode.Buffer):         # constant literal
+            ret = exprChild
 
-        elif x.child == '^':         # (lambda (var*) exp)
+        elif exprChild.cursor.child == '^':         # (lambda (var*) exp)
 
             try:
-                vars = x.next.child.toPySexp()
+                vars = exprChild.cursor.next.child.toPySexp()
                 #check if list of symbols:
 
-                exp = x.next.next
-                if not exp:
-                    raise LambdaSyntaxException("NoBody")
+                #exp = exprChild.cursor.next.next
+                expBuf = exprChild.curNext().curNext()
+                #if not exp:
+                    #raise LambdaSyntaxException("NoBody")
 
                 def constructLambda(*args):
                     if args and args[0] == 'inspect':
-                        return [exp, Env(vars, args[1:], env)]
+                        return [expBuf, Env(vars, args[1:], env)]
                     else:
-                        return self.eval(exp, Env(vars, args, env), False)
+                        return self.eval(expBuf, Env(vars, args, env), False)
 
             except AttributeError:
                 ret = LambdaSyntaxException("Err")
@@ -138,7 +141,7 @@ class CodeEditor(Editors.TreeEditor):
                 ret = constructLambda
 
 
-        elif x.child == 'let':
+        elif exprChild.cursor.child == 'let':
         #            if not isa(mapping, TNode):
         #                ret = LetSyntaxException("Bad-Var-Syntax")
 
@@ -146,25 +149,41 @@ class CodeEditor(Editors.TreeEditor):
             valResults = []
 
             try:
-                mapping = x.next.child
-                for i in mapping:
-                    vars.append(i.child.child)
-                    val = i.child.next
+                #mapping = exprChild.cursor.next.child
+                mapping = exprChild.curNext().curChild()
+
+                while True:
+                    vars.append(mapping.curChild().curChild())
+                    val = mapping.curChild().curNext()
                     valResults.append(self.eval(val, env))
+                    try: mapping = mapping.curNext()
+                    except ValueError: break
+
+#                for i in mapping:
+#                    vars.append(i.child.child)
+#                    val = i.child.next
+#                    valResults.append(self.eval(val, env))
             except AttributeError:
                 ret = LetSyntaxException("Bad-Var-Syntax")
 
             else:
-                body = x.next.next
-                if body:
+                #body = exprChild.cursor.next.next
+                body = exprChild.curNext().curNext()
+                if body:    # replace with try
                     ret = self.eval(body, Env(vars, valResults, env))
                 else:
                     ret = LetSyntaxException("NoBody")
 
-        else:  # i.e. a Tnode
+        else:  # i.e. a procedure call
             childExpr = []
-            for i in x:
-                childExpr.append(self.eval(i, env, memoize))
+            procExpr = exprChild
+            while True:
+                childExpr.append(self.eval(procExpr, env, memoize))
+                try: procExpr = procExpr.curNext()
+                except ValueError: break
+
+#            for i in exprChild.cursor:
+#                childExpr.append(self.eval(i, env, memoize))
 
             #exps = [eval(exp, env) for exp in childExpr]
             for i in childExpr:
@@ -186,7 +205,7 @@ class CodeEditor(Editors.TreeEditor):
                     #self.displayValue = True
 
         if memoize:
-            self.nodeValues[expr] = ret
+            self.nodeValues[exprBuf.cursor] = ret
 
         return ret
 
