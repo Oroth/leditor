@@ -65,8 +65,6 @@ class WindowManager(TNode.FuncObject):
         # root of windows
         winRoot = TNode.TNode(self.parse_memory(ImageRoot))
         self.winTree = Buffer(winRoot, [0], [0, 0])
-        #self.active = self.root
-        #self.winCursor = Cursor(self.winRoot, [0])
         self.winCmd = False
         self.cols = 1
         self.wins = 1
@@ -167,7 +165,6 @@ class WindowManager(TNode.FuncObject):
                     ('winCmd', False)
                 )
 
-
             elif chr(key.c) == 'd':
                 if self.wins > 1:
                     return self.updateList(
@@ -213,7 +210,11 @@ class WindowManager(TNode.FuncObject):
                 newEd.evalBuffer()
                 #newEd.value.calcValue(newEd.id)
 
-                newWinTree = self.addWindow(newEd)
+                #newWinTree = self.addWindow(newEd)
+
+                self.wins += 1
+                newWinTree = self.winTree.appendAtCursor(newEd).curNext()
+
                 return self.updateList(
                     ('winTree', newWinTree),
                     ('winCmd', False))
@@ -229,27 +230,34 @@ class WindowManager(TNode.FuncObject):
                     args = []
                     if curNode.child.next:
                         for i in curNode.child.next:
-                            args.append(i.getValue(curEd.id))
+                            #args.append(i.getValue(curEd.id))
+                            args.append(curEd.nodeValues[i])
 
 
-                    (newTree, env) = curNode.child.getValue(curEd.id)('inspect', *args)
-                    newEd = Editors.TreeEditor(newTree)
+                    #(newTree, env) = curNode.child.getValue(curEd.id)('inspect', *args)
+                    (newTree, env) = curEd.nodeValues[curNode.child]('inspect', *args)
+                    newEd = CodeEditor.CodeEditor(newTree)
                     newEd.context = curNode.child
-                    newEd.contextParent = curEd.id
+                    newEd.contextParent = curEd.id    # not really needed?
                     newEd.showValues = True
                     newEd.env = env
                     newEd.syncWithRoot = False
                     #newEd.root.calcValue()
-                    newEd.buffer.root.eval(newEd.id, env)
+                    #newEd.buffer.root.eval(newEd.id, env)
+                    newEd.evalBuffer()
 
                     newWinTree = self.addWindow(newEd)
                     return self.updateList(
                         ('winTree', newWinTree),
                         ('winCmd', False))
 
+            elif key.vk == libtcod.KEY_ESCAPE:
+                return self.update('winCmd', False)
+
         elif chr(key.c) == 'w': #and key.lctrl:
             self.winCmd = True
             print "windowing"
+
 
         else:
             result = self.winTree.cursor.child.handleKeys(key)
