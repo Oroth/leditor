@@ -38,19 +38,20 @@ class Column(object):
             return True
 
 class evalIOHandler(object):
-    def __init__(self, funcTree):
-        self.tree = funcTree
+    def __init__(self, function):
+        #self.tree = funcTree
         self.keyHistory = []
         self.output = ''
-        self.function = None
+        self.function = function
 
     def handleKeys(self, key):
         if key.c != 0:
             self.keyHistory.append(chr(key.c))
-            self.tree.calcValue(0)
-            self.function = self.tree.value[0]
+            #self.tree.calcValue(0)
+            #self.function = self.tree.value[0]
             self.output = self.function(int(chr(key.c)))
-            return False
+
+        return self
 
 
     def draw(self, posx, posy, maxx, maxy, hlcol=None):
@@ -188,7 +189,17 @@ class WindowManager(TNode.FuncObject):
 
             # run a function like a program
             elif key.vk == libtcod.KEY_SPACE:
-                pass
+                curEd = self.winTree.cursor.child
+                evalBuffer = TNode.Buffer(self.ImageRoot, curEd.buffer.rootToCursorAdd())
+                func = CodeEditor.eval(evalBuffer)
+                prog = evalIOHandler(func)
+                newWinTree = self.addWindow(prog)
+
+                newWM = self.updateList(
+                    ('winTree', newWinTree),
+                    ('winCmd', False))
+
+                return newWM
 #                newTree = TNode.copyTNodeAsNewTreeClass(self.active.child.active, evalNode.EvalNode)
 #                newTree.calcValue(0)
 #                prog = evalIOHandler(newTree)
@@ -234,7 +245,8 @@ class WindowManager(TNode.FuncObject):
                     (newTree, env) = curEd.nodeValues[curNode.child]('inspect', *args)
                     #newEd = CodeEditor.CodeEditor(newTree)
                     newEd = CodeEditor.CodeEditor(newTree.root, newTree.rootToCursorAdd())
-                    newEd.context = curNode.child
+                    #newEd.context = curNode.child
+                    newEd.context = curEd.buffer
                     newEd.contextParent = curEd.id    # not really needed?
                     newEd.showValues = True
                     newEd.env = env
@@ -271,7 +283,8 @@ class WindowManager(TNode.FuncObject):
             else:
                 self.winTree = self.winTree.replaceAtCursor(result)
 
-                if result.syncWithRoot and self.ImageRoot != result.buffer.root:
+                if isinstance(result, Editors.TreeEditor) and result.syncWithRoot and \
+                   self.ImageRoot != result.buffer.root:
                     self.ImageRoot = result.buffer.root
                     if result.updateUndo:
                         self.hist = cons(self.ImageRoot.child, self.hist)
@@ -279,7 +292,7 @@ class WindowManager(TNode.FuncObject):
 
             # need to sync all Editors to the newTree
             for i in self.winTree.root.child:
-                if i.child.syncWithRoot:
+                if isinstance(i.child, Editors.TreeEditor) and i.child.syncWithRoot:
                     i.child = i.child.syncWithImage(self.ImageRoot)
             #functional: map(self.winTree.root.child .syncWithImage)
 

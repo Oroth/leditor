@@ -201,7 +201,9 @@ class CodeEditor(Editors.TreeEditor):
         super(CodeEditor, self).__init__(*args, **kwargs)
         self.showValues = True
         self.env = None
+        self.vars = None
         self.context = None
+        self.parent = None
         #self.value = TNode.copyTNodeAsNewTreeClass(self.buffer.cursor, evalNode.EvalNode)
         self.nodeValues = {}
 
@@ -210,6 +212,10 @@ class CodeEditor(Editors.TreeEditor):
 
     def evalBuffer(self):
         #self.eval(self.buffer, self.env)
+        #if self.context:
+            #parent = findWin(self.parentID)
+            #vals = parent.nodeValues[args]
+            #self.env = Env(self.vars, vals, parent.env)
         eval(TNode.Buffer(self.buffer.root, self.buffer.viewAdd), self.env, self.storeNodeValue)
 
 
