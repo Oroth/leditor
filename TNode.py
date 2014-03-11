@@ -236,7 +236,43 @@ class Buffer(FuncObject):
         )
 
     def syncToNewRoot(self, newRoot):
-        return Buffer(newRoot, self.viewAdd, self.cursorAdd)
+#        return Buffer(newRoot, self.viewAdd, self.cursorAdd)
+        newView, newViewAdd = self.root.gotoAddressOnNewRoot(self.viewAdd, newRoot)
+        newCursor, newCursorAdd = self.view.gotoAddressOnNewRoot(self.cursorAdd, newView)
+        return Buffer(newRoot, newViewAdd, newCursorAdd)
+
+    def syncViewAddToNewRoot(self, newRoot):
+        add = list(self.viewAdd)
+        oldNodeIter = self.root
+        newNodeIter = newRoot
+        newAdd = []
+        while add:
+            curDest = add.pop(0)
+            newAdd.append(0)
+            while curDest != 0:
+                if newNodeIter == oldNodeIter:
+                    if newNodeIter.next:
+                        oldNodeIter = oldNodeIter.next
+                        newNodeIter = newNodeIter.next
+                        curDest -= 1
+                        newAdd[-1] += 1
+                    else: return (newNodeIter, newAdd)  # the old node must have been deleted from the new root
+                elif newNodeIter == oldNodeIter.next:  # the old node was deleted
+                    oldNodeIter = oldNodeIter.next
+                elif newNodeIter.next == oldNodeIter: # a node was inserted into the old root
+                    newNodeIter = newNodeIter.next
+                    newAdd[-1] += 1
+
+                else: return (newNodeIter, newAdd)  # something more complicated happened.
+
+            # check if still have sublevels to follow and go to them if possible
+            if add:
+                if newNodeIter.isSubNode():
+                    newNodeIter = newNodeIter.child
+                    oldNodeIter = oldNodeIter.child
+                else: return (newNodeIter, newAdd)
+
+        return (newNodeIter, newAdd)
 
     def rootToCursorAdd(self):
         return self.viewAdd + self.cursorAdd[1:]
@@ -478,6 +514,39 @@ class TNode(object):
 
         return (iter, newAdd)
 
+    def gotoAddressOnNewRoot(self, address, newRoot):
+        add = list(address)
+        oldNodeIter = self
+        newNodeIter = newRoot
+        newAdd = []
+        while add:
+            curDest = add.pop(0)
+            newAdd.append(0)
+            while curDest != 0:
+                if newNodeIter == oldNodeIter:
+                    if newNodeIter.next:
+                        oldNodeIter = oldNodeIter.next
+                        newNodeIter = newNodeIter.next
+                        curDest -= 1
+                        newAdd[-1] += 1
+                    else: return (newNodeIter, newAdd)  # the old node must have been deleted from the new root
+                elif newNodeIter == oldNodeIter.next:  # the old node was deleted
+                    oldNodeIter = oldNodeIter.next
+                    curDest -= 1
+                elif newNodeIter.next == oldNodeIter: # a node was inserted into the old root
+                    newNodeIter = newNodeIter.next
+                    newAdd[-1] += 1
+
+                else: return (newNodeIter, newAdd)  # something more complicated happened.
+
+            # check if still have sublevels to follow and go to them if possible
+            if add:
+                if newNodeIter.isSubNode():
+                    newNodeIter = newNodeIter.child
+                    oldNodeIter = oldNodeIter.child
+                else: return (newNodeIter, newAdd)
+
+        return (newNodeIter, newAdd)
 
 
 #    def getNextUpAlong(self, direction, root):

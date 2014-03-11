@@ -188,26 +188,23 @@ class WindowManager(TNode.FuncObject):
 
             # run a function like a program
             elif key.vk == libtcod.KEY_SPACE:
-                newTree = TNode.copyTNodeAsNewTreeClass(self.active.child.active, evalNode.EvalNode)
-                newTree.calcValue(0)
-                prog = evalIOHandler(newTree)
-                self.addWindow(prog)
-                self.active = self.active.next
-                self.winCmd = False
+                pass
+#                newTree = TNode.copyTNodeAsNewTreeClass(self.active.child.active, evalNode.EvalNode)
+#                newTree.calcValue(0)
+#                prog = evalIOHandler(newTree)
+#                self.addWindow(prog)
+#                self.active = self.active.next
+#                self.winCmd = False
+
 
             elif key.vk == libtcod.KEY_ENTER:
                 curEd = self.winTree.cursor.child
-                curNode = curEd.buffer.cursor
-                curAdd = curEd.buffer.cursorAdd
-                viewAdd = curEd.buffer.viewAdd
                 newEd = CodeEditor.CodeEditor(self.ImageRoot, curEd.buffer.rootToCursorAdd())
-                #newTree = TNode.copyTNodeAsNewTreeClass(curNode, evalNode.EvalNode)
-                #newEd = Editors.TreeEditor(newTree)
+
                 #newEd.showValues = True
                 #newEd.syncWithRoot = False
                 newEd.env = CodeEditor.global_env
                 newEd.evalBuffer()
-                #newEd.value.calcValue(newEd.id)
 
                 #newWinTree = self.addWindow(newEd)
 

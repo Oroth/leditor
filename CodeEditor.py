@@ -83,6 +83,118 @@ def add_globals(env):
 
 global_env = add_globals(Env())
 
+def eval(exprBuf, env=global_env, memoize=None):
+    #self.calcEnv()
+    #x = expr.child
+    exprChild = exprBuf.curChild()
+    ret = None
+
+    #        if not self.evaled and not ignoreQuote:
+    #            ret = self.activeToPySexp()
+
+    if isa(exprChild, Symbol):             # variable reference
+        try:
+            ret = env.find(exprChild)[exprChild]
+        except EvalException as ex:
+            ret = ex
+    elif not isa(exprChild, TNode.Buffer):         # constant literal
+        ret = exprChild
+
+    elif exprChild.cursor.child == '^':         # (lambda (var*) exp)
+
+        try:
+            vars = exprChild.cursor.next.child.toPySexp()
+            #check if list of symbols:
+
+            #exp = exprChild.cursor.next.next
+            expBuf = exprChild.curNext().curNext()
+            #if not exp:
+            #raise LambdaSyntaxException("NoBody")
+
+            def constructLambda(*args):
+                if args and args[0] == 'inspect':
+                    return [expBuf, Env(vars, args[1:], env)]
+                else:
+                    return eval(expBuf, Env(vars, args, env), False)
+
+        except AttributeError:
+            ret = LambdaSyntaxException("Err")
+        except LambdaSyntaxException as err:
+            ret = err
+
+        else:
+            ret = constructLambda
+
+
+    elif exprChild.cursor.child == 'let':
+    #            if not isa(mapping, TNode):
+    #                ret = LetSyntaxException("Bad-Var-Syntax")
+
+        vars = []
+        valResults = []
+
+        try:
+            #mapping = exprChild.cursor.next.child
+            mapping = exprChild.curNext().curChild()
+
+            while True:
+                vars.append(mapping.curChild().curChild())
+                val = mapping.curChild().curNext()
+                valResults.append(eval(val, env, memoize))
+                try: mapping = mapping.curNext()
+                except ValueError: break
+
+            #                for i in mapping:
+            #                    vars.append(i.child.child)
+            #                    val = i.child.next
+            #                    valResults.append(self.eval(val, env))
+        except AttributeError:
+            ret = LetSyntaxException("Bad-Var-Syntax")
+
+        else:
+            #body = exprChild.cursor.next.next
+            body = exprChild.curNext().curNext()
+            if body:    # replace with try
+                ret = eval(body, Env(vars, valResults, env), memoize)
+            else:
+                ret = LetSyntaxException("NoBody")
+
+    else:  # i.e. a procedure call
+        childExpr = []
+        procExpr = exprChild
+        while True:
+            childExpr.append(eval(procExpr, env, memoize))
+            try: procExpr = procExpr.curNext()
+            except ValueError: break
+
+        #            for i in exprChild.cursor:
+        #                childExpr.append(self.eval(i, env, memoize))
+
+        #exps = [eval(exp, env) for exp in childExpr]
+        for i in childExpr:
+            if isinstance(i, LookUpException):
+                ret = i
+                break
+        else:
+            proc = childExpr.pop(0)
+            if hasattr(proc, '__call__'):
+                try:
+                    ret = proc(*childExpr)
+                except ZeroDivisionError:
+                    ret = DivZeroException()
+                except TypeError:
+                    ret = TypeException(childExpr)
+            else:
+                ret = NonProcException(proc)
+
+
+
+    if memoize:
+        memoize(exprBuf.cursor, ret)
+        #self.nodeValues[exprBuf.cursor] = ret
+
+    return ret
+
 
 class CodeEditor(Editors.TreeEditor):
     def __init__(self, *args, **kwargs):
@@ -93,122 +205,12 @@ class CodeEditor(Editors.TreeEditor):
         #self.value = TNode.copyTNodeAsNewTreeClass(self.buffer.cursor, evalNode.EvalNode)
         self.nodeValues = {}
 
+    def storeNodeValue(self, node, val):
+        self.nodeValues[node] = val
+
     def evalBuffer(self):
         #self.eval(self.buffer, self.env)
-        self.eval(TNode.Buffer(self.buffer.root, self.buffer.viewAdd), self.env)
-
-    def eval(self, exprBuf, env=global_env, memoize=True):
-        #self.calcEnv()
-        #x = expr.child
-        exprChild = exprBuf.curChild()
-        ret = None
-
-#        if not self.evaled and not ignoreQuote:
-#            ret = self.activeToPySexp()
-
-        if isa(exprChild, Symbol):             # variable reference
-            try:
-                ret = env.find(exprChild)[exprChild]
-            except EvalException as ex:
-                ret = ex
-                #self.displayValue = True
-        elif not isa(exprChild, TNode.Buffer):         # constant literal
-            ret = exprChild
-
-        elif exprChild.cursor.child == '^':         # (lambda (var*) exp)
-
-            try:
-                vars = exprChild.cursor.next.child.toPySexp()
-                #check if list of symbols:
-
-                #exp = exprChild.cursor.next.next
-                expBuf = exprChild.curNext().curNext()
-                #if not exp:
-                    #raise LambdaSyntaxException("NoBody")
-
-                def constructLambda(*args):
-                    if args and args[0] == 'inspect':
-                        return [expBuf, Env(vars, args[1:], env)]
-                    else:
-                        return self.eval(expBuf, Env(vars, args, env), False)
-
-            except AttributeError:
-                ret = LambdaSyntaxException("Err")
-            except LambdaSyntaxException as err:
-                ret = err
-
-            else:
-                ret = constructLambda
-
-
-        elif exprChild.cursor.child == 'let':
-        #            if not isa(mapping, TNode):
-        #                ret = LetSyntaxException("Bad-Var-Syntax")
-
-            vars = []
-            valResults = []
-
-            try:
-                #mapping = exprChild.cursor.next.child
-                mapping = exprChild.curNext().curChild()
-
-                while True:
-                    vars.append(mapping.curChild().curChild())
-                    val = mapping.curChild().curNext()
-                    valResults.append(self.eval(val, env))
-                    try: mapping = mapping.curNext()
-                    except ValueError: break
-
-#                for i in mapping:
-#                    vars.append(i.child.child)
-#                    val = i.child.next
-#                    valResults.append(self.eval(val, env))
-            except AttributeError:
-                ret = LetSyntaxException("Bad-Var-Syntax")
-
-            else:
-                #body = exprChild.cursor.next.next
-                body = exprChild.curNext().curNext()
-                if body:    # replace with try
-                    ret = self.eval(body, Env(vars, valResults, env))
-                else:
-                    ret = LetSyntaxException("NoBody")
-
-        else:  # i.e. a procedure call
-            childExpr = []
-            procExpr = exprChild
-            while True:
-                childExpr.append(self.eval(procExpr, env, memoize))
-                try: procExpr = procExpr.curNext()
-                except ValueError: break
-
-#            for i in exprChild.cursor:
-#                childExpr.append(self.eval(i, env, memoize))
-
-            #exps = [eval(exp, env) for exp in childExpr]
-            for i in childExpr:
-                if isinstance(i, LookUpException):
-                    ret = i
-                    break
-            else:
-                proc = childExpr.pop(0)
-                if hasattr(proc, '__call__'):
-                    try:
-                        ret = proc(*childExpr)
-                    except ZeroDivisionError:
-                        ret = DivZeroException()
-                    except TypeError:
-                        ret = TypeException(childExpr)
-                else:
-                    ret = NonProcException(proc)
-
-                    #self.displayValue = True
-
-        if memoize:
-            self.nodeValues[exprBuf.cursor] = ret
-
-        return ret
-
+        eval(TNode.Buffer(self.buffer.root, self.buffer.viewAdd), self.env, self.storeNodeValue)
 
 
     def draw(self, posx, posy, maxx, maxy, hlcol):
