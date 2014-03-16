@@ -7,8 +7,7 @@ import TNode
 
 isa = isinstance
 
-#class Symbol(str): pass
-Symbol = str
+#Symbol = str
 
 class EvalException(Exception):
     def __init__(self, value):
@@ -65,6 +64,13 @@ class Env(dict):
         else:
             raise LookUpException(var)
 
+
+def charToInt(char):
+    try:
+        return int(char)
+    except ValueError:
+        raise TypeError
+
 def add_globals(env):
     "Add some Scheme standard procedures to an environment."
     import math, operator as op
@@ -75,8 +81,8 @@ def add_globals(env):
          'equal?':op.eq, 'eq?':op.is_, 'length':len, 'cons':lambda x,y:[x]+y,
          'car':lambda x:x[0],'cdr':lambda x:x[1:], 'append':op.add,
          'list':lambda *x:list(x), 'list?': lambda x:isa(x,list),
-         'null?':lambda x:x==[], 'symbol?':lambda x: isa(x, Symbol)
-
+         'null?':lambda x:x==[], 'symbol?':lambda x: isa(x, reader.Symbol),
+         'int':lambda x:charToInt(x)
          #,'^':lambda *vars,*body: (lambda *args: eval(body, Env(vars, args, global_env)))
         })
     return env
@@ -92,7 +98,7 @@ def eval(exprBuf, env=global_env, memoize=None):
     if not exprBuf.cursor.evaled:
         ret = exprBuf.cursorToPySexp()
 
-    elif isa(exprChild, Symbol):             # variable reference
+    elif isa(exprChild, reader.Symbol):             # variable reference
         try:
             ret = env.find(exprChild)[exprChild]
         except EvalException as ex:
@@ -168,7 +174,9 @@ def eval(exprBuf, env=global_env, memoize=None):
 
         condResult = eval(cond, env, memoize)
 
-        if condResult:    # replace with try
+        if isinstance(condResult, Exception):
+            ret = condResult
+        elif condResult:    # replace with try
             ret = eval(positive, env, memoize)
         else:
             ret = eval(negative, env, memoize)
@@ -186,7 +194,7 @@ def eval(exprBuf, env=global_env, memoize=None):
 
         #exps = [eval(exp, env) for exp in childExpr]
         for i in childExpr:
-            if isinstance(i, LookUpException):
+            if isinstance(i, Exception):
                 ret = i
                 break
         else:
@@ -350,6 +358,6 @@ class evalIOHandler(CodeEditor):
     def draw(self, posx, posy, maxx, maxy, hlcol=None):
         self.function = self.nodeValues[self.buffer.cursor]
         if self.lastKey != 0:
-            self.output = self.function(int(chr(self.lastKey)))
+            self.output = self.function(chr(self.lastKey))
         pen = utility.Pen(posx, posy, maxx, maxy)
         pen.write(str(self.output))

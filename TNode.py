@@ -111,7 +111,7 @@ def deleteAdd(node, add):
 
 def replaceAdd(node, add, value):
     #return opAtAdd(node, add, lambda addNode: cons(value, addNode.next))
-    return opAtAdd(node, add, lambda addNode: addNode.update('child', value))
+    return opAtAdd(node, add, lambda addNode: addNode.update('child', addNode.parseValue(value)))
 
 def copyToAdd(node, add):
     return opAtAdd(node, add, lambda addNode: TNode(addNode.child))
@@ -136,7 +136,8 @@ def cons(value, cdr):
     return car
 
 def join(node1, node2):
-    car = TNode(node1.child, node1.nodeID)
+    car = copy.copy(node1)
+    #car = TNode(node1.child, node1.nodeID)
     car.next = node2
     return car
 
@@ -340,13 +341,7 @@ class TNode(FuncObject):
     __nodes__ = 0
     def __init__(self, val=None, id=None, next=None):
         self.next = next
-#        self.previous = prev
-#        self.parent = parent
-
-        if isList(val):
-            self.child = createTreeFromSexp(val)
-        else:
-            self.child = val
+        self.child = self.parseValue(val)
 
         self.evaled = True
         self.displayValue = False
@@ -373,6 +368,12 @@ class TNode(FuncObject):
         if isinstance(other, TNode):
             return self.nodeID == other.nodeID
         else: return False
+
+    def parseValue(self, val):
+        if isList(val):
+            return createTreeFromSexp(val)
+        else:
+            return val
 
     def toPySexp(self):
         ret = list()
