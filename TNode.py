@@ -111,13 +111,16 @@ def deleteAdd(node, add):
 
 def replaceAdd(node, add, value):
     #return opAtAdd(node, add, lambda addNode: cons(value, addNode.next))
-    return opAtAdd(node, add, lambda addNode: TNode(value, addNode.nodeID, addNode.next))
+    return opAtAdd(node, add, lambda addNode: addNode.update('child', value))
 
 def copyToAdd(node, add):
-    return opAtAdd(node, add, lambda addNode: TNode(node.child))
+    return opAtAdd(node, add, lambda addNode: TNode(addNode.child))
 
 def nestAdd(node, add):
-    return opAtAdd(node, add, lambda addNode: cons(addNode, addNode.next))
+    return opAtAdd(node, add, lambda addNode: cons(TNode(addNode.child), addNode.next))
+
+def quoteAdd(node, add, value):
+    return opAtAdd(node, add, lambda addNode: addNode.update('evaled', value))
 
 def append(node1, node2):
     if not node1:
@@ -156,65 +159,6 @@ def copyTNodeAsNewTreeClass(node, newTreeClass):
             return node
 
     return startNode
-
-#class Cursor(object):
-#    def __init__(self, root, startAddress=[0], start=None):
-#        self.root = root
-#        #print "startAddress: ", startAddress
-#        self.address = list(startAddress)
-#        #self.address = list([0])
-#        if start:
-#            self.active = start
-#        else:
-#            self.active = root.gotoAddress(startAddress)
-#
-#    def get(self):
-#        return self.active
-#
-#    def refreshToNearest(self):
-#        return self.root.gotoNearestAddress(self.address)
-#
-#    def onSubNode(self):
-#        return self.active.isSubNode()
-#
-#    def childToPySexp(self):
-#        return self.active.activeToPySexp()
-#
-#    def insertAfter(self, value):
-#        newFrame = copyTNode(self.root)
-#        c = Cursor(newFrame, self.address)
-#        c.active.insertAfter('')
-#
-#    def next(self):
-#        if self.active.next:
-#            newAddress = list(self.address)
-#            newAddress[-1] += 1
-#            return Cursor(self.root, newAddress, self.active.next)
-#        else:
-#            raise ValueError
-#
-#    def prev(self):
-#        if self.address[-1] > 0:
-#            newAddress = list(self.address)
-#            newAddress[-1] -= 1
-#            return Cursor(self.root, newAddress)
-#        else:
-#            raise ValueError
-#
-#    def up(self):
-#        if len(self.address) > 1:
-#            newAddress = self.address[0:-1]
-#            return Cursor(self.root, newAddress)
-#        else:
-#            raise ValueError
-#
-#    def child(self):
-#        if self.active.isSubNode():
-#            newAddress = list(self.address)
-#            newAddress.append(0)
-#            return Cursor(self.root, newAddress, self.active.child)
-#        else:
-#            return self.active.child  # the value
 
 
 class Buffer(FuncObject):
@@ -319,6 +263,11 @@ class Buffer(FuncObject):
         newImage = replaceAdd(self.root, self.viewAdd, newView.child)
         return Buffer(newImage, self.viewAdd, self.cursorAdd)
 
+    def quoteAtCursor(self):
+        newView = quoteAdd(self.view, self.cursorAdd, not(self.cursor.evaled))
+        newImage = replaceAdd(self.root, self.viewAdd, newView.child)
+        return Buffer(newImage, self.viewAdd, self.cursorAdd)
+
     def viewUp(self):
         # from curUp
         if len(self.viewAdd) > 1:
@@ -381,7 +330,7 @@ class Buffer(FuncObject):
             return self.cursor.child  # the value
 
 
-class TNode(object):
+class TNode(FuncObject):
     __nodes__ = 0
     def __init__(self, val=None, id=None, next=None):
         self.next = next

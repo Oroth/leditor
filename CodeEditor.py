@@ -89,10 +89,10 @@ def eval(exprBuf, env=global_env, memoize=None):
     exprChild = exprBuf.curChild()
     ret = None
 
-    #        if not self.evaled and not ignoreQuote:
-    #            ret = self.activeToPySexp()
+    if not exprBuf.cursor.evaled:
+        ret = exprBuf.cursorToPySexp()
 
-    if isa(exprChild, Symbol):             # variable reference
+    elif isa(exprChild, Symbol):             # variable reference
         try:
             ret = env.find(exprChild)[exprChild]
         except EvalException as ex:
@@ -159,6 +159,20 @@ def eval(exprBuf, env=global_env, memoize=None):
             else:
                 ret = LetSyntaxException("NoBody")
 
+    elif exprChild.cursor.child == 'if':
+
+        #try:
+        cond = exprChild.curNext()
+        positive = exprChild.curNext().curNext()
+        negative = exprChild.curNext().curNext().curNext()
+
+        condResult = eval(cond, env, memoize)
+
+        if condResult:    # replace with try
+            ret = eval(positive, env, memoize)
+        else:
+            ret = eval(negative, env, memoize)
+
     else:  # i.e. a procedure call
         childExpr = []
         procExpr = exprChild
@@ -200,7 +214,7 @@ class CodeEditor(Editors.TreeEditor):
     def __init__(self, *args, **kwargs):
         super(CodeEditor, self).__init__(*args, **kwargs)
         self.showValues = True
-        self.env = None
+        self.env = global_env
         self.vars = None
         self.context = None
         self.parent = None
@@ -219,10 +233,25 @@ class CodeEditor(Editors.TreeEditor):
         eval(TNode.Buffer(self.buffer.root, self.buffer.viewAdd), self.env, self.storeNodeValue)
 
 
+    def syncWithImage(self, newImageRoot):
+        if newImageRoot != self.buffer.root:
+            newSelf = self.update('buffer', self.buffer.syncToNewRoot(newImageRoot))
+            newSelf.evalBuffer()
+            return newSelf
+        else:
+            return self
+
+    # a bit of a hack, necessary because everything is handled in handleKeys. We need to make sure that
+    # the codeEditor returns with a newly evaluated buffer if there were any significant changes.
+    def handleKeys(self, key):
+        result = super(CodeEditor, self).handleKeys(key)
+        self.evalBuffer()
+        return result
+
     def draw(self, posx, posy, maxx, maxy, hlcol):
 
-        if self.showValues:
-            self.evalBuffer()
+        #if self.showValues:
+
 
         def drawHorizontal(posx, posy, hlcol, indent=True):
             pen = utility.Pen(posx, posy, maxx, maxy)
@@ -295,3 +324,32 @@ class CodeEditor(Editors.TreeEditor):
                 pen.write(str(self.buffer.view.child))
 
         drawHorizontal(posx, posy, hlcol)
+
+
+class evalIOHandler(CodeEditor):
+    def __init__(self, buffer):
+        #self.tree = funcTree
+        super(evalIOHandler, self).__init__(buffer.root, buffer.viewAdd, buffer.cursorAdd)
+        self.keyHistory = []
+        self.lastKey = 0
+        #self.buffer = buffer
+        self.output = ''
+        self.evalBuffer()
+
+    def handleKeys(self, key):
+        if key.c != 0:
+            self.keyHistory.append(chr(key.c))
+            self.lastKey = key.c
+
+            #self.function = eval(self.buffer)
+            #self.output = self.function(int(chr(key.c)))
+
+        return self
+
+
+    def draw(self, posx, posy, maxx, maxy, hlcol=None):
+        self.function = self.nodeValues[self.buffer.cursor]
+        if self.lastKey != 0:
+            self.output = self.function(int(chr(self.lastKey)))
+        pen = utility.Pen(posx, posy, maxx, maxy)
+        pen.write(str(self.output))

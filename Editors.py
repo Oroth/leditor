@@ -57,7 +57,7 @@ class CellEditor(object):
             self.index += 1
 
     def draw(self, pen):
-        pen.writeHL(''.join(self.content), libtcod.azure, self.index)
+        pen.writeHL(''.join(self.content) + ' ', libtcod.azure, self.index)
 
 
 class TreeEditor(TNode.FuncObject):
@@ -74,6 +74,7 @@ class TreeEditor(TNode.FuncObject):
         self.syncWithRoot = True
         self.updateUndo = False
         self.showValues = False
+        self.statusBar = None
 #        self.env = None
 #        self.context = None
         self.revealedNodes = {}
@@ -120,7 +121,7 @@ class TreeEditor(TNode.FuncObject):
                     newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent())
                     newBuff2 = newBuff.appendAtCursor(['']).curNext().curChild()
                 else:
-                    newBuff2 = self.buffer.replaceAtCursor(['']).child()
+                    newBuff2 = self.buffer.replaceAtCursor(['']).curChild()
 
                 return self.updateList(
                     ('buffer', newBuff2),
@@ -128,13 +129,17 @@ class TreeEditor(TNode.FuncObject):
 
             elif finished == 'UNNEST':
                 if self.cellEditor.content:
-                    self.active.child = self.cellEditor.getContent()
-                    if self.active.parent:
-                        self.active = self.active.parent
-                    self.active.insertAfter('')
-                    self.active = self.active.next
+                    newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent())
+                else:
+                    newBuff = self.buffer.deleteAtCursor()
 
-                self.cellEditor = CellEditor(self.active.child)
+                newBuff2 = newBuff.curUp()
+                newBuff3 = newBuff2.appendAtCursor('').curNext()
+
+                return self.updateList(
+                    ('buffer', newBuff3),
+                    ('cellEditor', CellEditor('')))
+
         else:
 
             # For the case when our active node gets deleted by another editor
@@ -204,7 +209,7 @@ class TreeEditor(TNode.FuncObject):
                     self.active = self.curRoot
 
             elif chr(key.c) == '(':
-                self.buffer.nestCursor()
+                return self.update('buffer', self.buffer.nestCursor())
 
 
             elif chr(key.c) == 'o':
@@ -252,9 +257,10 @@ class TreeEditor(TNode.FuncObject):
                 print self.yankBuffer
 
             elif chr(key.c) == "'":
-                if self.active.evaled:
-                    self.active.evaled = False
-                else: self.active.evaled = True
+                return self.update('buffer', self.buffer.quoteAtCursor())
+#                if self.buffer.cursor.evaled:
+#                    self.buffer.cursor.evaled = False
+#                else: self.buffer.cursor.evaled = True
 
             elif chr(key.c) == '=':
                 #return self.update()
@@ -341,7 +347,8 @@ class TreeEditor(TNode.FuncObject):
                 if node.next and node.next.next:
                     for i in node.next:
                         if i.isSubNode():
-                            reindent = True
+                            for subi in i.child:
+                                if subi.isSubNode(): reindent = True
 
 
                 if node.next:
@@ -351,8 +358,8 @@ class TreeEditor(TNode.FuncObject):
                         pen.write(' ' * (2 * nesting), parentCol)
 
                     # try to avoid hiding the cursor in a cell editor
-                    elif node == self.buffer.cursor and self.editing:
-                        pen.skip(1, 0)
+                    #elif node == self.buffer.cursor and self.editing:
+                    #    pen.skip(1, 0)
                     else:
                         pen.write(' ', parentCol)
 
@@ -362,6 +369,9 @@ class TreeEditor(TNode.FuncObject):
                 drawChild(self.buffer.view, 1)
             else:
                 pen.write(str(self.buffer.view.child))
+
+            if self.statusBar:
+                self.statusBar.draw(0, maxy - 1, maxx, maxy, libtcod.darker_gray)
 
 
         def drawVert(posx, posy, levels):
@@ -419,4 +429,8 @@ class TreeEditor(TNode.FuncObject):
                 drawVert(posx, posy, 1)
         except utility.windowBorderException: pass
 
-
+#
+#class statusBar(TreeEditor):
+#    def __init__(self, *args, **kwargs):
+#        #super(statusBar, self).__init__(*args, **kwargs)
+#        self.buffer =
