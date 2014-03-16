@@ -122,6 +122,7 @@ def nestAdd(node, add):
 def quoteAdd(node, add, value):
     return opAtAdd(node, add, lambda addNode: addNode.update('evaled', value))
 
+
 def append(node1, node2):
     if not node1:
         return node2
@@ -267,6 +268,11 @@ class Buffer(FuncObject):
         newView = quoteAdd(self.view, self.cursorAdd, not(self.cursor.evaled))
         newImage = replaceAdd(self.root, self.viewAdd, newView.child)
         return Buffer(newImage, self.viewAdd, self.cursorAdd)
+
+    def toggleStringAtCursor(self):
+        if isinstance(self.cursor.child, reader.Symbol):
+            return self.replaceAtCursor(str(self.cursor.child))
+        else: return self
 
     def viewUp(self):
         # from curUp

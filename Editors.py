@@ -11,9 +11,15 @@ class CellEditor(object):
     def __init__(self, content):
         self.content = list(str(content))
         self.index = 0
+        # should check to make sure not a symbol
+        if isinstance(content, str) and len(content) > 0 and content[0] == '"':
+            self.isString = True
+        else: self.isString = False
 
     def getContent(self):
         text = ''.join(self.content)
+        if self.isString:
+            text = '"' + text + '"'
         return reader.atom(text)
 
     def handle_key(self, key):
@@ -47,9 +53,14 @@ class CellEditor(object):
         elif chr(key.c) == ')':
             return 'UNNEST'
 
+        elif chr(key.c) == '"':
+            self.isString = not(self.isString)
+
         elif key.vk == libtcod.KEY_SPACE:
-            #print 'space'
-            return 'SPACE'
+            if self.isString:
+                self.content.insert(self.index, chr(key.c))
+                self.index += 1
+            else: return 'SPACE'
 
         #elif chr(key.c).isalnum():
         elif key.c != 0:
@@ -57,14 +68,17 @@ class CellEditor(object):
             self.index += 1
 
     def draw(self, pen):
-        pen.writeHL(''.join(self.content) + ' ', libtcod.azure, self.index)
+        if self.isString:
+            pen.writeHL('"' + ''.join(self.content) + '" ', libtcod.azure, self.index+1)
+        else:
+            pen.writeHL(''.join(self.content) + ' ', libtcod.azure, self.index)
 
 
 class TreeEditor(TNode.FuncObject):
     editors = 0
 
     def __init__(self, root, rootCursorAdd=[0], cursorAdd=[0]):
-        self.root = root
+        #self.root = root
         self.buffer = TNode.Buffer(root, rootCursorAdd, cursorAdd)
 
         self.editing = False
@@ -261,6 +275,12 @@ class TreeEditor(TNode.FuncObject):
 #                if self.buffer.cursor.evaled:
 #                    self.buffer.cursor.evaled = False
 #                else: self.buffer.cursor.evaled = True
+
+            elif chr(key.c) == '"':
+                return self.updateList(
+                    ('buffer', self.buffer.toggleStringAtCursor()),
+                    ('updateUndo', True)
+                )
 
             elif chr(key.c) == '=':
                 #return self.update()
