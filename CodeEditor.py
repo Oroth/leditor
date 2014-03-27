@@ -82,7 +82,7 @@ def add_globals(env):
          'car':lambda x:x[0],'cdr':lambda x:x[1:], 'append':op.add,
          'list':lambda *x:list(x), 'list?': lambda x:isa(x,list),
          'null?':lambda x:x==[], 'symbol?':lambda x: isa(x, reader.Symbol),
-         'int':lambda x:charToInt(x)
+         'int':lambda x:charToInt(x), 'cat':lambda a,b:a+b
          #,'^':lambda *vars,*body: (lambda *args: eval(body, Env(vars, args, global_env)))
         })
     return env
@@ -117,7 +117,11 @@ def eval(exprBuf, env=global_env, memoize=None):
             #if not exp:
             #raise LambdaSyntaxException("NoBody")
 
-            def constructLambda(*args):
+#            def makeClosure(fun, env):
+#                exp, curEnv = fun('inspect')  # makeLambda
+#                return eval(exp, curEnv)
+
+            def makeLambda(*args):
                 if args and args[0] == 'inspect':
                     return [expBuf, Env(vars, args[1:], env)]
                 else:
@@ -129,7 +133,8 @@ def eval(exprBuf, env=global_env, memoize=None):
             ret = err
 
         else:
-            ret = constructLambda
+            ret = makeLambda
+            #ret = makeClosure(makeLambda, )
 
 
     elif exprChild.cursor.child == 'let':
@@ -144,9 +149,16 @@ def eval(exprBuf, env=global_env, memoize=None):
             mapping = exprChild.curNext().curChild()
 
             while True:
-                vars.append(mapping.curChild().curChild())
-                val = mapping.curChild().curNext()
-                valResults.append(eval(val, env, memoize))
+                curVar = mapping.curChild().curChild()
+                vars.append(curVar)
+
+                curVal = mapping.curChild().curNext()
+                closure = Env([curVar], [None], env)
+                curValResult = eval(curVal, closure, memoize)
+                closure.find(curVar)[curVar] = curValResult
+                #closure = Env([curVar], [eval(val, env, memoize)], env)
+                valResults.append(curValResult)
+
                 try: mapping = mapping.curNext()
                 except ValueError: break
 
@@ -161,7 +173,8 @@ def eval(exprBuf, env=global_env, memoize=None):
             #body = exprChild.cursor.next.next
             body = exprChild.curNext().curNext()
             if body:    # replace with try
-                ret = eval(body, Env(vars, valResults, env), memoize)
+                newEnv = Env(vars, valResults, env)
+                ret = eval(body, newEnv, memoize)
             else:
                 ret = LetSyntaxException("NoBody")
 
@@ -257,8 +270,6 @@ class CodeEditor(Editors.TreeEditor):
         return result
 
     def draw(self, posx, posy, maxx, maxy, hlcol):
-
-        #if self.showValues:
 
 
         def drawHorizontal(posx, posy, hlcol, indent=True):
@@ -358,6 +369,7 @@ class evalIOHandler(CodeEditor):
     def draw(self, posx, posy, maxx, maxy, hlcol=None):
         self.function = self.nodeValues[self.buffer.cursor]
         if self.lastKey != 0:
-            self.output = self.function(chr(self.lastKey))
+            #self.output = self.function(chr(self.lastKey))
+            self.output = self.function(self.keyHistory)
         pen = utility.Pen(posx, posy, maxx, maxy)
         pen.write(str(self.output))

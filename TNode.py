@@ -298,6 +298,13 @@ class Buffer(FuncObject):
         else:
             raise ValueError
 
+    def curLast(self):
+        cur = self
+        while cur.cursor.next:
+            cur = cur.curNext()
+
+        return cur
+
     def curNextUpAlong(self):
         cur = self
         while not cur.cursor.next:

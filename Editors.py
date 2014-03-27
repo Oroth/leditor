@@ -207,6 +207,9 @@ class TreeEditor(TNode.FuncObject):
                         ('cellEditor', CellEditor('')),
                         ('editing', True))
 
+            elif chr(key.c) == 'e':
+                return self.update('buffer', self.buffer.curLast())
+
             elif chr(key.c) == 'J':
                 if self.buffer.onSubNode():
                     return self.update('buffer', self.buffer.viewToCursor())
@@ -267,7 +270,7 @@ class TreeEditor(TNode.FuncObject):
                 return "UNDO"
 
             elif chr(key.c) == 'y':
-                self.yankBuffer = self.buffer.cursor.activeToSexpr()
+                self.yankBuffer = self.buffer.cursorToPySexp()
                 print self.yankBuffer
 
             elif chr(key.c) == "'":
