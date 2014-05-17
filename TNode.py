@@ -290,6 +290,22 @@ class Buffer(FuncObject):
         newViewAddress = self.viewAdd + self.cursorAdd[1:]
         return Buffer(self.root, newViewAddress)
 
+    def viewNext(self):
+        if self.view.next:
+            newAddress = list(self.viewAdd)
+            newAddress[-1] += 1
+            return Buffer(self.root, newAddress)
+        else:
+            raise ValueError
+
+    def viewPrev(self):
+        if self.viewAdd[-1] > 0:
+            newAddress = list(self.viewAdd)
+            newAddress[-1] -= 1
+            return Buffer(self.root, newAddress)
+        else:
+            raise ValueError
+
     def curNext(self):
         if self.cursor.next:
             newAddress = list(self.cursorAdd)
@@ -307,8 +323,14 @@ class Buffer(FuncObject):
 
     def curNextUpAlong(self):
         cur = self
+
+        if cur.cursor == cur.view:
+            return self
+
         while not cur.cursor.next:
             cur = cur.curUp()
+            if cur.cursor == cur.view:
+                return self
 
         return cur.curNext()
 

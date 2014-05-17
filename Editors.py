@@ -219,11 +219,16 @@ class TreeEditor(TNode.FuncObject):
                     return self.update('buffer', self.buffer.viewUp())
                 except ValueError: pass
 
+            elif chr(key.c) == 'H':
+                try:
+                    return self.update('buffer', self.buffer.viewPrev())
+                except ValueError: pass
 
             elif chr(key.c) == 'L':
-                if self.curRoot.next:
-                    self.curRoot = self.curRoot.next
-                    self.active = self.curRoot
+                try:
+                    return self.update('buffer', self.buffer.viewNext())
+                except ValueError: pass
+
 
             elif chr(key.c) == '(':
                 return self.update('buffer', self.buffer.nestCursor())
