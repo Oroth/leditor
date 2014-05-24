@@ -2,7 +2,10 @@ __author__ = 'chephren'
 import libtcodpy as libtcod
 
 def defaultBG():
-    return libtcod.console_get_default_background(0)
+        return libtcod.console_get_default_background(0)
+
+def defaultFG():
+    return libtcod.console_get_default_foreground(0)
 
 def screenWidth():
     return libtcod.console_get_width(0)
@@ -19,11 +22,14 @@ def get_key(key):
 class windowBorderException(Exception):
     pass
 
-def cprint(x, y, fmt, bgcolour=defaultBG()):
+def cprint(x, y, fmt, bgcolour=defaultBG(), fgcolour=defaultFG()):
     defaultbg = defaultBG()
+    defaultfg = defaultFG()
     libtcod.console_set_default_background(0, bgcolour)
+    libtcod.console_set_default_foreground(0, fgcolour)
     libtcod.console_print(0, x, y, fmt)
     libtcod.console_set_default_background(0, defaultbg)
+    libtcod.console_set_default_foreground(0, defaultfg)
 
 
 class Pen(object):
@@ -48,26 +54,28 @@ class Pen(object):
             self.writeString(input, bgcolour)
         else: self.write2(input, bgcolour)
 
-    def write2(self, input, bgcolour=defaultBG()):
-        if self.x1 + len(input) < self.x2:
-            cprint(self.x1, self.y1, input, bgcolour)
-            self.x1 += len(input)
-        elif self.y1 < self.y2:
-            self.y1 += 1
-            self.x1 = 0
-            cprint(self.x1, self.y1, input, bgcolour)
-            self.x1 = len(input)
-        else:
-            raise windowBorderException
-
     def writeString(self, input, bgcolour):
         wordList = input.split(' ')
-        self.write2(wordList[0], bgcolour)
+        self.write2(wordList[0], bgcolour, libtcod.dark_green)
 
         if len(wordList) > 1:
             for i in wordList[1:]:
                 self.write2(' ', bgcolour)
-                self.write2(i, bgcolour)
+                self.write2(i, bgcolour, libtcod.dark_green)
+
+    def write2(self, input, bgcolour=defaultBG(), fgcolour=defaultFG()):
+        if self.x1 + len(input) < self.x2:
+            cprint(self.x1, self.y1, input, bgcolour, fgcolour)
+            self.x1 += len(input)
+        elif self.y1 < self.y2:
+            self.y1 += 1
+            self.x1 = 0
+            cprint(self.x1, self.y1, input, bgcolour, fgcolour)
+            self.x1 = len(input)
+        else:
+            raise windowBorderException
+
+
 
 
     #def writeVert(self, input, bgcolour=defaultBG()):
