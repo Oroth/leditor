@@ -44,6 +44,11 @@ class Pen(object):
         self.y1 += y
 
     def write(self, input, bgcolour=defaultBG()):
+        if input[0] == '"':
+            self.writeString(input, bgcolour)
+        else: self.write2(input, bgcolour)
+
+    def write2(self, input, bgcolour=defaultBG()):
         if self.x1 + len(input) < self.x2:
             cprint(self.x1, self.y1, input, bgcolour)
             self.x1 += len(input)
@@ -54,6 +59,16 @@ class Pen(object):
             self.x1 = len(input)
         else:
             raise windowBorderException
+
+    def writeString(self, input, bgcolour):
+        wordList = input.split(' ')
+        self.write2(wordList[0], bgcolour)
+
+        if len(wordList) > 1:
+            for i in wordList[1:]:
+                self.write2(' ', bgcolour)
+                self.write2(i, bgcolour)
+
 
     #def writeVert(self, input, bgcolour=defaultBG()):
 

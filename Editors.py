@@ -54,7 +54,12 @@ class CellEditor(object):
             return 'UNNEST'
 
         elif chr(key.c) == '"':
-            self.isString = not(self.isString)
+            if not self.isString:
+                self.isString = True
+            else:
+                temp = ''.join(self.content)
+                if temp.find(' ') == -1:
+                    self.isString = False
 
         elif key.vk == libtcod.KEY_SPACE:
             if self.isString:
@@ -267,7 +272,7 @@ class TreeEditor(TNode.FuncObject):
 
             elif chr(key.c) == 'N':
                 newBuff = TNode.Buffer(self.buffer.root, [0], [0, 0]).curLast()
-                newBuff = newBuff.appendAtCursor(['newNode']).curNext()
+                newBuff = newBuff.appendAtCursor([reader.Symbol('newNode')]).curNext()
                 newBuff = newBuff.viewToCursor().curChild()
                 return self.update('buffer', newBuff)
 
@@ -365,6 +370,7 @@ class TreeEditor(TNode.FuncObject):
                     bgcolour = hlcol
                 else:
                     bgcolour = parentCol
+
 
                 if node.isSubNode():
                     if node.child == "=>":
