@@ -422,7 +422,8 @@ class TNode(FuncObject):
         elif self.child is None:
             return []
         else:
-            return reader.atom(self.child)
+            #return reader.atom(self.child)
+            return self.child
 
     def isSubNode(self):
         if isinstance(self.child, TNode):

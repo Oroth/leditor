@@ -50,7 +50,7 @@ class Pen(object):
         self.y1 += y
 
     def write(self, input, bgcolour=defaultBG()):
-        if input[0] == '"':
+        if len(input) > 0 and input[0] == '"':
             self.writeString(input, bgcolour)
         else: self.write2(input, bgcolour)
 

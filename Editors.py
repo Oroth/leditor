@@ -65,7 +65,8 @@ class CellEditor(object):
             if self.isString:
                 self.content.insert(self.index, chr(key.c))
                 self.index += 1
-            else: return 'SPACE'
+            elif len(self.content) > 0:
+                return 'SPACE'
 
         #elif chr(key.c).isalnum():
         elif key.c != 0:
