@@ -74,9 +74,7 @@ class WindowManager(TNode.FuncObject):
 #        listEd = Editors.TreeEditor(curs, edAddPy)
         listEd = Editors.TreeEditor(root, edAddPy)
 
-        status = TNode.TNode(TNode.createTreeFromSexp(['Editor', 'View', 'Address']))
-        statusBar = Editors.TreeEditor(status)
-        listEd.statusBar = statusBar
+
 
         return TNode.TNode(listEd)
 

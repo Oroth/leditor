@@ -2,7 +2,7 @@ __author__ = 'chephren'
 import libtcodpy as libtcod
 
 def defaultBG():
-        return libtcod.console_get_default_background(0)
+    return libtcod.console_get_default_background(0)
 
 def defaultFG():
     return libtcod.console_get_default_foreground(0)
@@ -55,13 +55,18 @@ class Pen(object):
         else: self.write2(input, bgcolour)
 
     def writeString(self, input, bgcolour):
+        if bgcolour != defaultBG():
+            stringCol = libtcod.light_green
+        else:
+            stringCol = libtcod.dark_green
+
         wordList = input.split(' ')
-        self.write2(wordList[0], bgcolour, libtcod.dark_green)
+        self.write2(wordList[0], bgcolour, stringCol)
 
         if len(wordList) > 1:
             for i in wordList[1:]:
                 self.write2(' ', bgcolour)
-                self.write2(i, bgcolour, libtcod.dark_green)
+                self.write2(i, bgcolour, stringCol)
 
     def write2(self, input, bgcolour=defaultBG(), fgcolour=defaultFG()):
         if self.x1 + len(input) < self.x2:

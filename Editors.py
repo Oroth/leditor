@@ -93,11 +93,18 @@ class TreeEditor(TNode.FuncObject):
         self.syncWithRoot = True
         self.updateUndo = False
         self.showValues = False
-        self.statusBar = None
+       # self.statusBar = None
 #        self.env = None
 #        self.context = None
         self.revealedNodes = {}
         self.zippedNodes = {}
+
+#        status = TNode.TNode(TNode.createTreeFromSexp(
+#                [reader.Symbol('Editor')
+#                ,reader.Symbol('View')
+#                ,reader.Symbol('Address')]
+#        ))
+        self.statusBar = StatusBar()
 
         self.id = TreeEditor.editors
         TreeEditor.editors += 1
@@ -111,6 +118,12 @@ class TreeEditor(TNode.FuncObject):
 
     def handleKeys(self, key):
         self.updateUndo = False
+        self.statusBar.buffer = TNode.Buffer(TNode.TNode(TNode.createTreeFromSexp(
+                [reader.Symbol('Editor')
+                ,self.buffer.viewAdd
+                ,self.buffer.cursorAdd]
+        )))
+
 
         if self.editing:
             finished = self.cellEditor.handle_key(key)
@@ -392,13 +405,6 @@ class TreeEditor(TNode.FuncObject):
                         pen.write(output, bgcolour)
 
 
-
-
-#                #if node.displayValue:
-#                if node in self.revealedNodes:
-#                    pen.write("=>", parentCol)
-#                    pen.write(reader.to_string(node.getValue(self.id)), parentCol)
-
             def drawr(node, nesting, parentCol=libtcod.black, reindent=False):
 
                 try:
@@ -437,7 +443,7 @@ class TreeEditor(TNode.FuncObject):
                 pen.write(str(self.buffer.view.child))
 
             if self.statusBar:
-                self.statusBar.draw(0, maxy - 1, maxx, maxy, libtcod.darker_gray)
+                self.statusBar.draw(0, maxy - 2, maxx, maxy, libtcod.darker_gray)
 
 
         def drawVert(posx, posy, levels):
@@ -496,7 +502,20 @@ class TreeEditor(TNode.FuncObject):
         except utility.windowBorderException: pass
 
 #
-#class statusBar(TreeEditor):
-#    def __init__(self, *args, **kwargs):
-#        #super(statusBar, self).__init__(*args, **kwargs)
-#        self.buffer =
+class StatusBar(TreeEditor):
+    def __init__(self, *args, **kwargs):
+        #super(statusBar, self).__init__(*args, **kwargs)
+
+        self.editing = False
+        #self.cellEditor = None
+        self.printingMode = 'horizontal'
+        self.zippedNodes = {}
+        self.statusBar = None
+
+        status = TNode.TNode(TNode.createTreeFromSexp(
+            [reader.Symbol('Editor')
+            ,reader.Symbol('View')
+            ,reader.Symbol('Address')]
+        ))
+
+        self.buffer = TNode.Buffer(status)
