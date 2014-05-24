@@ -304,6 +304,13 @@ class TreeEditor(TNode.FuncObject):
                     ('cellEditor', CellEditor('')),
                     ('editing', True))
 
+            elif chr(key.c) == 't':
+                #print self.buffer.root.getNodeAtNVS(['origin', 'editor', 'address']).toPySexp()
+                op = lambda addNode: TNode.cons('test', addNode)
+                newImage = TNode.opAtNVSAdd(self.buffer.root, ['origin', 'editor', 'cursor'], op)
+                newBuff = TNode.Buffer(newImage)
+                return self.update('buffer', newBuff)
+
             elif chr(key.c) == 'u':
                 return "UNDO"
 
@@ -387,9 +394,14 @@ class TreeEditor(TNode.FuncObject):
 
 
                 if node.isSubNode():
-                    if node.child == "=>":
-                        pen.writeNL()
 
+
+#                    if node.child.child == "quote" and node.child.next and not node.child.next.next:
+#                        pen.write("'", bgcolour)
+#                        drawr(node.child.next, nesting, bgcolour)
+#                    else:
+                    if node.child.child == "=>":
+                        pen.writeNL()
                     pen.write('(', bgcolour)
                     drawr(node.child, nesting, bgcolour)
                     pen.write(')', bgcolour)

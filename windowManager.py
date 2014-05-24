@@ -56,25 +56,22 @@ class WindowManager(TNode.FuncObject):
         editor = root.child.next.child
         code = root.child.next.next
 
-        edId = editor.next.child
-        edAddNode = editor.next.next.child
-        edAdd = edAddNode.next.child
-        edAddPy = edAdd.toPySexp()
-        print edAddPy
+#        edId = editor.next.child
+#        edAddNode = editor.next.next.child
+#        edAdd = edAddNode.next.child
+#        edAddPy = edAdd.toPySexp()
+#        print edAddPy
 
-        edCurNode = editor.next.next.next.child
-        edCur = edCurNode.next.child
-        edCurPy = edCur.toPySexp()
-        print "edCurPy", edCurPy
+        edAddPy = root.getNodeAtNVS(['origin', 'editor', 'address']).child.toPySexp()
 
-#        actCode = root.gotoAddress(edAddPy)
-#        listEd = Editors.TreeEditor(root, actCode, edCurPy)
+#        edCurNode = editor.next.next.next.child
+#        edCur = edCurNode.next.child
+#        edCurPy = edCur.toPySexp()
+#        print "edCurPy", edCurPy
 
-#        curs = Cursor(root, edAddPy)
-#        listEd = Editors.TreeEditor(curs, edAddPy)
-        listEd = Editors.TreeEditor(root, edAddPy)
+        edCurPy = root.getNodeAtNVS(['origin', 'editor', 'cursor']).child.toPySexp()
 
-
+        listEd = Editors.TreeEditor(root, edAddPy, edCurPy)
 
         return TNode.TNode(listEd)
 

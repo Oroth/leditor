@@ -84,6 +84,25 @@ def copyTNodeToInd(node, i):
     else:
         return TNode(node.child)
 
+def opAtNVSAdd(node, nvs, op):
+    def opAtAdd2(node, nvs, curDest):
+        if node.isSubNode() and node.child.child == curDest:
+
+            if nvs:
+                newNvs = nvs[1:]
+                newDest = nvs[0]
+                #return cons(opAtAdd2(node.child, newAdd, newDest), node.next)
+                return TNode(opAtAdd2(node.child, newNvs, newDest), node.nodeID, node.next)
+            else:
+                return TNode(node.child.child, node.nodeID, op(node.child.next))
+
+        else:
+            return join(node, opAtAdd2(node.next, nvs, curDest))
+
+    newNvs = nvs[1:]
+    newDest = nvs[0]
+    return opAtAdd2(node, newNvs, newDest)
+
 def opAtAdd(node, add, op):
     def opAtAdd2(node, add, curDest):
         if curDest != 0:
@@ -430,39 +449,23 @@ class TNode(FuncObject):
             return True
         return False
 
+    def getNodeAtNVS(self, nvs):
+        add = list(nvs)
+        iter = self
+        while add:
+            curDest = add.pop(0)
+            while curDest != iter.child.child:
+                if iter.next:
+                    iter = iter.next
+                else: return None
 
+            # check if still have sublevels to follow and go to them if possible
+            if add:
+                if iter.isSubNode():
+                    iter = iter.child.next
+                else: return None
 
-#    def getAddress(self):
-#        ret = []
-#        iter = self
-#
-#        while iter.parent:
-#            curLevelLoc = 0
-#            while iter.previous:
-#                curLevelLoc += 1
-#                iter = iter.previous
-#
-#            ret.insert(0, curLevelLoc)
-#            iter = iter.parent
-#
-#        ret.insert(0, 0)  #because of root node...
-#        return ret
-#
-#    def getAddressFrom(self, start):
-#        ret = []
-#        iter = self
-#
-#        while iter.parent and iter != start:
-#            curLevelLoc = 0
-#            while iter.previous and iter != start:
-#                curLevelLoc += 1
-#                iter = iter.previous
-#
-#            ret.insert(0, curLevelLoc)
-#            iter = iter.parent
-#
-#        #ret.insert(0, 0)  #because of root node...
-#        return ret
+        return iter.child.next
 
     def gotoAddress(self, address):
         add = list(address)
