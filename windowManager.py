@@ -236,7 +236,7 @@ class WindowManager(TNode.FuncObject):
             elif key.vk == libtcod.KEY_ESCAPE:
                 return self.update('winCmd', False)
 
-        elif chr(key.c) == 'w': #and key.lctrl:
+        elif chr(key.c) == 'w' and key.lctrl:
             self.winCmd = True
             print "windowing"
 

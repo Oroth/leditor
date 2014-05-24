@@ -59,7 +59,7 @@ while not libtcod.console_is_window_closed():
     libtcod.console_flush()
 
     #handle keys and exit game if needed
-    key = libtcod.console_check_for_keypress()
+    key = libtcod.console_check_for_keypress(libtcod.KEY_PRESSED)
 
     result = wm.handleKeys(key)
     if result:

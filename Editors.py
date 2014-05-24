@@ -110,8 +110,12 @@ class TreeEditor(TNode.FuncObject):
         if self.editing:
             finished = self.cellEditor.handle_key(key)
             if finished == 'END':
+                if self.cellEditor.getContent() == '':
+                    content = reader.atom('nullSymbol')
+                else:
+                    content = self.cellEditor.getContent()
                 return self.updateList(
-                    ('buffer', self.buffer.replaceAtCursor(self.cellEditor.getContent())),
+                    ('buffer', self.buffer.replaceAtCursor(content)),
                     ('editing', False),
                     ('updateUndo', True))
 
@@ -261,6 +265,12 @@ class TreeEditor(TNode.FuncObject):
                     self.printingMode = 'horizontal'
                 print "print mode is set to:", self.printingMode
 
+            elif chr(key.c) == 'N':
+                newBuff = TNode.Buffer(self.buffer.root, [0], [0, 0]).curLast()
+                newBuff = newBuff.appendAtCursor(['newNode']).curNext()
+                newBuff = newBuff.viewToCursor().curChild()
+                return self.update('buffer', newBuff)
+
             elif chr(key.c) == 'p':
                 toInsert = TNode.createTreeFromSexp(self.yankBuffer)
                 return self.updateList(
@@ -348,35 +358,33 @@ class TreeEditor(TNode.FuncObject):
 
             def drawChild(node, nesting, parentCol=libtcod.black):
 
-
-
                 if not node.evaled:
                     pen.write("'", parentCol)
+
+                if node == self.buffer.cursor:
+                    bgcolour = hlcol
+                else:
+                    bgcolour = parentCol
 
                 if node.isSubNode():
                     if node.child == "=>":
                         pen.writeNL()
-                        # check view
-                    if node == self.buffer.cursor:
-                        bgcolour = hlcol
-                    else:
-                        bgcolour = parentCol
 
                     pen.write('(', bgcolour)
                     drawr(node.child, nesting, bgcolour)
                     pen.write(')', bgcolour)
 
-                elif node.child is not None:
+                elif node.child is None:
+                    pen.write('()', bgcolour)
+
+                else:
                     output = reader.to_string(node.child)
-                    if node == self.buffer.cursor:
 
-                        if self.editing:
-                            self.cellEditor.draw(pen)
-                        else:
-                            pen.write(output, hlcol)
-
+                    if node == self.buffer.cursor and self.editing:
+                        self.cellEditor.draw(pen)
                     else:
-                        pen.write(output, parentCol)
+                        pen.write(output, bgcolour)
+
 
 
 

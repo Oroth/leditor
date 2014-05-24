@@ -419,6 +419,8 @@ class TNode(FuncObject):
     def activeToPySexp(self):
         if self.isSubNode():
             return self.child.toPySexp()
+        elif self.child is None:
+            return []
         else:
             return reader.atom(self.child)
 
