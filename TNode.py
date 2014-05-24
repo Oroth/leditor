@@ -290,6 +290,9 @@ class Buffer(FuncObject):
         newViewAddress = self.viewAdd + self.cursorAdd[1:]
         return Buffer(self.root, newViewAddress)
 
+    def viewToRoot(self):
+        return Buffer(self.root, [0], [0])
+
     def viewNext(self):
         if self.view.next:
             newAddress = list(self.viewAdd)

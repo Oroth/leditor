@@ -139,6 +139,8 @@ class WindowManager(TNode.FuncObject):
                         ('winCmd', False))
                 except ValueError: pass
 
+            #elif chr(key.c) == 'n':
+
             elif chr(key.c) == 'o':
                 #abomination
                 #cursorToView

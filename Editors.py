@@ -166,9 +166,9 @@ class TreeEditor(TNode.FuncObject):
                 return 'ESC'  # exit Editor
 
             # evaluate the current context
-            elif key.vk == libtcod.KEY_ENTER:
+            #elif key.vk == libtcod.KEY_ENTER:
 
-                sexpToEval = self.active.activeToPySexp()
+                #sexpToEval = self.active.activeToPySexp()
                 #evalResult = interp.eval(sexpToEval)
 
                 #self.active.nestChild()
@@ -177,6 +177,9 @@ class TreeEditor(TNode.FuncObject):
 
             elif key.vk == 'x' and key.lctrl:
                 print "evaluating"
+
+            elif chr(key.c) == 'b':
+                return self.update('buffer', self.buffer.cursorToFirst())
 
             elif chr(key.c) == 'd':
                 if self.buffer.cursor != self.buffer.root:
@@ -265,7 +268,7 @@ class TreeEditor(TNode.FuncObject):
                     ('updateUndo', True))
 
             elif chr(key.c) == 'R':
-                self.active = self.curRoot
+                return self.update('buffer', self.buffer.viewToRoot())
 
             elif chr(key.c) == 's':
                 return self.updateList(
