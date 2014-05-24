@@ -92,6 +92,7 @@ class TreeEditor(TNode.FuncObject):
 #        self.env = None
 #        self.context = None
         self.revealedNodes = {}
+        self.zippedNodes = {}
 
         self.id = TreeEditor.editors
         TreeEditor.editors += 1
@@ -278,6 +279,12 @@ class TreeEditor(TNode.FuncObject):
                 self.yankBuffer = self.buffer.cursorToPySexp()
                 print self.yankBuffer
 
+            elif chr(key.c) == 'z':
+                if self.buffer.cursor in self.zippedNodes:
+                    self.zippedNodes[self.buffer.cursor] = not(self.zippedNodes[self.buffer.cursor])
+                else:
+                    self.zippedNodes[self.buffer.cursor] = True
+
             elif chr(key.c) == "'":
                 return self.update('buffer', self.buffer.quoteAtCursor())
 #                if self.buffer.cursor.evaled:
@@ -308,7 +315,10 @@ class TreeEditor(TNode.FuncObject):
 
             elif key.vk == libtcod.KEY_RIGHT or chr(key.c) == 'l':
                 try:
-                    newBuff = self.buffer.curNextUpAlong()
+                    if self.buffer.cursor in self.zippedNodes and self.zippedNodes[self.buffer.cursor]:
+                        newBuff = self.buffer.curUp().curNextUpAlong()
+                    else:
+                        newBuff = self.buffer.curNextUpAlong()
                     return self.update('buffer', newBuff)
                 except ValueError: pass
 
@@ -334,6 +344,8 @@ class TreeEditor(TNode.FuncObject):
             pen = utility.Pen(posx, posy, maxx, maxy)
 
             def drawChild(node, nesting, parentCol=libtcod.black):
+
+
 
                 if not node.evaled:
                     pen.write("'", parentCol)
@@ -363,12 +375,21 @@ class TreeEditor(TNode.FuncObject):
                     else:
                         pen.write(output, parentCol)
 
-                #if node.displayValue:
-                if node in self.revealedNodes:
-                    pen.write("=>", parentCol)
-                    pen.write(reader.to_string(node.getValue(self.id)), parentCol)
+
+
+#                #if node.displayValue:
+#                if node in self.revealedNodes:
+#                    pen.write("=>", parentCol)
+#                    pen.write(reader.to_string(node.getValue(self.id)), parentCol)
 
             def drawr(node, nesting, parentCol=libtcod.black, reindent=False):
+
+                try:
+                    if self.zippedNodes[node]:
+                        pen.write("...", hlcol if node == self.buffer.cursor else parentCol)
+                        return
+                except KeyError: pass
+
                 drawChild(node, nesting + 1, parentCol)
                 #reindent = False
 
