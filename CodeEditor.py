@@ -82,7 +82,8 @@ def add_globals(env):
          'car':lambda x:x[0],'cdr':lambda x:x[1:], 'append':op.add,
          'list':lambda *x:list(x), 'list?': lambda x:isa(x,list),
          'null?':lambda x:x==[], 'symbol?':lambda x: isa(x, reader.Symbol),
-         'int':lambda x:charToInt(x), 'cat':lambda a,b:a+b
+         'int':lambda x:charToInt(x), 'cat':lambda a,b:a+b,
+         'string-ref':lambda str,ref:str[ref]
          #,'^':lambda *vars,*body: (lambda *args: eval(body, Env(vars, args, global_env)))
         })
     return env

@@ -9,10 +9,10 @@ import TNode
 
 class CellEditor(object):
     def __init__(self, content):
-        self.content = list(str(content))
+        self.content = list(str(content).encode('string_escape'))
         self.index = 0
         # should check to make sure not a symbol
-        if isinstance(content, str) and len(content) > 0 and content[0] == '"':
+        if isinstance(content, str): # and len(content) > 0 and content[0] == '"':
             self.isString = True
         else: self.isString = False
 
@@ -25,6 +25,10 @@ class CellEditor(object):
     def handle_key(self, key):
 
         if key.vk == libtcod.KEY_ENTER:
+            try:
+                if self.isString and ''.join(self.content).decode('string_escape'):
+                    return 'END'
+            except ValueError: return
             return 'END'  # exit editor
 
         if key.vk == libtcod.KEY_ESCAPE:
