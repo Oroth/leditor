@@ -32,7 +32,12 @@ class DivZeroException(EvalException):
 
 class LetSyntaxException(EvalException):
     def __str__(self):
-        return "(LetSyntaxException)"
+        return "(LetSyntaxException " + str(self.value) + ")"
+    pass
+
+class SyntaxException(EvalException):
+    def __str__(self):
+        return "(SyntaxException " + str(self.value) + ")"
     pass
 
 class LambdaSyntaxException(EvalException):
@@ -171,29 +176,39 @@ def eval(exprBuf, env=global_env, memoize=None):
             ret = LetSyntaxException("Bad-Var-Syntax")
 
         else:
-            #body = exprChild.cursor.next.next
-            body = exprChild.curNext().curNext()
-            if body:    # replace with try
+            try:
+                body = exprChild.curNext().curNext()
+
+            except ValueError:
+                ret = LetSyntaxException("NoBody")
+            else:
                 newEnv = Env(vars, valResults, env)
                 ret = eval(body, newEnv, memoize)
-            else:
-                ret = LetSyntaxException("NoBody")
 
     elif exprChild.cursor.child == 'if':
 
-        #try:
-        cond = exprChild.curNext()
-        positive = exprChild.curNext().curNext()
-        negative = exprChild.curNext().curNext().curNext()
-
-        condResult = eval(cond, env, memoize)
-
-        if isinstance(condResult, Exception):
-            ret = condResult
-        elif condResult:    # replace with try
-            ret = eval(positive, env, memoize)
+        negative = None
+        try:
+            cond = exprChild.curNext()
+            positive = exprChild.curNext().curNext()
+            try:
+                negative = exprChild.curNext().curNext().curNext()
+            except ValueError: pass
+        except ValueError:
+            ret = SyntaxException("Bad-If-Expression")
         else:
-            ret = eval(negative, env, memoize)
+
+            condResult = eval(cond, env, memoize)
+
+            if isinstance(condResult, Exception):
+                ret = condResult
+            elif condResult:    # replace with try
+                ret = eval(positive, env, memoize)
+            else:
+                if negative is not None:
+                    ret = eval(negative, env, memoize)
+                else:
+                    return False
 
     else:  # i.e. a procedure call
         childExpr = []

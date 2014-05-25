@@ -2,6 +2,7 @@ __author__ = 'chephren'
 import libtcodpy as libtcod
 import utility
 import reader
+from reader import Symbol
 import interp
 import TNode
 #import evalNode
@@ -9,10 +10,11 @@ import TNode
 
 class CellEditor(object):
     def __init__(self, content):
+        self.original = str(content)
         self.content = list(str(content).encode('string_escape'))
         self.index = 0
         # should check to make sure not a symbol
-        if isinstance(content, str): # and len(content) > 0 and content[0] == '"':
+        if not isinstance(content, Symbol): # and len(content) > 0 and content[0] == '"':
             self.isString = True
         else: self.isString = False
 
@@ -143,12 +145,13 @@ class TreeEditor(TNode.FuncObject):
                     ('updateUndo', True))
 
             elif finished == 'CANCEL':
-                #if self.active.element == '':
-                    #delete self
-                return self.updateList(
-                    ('buffer', self.buffer.deleteAtCursor()),
-                    ('editing', False)
-                )
+                if self.cellEditor.original == '':
+                    return self.updateList(
+                        ('buffer', self.buffer.deleteAtCursor()),
+                        ('editing', False)
+                    )
+                else:
+                    return self.update('editing', False)
 
             elif finished == 'SPACE':
                 ## ideal: self.buffer.spliceAtCursor([self.cellEditor.getContent(), ''], [1])
@@ -156,7 +159,7 @@ class TreeEditor(TNode.FuncObject):
                 newBuff2 = newBuff.appendAtCursor('').curNext()
                 return self.updateList(
                     ('buffer', newBuff2),
-                    ('cellEditor', CellEditor('')))
+                    ('cellEditor', CellEditor(Symbol(''))))
 
             elif finished == 'NEST':
                 if self.cellEditor.content:
@@ -167,7 +170,7 @@ class TreeEditor(TNode.FuncObject):
 
                 return self.updateList(
                     ('buffer', newBuff2),
-                    ('cellEditor', CellEditor('')))
+                    ('cellEditor', CellEditor(Symbol(''))))
 
             elif finished == 'UNNEST':
                 if self.cellEditor.content:
@@ -180,14 +183,9 @@ class TreeEditor(TNode.FuncObject):
 
                 return self.updateList(
                     ('buffer', newBuff3),
-                    ('cellEditor', CellEditor('')))
+                    ('cellEditor', CellEditor(Symbol(''))))
 
         else:
-
-            # For the case when our active node gets deleted by another editor
-            # Not perfect, but will do for now
-
-            #self.cursor = self.cursor.refreshToNearest()
 
             if key.vk == libtcod.KEY_ESCAPE:
                 return 'ESC'  # exit Editor
@@ -227,7 +225,7 @@ class TreeEditor(TNode.FuncObject):
                     newBuff = self.buffer.appendAtCursor('').curNext()
                     return self.updateList(
                         ('buffer', newBuff),
-                        ('cellEditor', CellEditor('')),
+                        ('cellEditor', CellEditor(Symbol(''))),
                         ('editing', True))
 
             elif chr(key.c) == 'i':
@@ -235,7 +233,7 @@ class TreeEditor(TNode.FuncObject):
                     newBuff = self.buffer.insertAtCursor('').curPrev()
                     return self.updateList(
                         ('buffer', newBuff),
-                        ('cellEditor', CellEditor('')),
+                        ('cellEditor', CellEditor(Symbol(''))),
                         ('editing', True))
 
             elif chr(key.c) == 'e':
@@ -270,7 +268,7 @@ class TreeEditor(TNode.FuncObject):
                     newBuff = self.buffer.appendAtCursor(['']).curNext().curChild()
                     return self.updateList(
                         ('buffer', newBuff),
-                        ('cellEditor', CellEditor('')),
+                        ('cellEditor', CellEditor(Symbol(''))),
                         ('editing', True))
 
             elif chr(key.c) == 'O':
@@ -278,15 +276,15 @@ class TreeEditor(TNode.FuncObject):
                     newBuff = self.buffer.insertAtCursor(['']).curPrev().curChild()
                     return self.updateList(
                         ('buffer', newBuff),
-                        ('cellEditor', CellEditor('')),
+                        ('cellEditor', CellEditor(Symbol(''))),
                         ('editing', True))
 
-            elif chr(key.c) == 'm':
-                if self.printingMode == 'horizontal':
-                    self.printingMode = 'vertical'
-                else:
-                    self.printingMode = 'horizontal'
-                print "print mode is set to:", self.printingMode
+#            elif chr(key.c) == 'm':
+#                if self.printingMode == 'horizontal':
+#                    self.printingMode = 'vertical'
+#                else:
+#                    self.printingMode = 'horizontal'
+#                print "print mode is set to:", self.printingMode
 
             elif chr(key.c) == 'N':
                 newBuff = TNode.Buffer(self.buffer.root, [0], [0, 0]).curLast()
@@ -305,7 +303,7 @@ class TreeEditor(TNode.FuncObject):
 
             elif chr(key.c) == 's':
                 return self.updateList(
-                    ('cellEditor', CellEditor('')),
+                    ('cellEditor', CellEditor(Symbol(''))),
                     ('editing', True))
 
             elif chr(key.c) == 't':
