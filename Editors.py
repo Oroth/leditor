@@ -3,9 +3,10 @@ import libtcodpy as libtcod
 import utility
 import reader
 from reader import Symbol
-import interp
+import Eval
 import TNode
-#import evalNode
+import operator
+
 
 
 class CellEditor(object):
@@ -191,10 +192,10 @@ class TreeEditor(TNode.FuncObject):
                 return 'ESC'  # exit Editor
 
             # evaluate the current context
-            #elif key.vk == libtcod.KEY_ENTER:
+            elif key.vk == libtcod.KEY_ENTER:
 
-                #sexpToEval = self.active.activeToPySexp()
-                #evalResult = interp.eval(sexpToEval)
+                result = Eval.eval(self.buffer)
+                return self.update('yankBuffer', result)
 
                 #self.active.nestChild()
                 #self.active.child.insertAfter(TNode.createTreeFromSexp(evalResult))
@@ -331,6 +332,18 @@ class TreeEditor(TNode.FuncObject):
 #                if self.buffer.cursor.evaled:
 #                    self.buffer.cursor.evaled = False
 #                else: self.buffer.cursor.evaled = True
+
+            elif chr(key.c) == '+':
+                numList = self.buffer.cursorToPySexp()
+                result = reduce(operator.add, numList)
+                newBuff = self.buffer.replaceAtCursor(result)
+                #result = Eval.eval(self.buffer)
+                #return self.update('yankBuffer', result)
+                return self.updateList(
+                    ('buffer', newBuff),
+                    ('updateUndo', True)
+                )
+
 
             elif chr(key.c) == '"':
                 return self.updateList(
