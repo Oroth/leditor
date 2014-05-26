@@ -4,9 +4,10 @@ from TNode import cons, Buffer
 import utility
 import Editors
 import libtcodpy as libtcod
-#import evalNode
 import reader
 import CodeEditor
+
+
 
 # interface
 

@@ -3,6 +3,7 @@ import TNode
 import reader
 import windowManager
 import time
+import CodeEditor
 
 #import peak.
 
@@ -27,8 +28,8 @@ libtcod.console_set_default_foreground(0, libtcod.white)
 
 rootNode = TNode.TNode()
 rootNode.setChild(TNode.createTreeFromSexp(reader.loadFile("image")))
-
 wm = windowManager.WindowManager(rootNode)
+CodeEditor.wm = lambda: wm
 
 
 print "width is: ", libtcod.console_get_width(0)

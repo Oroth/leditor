@@ -4,6 +4,9 @@ import utility
 import libtcodpy as libtcod
 import reader
 import TNode
+#from main import wm
+
+wm = None
 
 isa = isinstance
 
@@ -88,7 +91,12 @@ def add_globals(env):
          'list':lambda *x:list(x), 'list?': lambda x:isa(x,list),
          'null?':lambda x:x==[], 'symbol?':lambda x: isa(x, reader.Symbol),
          'int':lambda x:charToInt(x), 'cat':lambda a,b:a+b,
-         'string-ref':lambda str,ref:str[ref]
+         'string-ref':lambda str,ref:str[ref],
+         'screen-width':lambda :utility.screenWidth(),
+         'screen-height': lambda :utility.screenHeight(),
+         'make-vector':lambda size,t:list(t) * size,
+         'make-string':lambda size,c:str(c) * size,
+         'count-wins':lambda :wm().wins
          #,'^':lambda *vars,*body: (lambda *args: eval(body, Env(vars, args, global_env)))
         })
     return env

@@ -69,14 +69,23 @@ class Pen(object):
                 self.write2(i, bgcolour, stringCol)
 
     def write2(self, input, bgcolour=defaultBG(), fgcolour=defaultFG()):
-        if self.x1 + len(input) < self.x2:
+        lineSpaceLeft = self.x2 - self.x1
+        inputLength = len(input)
+        if inputLength < lineSpaceLeft:
             cprint(self.x1, self.y1, input, bgcolour, fgcolour)
             self.x1 += len(input)
         elif self.y1 < self.y2:
-            self.y1 += 1
-            self.x1 = 0
-            cprint(self.x1, self.y1, input, bgcolour, fgcolour)
-            self.x1 = len(input)
+
+            if inputLength < screenWidth():
+                self.y1 += 1
+                self.x1 = 0
+                cprint(self.x1, self.y1, input, bgcolour, fgcolour)
+                self.x1 = len(input)
+            else:
+                cprint(self.x1, self.y1, input[0:lineSpaceLeft], bgcolour, fgcolour)
+                self.y1 += 1
+                self.x1 = 0
+                self.write2(input[lineSpaceLeft:],bgcolour, fgcolour)
         else:
             raise windowBorderException
 

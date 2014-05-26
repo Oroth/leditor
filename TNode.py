@@ -3,6 +3,8 @@ import reader
 import copy
 
 
+
+
 class FuncObject(object):
     def update(self, prop, val):
         newSelf = copy.copy(self)
