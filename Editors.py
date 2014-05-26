@@ -126,11 +126,17 @@ class TreeEditor(TNode.FuncObject):
 
     def handleKeys(self, key):
         self.updateUndo = False
-        self.statusBar.buffer = TNode.Buffer(TNode.TNode(TNode.createTreeFromSexp(
-                [reader.Symbol('Editor')
-                ,self.buffer.viewAdd
-                ,self.buffer.cursorAdd]
-        )))
+        self.statusBar.item1 = reader.Symbol('Editor')
+        self.statusBar.item2 = self.buffer.viewAdd
+        self.statusBar.item3 = self.buffer.cursorAdd
+        if key.c != 0:
+            self.statusBar.message = None
+        self.statusBar = self.statusBar.refreshStatus()
+
+#        self.statusBar = self.statusBar.updateStatus(
+#            [reader.Symbol('Editor')
+#            ,self.buffer.viewAdd
+#            ,self.buffer.cursorAdd])
 
 
         if self.editing:
@@ -195,6 +201,7 @@ class TreeEditor(TNode.FuncObject):
             elif key.vk == libtcod.KEY_ENTER:
 
                 result = Eval.eval(self.buffer)
+                self.statusBar.message = 'Result to buffer'
                 return self.update('yankBuffer', result)
 
                 #self.active.nestChild()
@@ -539,6 +546,10 @@ class StatusBar(TreeEditor):
         self.printingMode = 'horizontal'
         self.zippedNodes = {}
         self.statusBar = None
+        self.item1 = None
+        self.item2 = None
+        self.item3 = None
+        self.message = None
 
         status = TNode.TNode(TNode.createTreeFromSexp(
             [reader.Symbol('Editor')
@@ -547,3 +558,15 @@ class StatusBar(TreeEditor):
         ))
 
         self.buffer = TNode.Buffer(status)
+
+    def refreshStatus(self):
+        statusList = [x for x in [self.item1, self.item2, self.item3, self.message] if x is not None]
+        return self.updateStatus(statusList)
+
+    def updateStatus(self, status):
+        newStatus = TNode.Buffer(TNode.TNode(TNode.createTreeFromSexp(status)))
+        return self.update('buffer', newStatus)
+
+    def displayMessage(self, message):
+        self.message = message
+        self.buffer = self.buffer.curChild().curLast().appendAtCursor(message)

@@ -236,6 +236,9 @@ class WindowManager(TNode.FuncObject):
             self.winCmd = True
             print "windowing"
 
+        elif chr(key.c) == 's' and key.lctrl:
+            self.writeImage()
+
 
         else:
             result = self.winTree.cursor.child.handleKeys(key)
