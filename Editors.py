@@ -335,7 +335,9 @@ class TreeEditor(TNode.FuncObject):
                     self.zippedNodes[self.buffer.cursor] = True
 
             elif chr(key.c) == "'":
-                return self.update('buffer', self.buffer.quoteAtCursor())
+                #return self.update('buffer', self.buffer.quoteAtCursor())
+                newBuff = self.buffer.nestCursor().curChild().insertAtCursor(Symbol('quote'))
+                return self.update('buffer', newBuff)
 #                if self.buffer.cursor.evaled:
 #                    self.buffer.cursor.evaled = False
 #                else: self.buffer.cursor.evaled = True
