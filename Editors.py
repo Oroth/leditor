@@ -247,6 +247,12 @@ class TreeEditor(TNode.FuncObject):
             elif chr(key.c) == 'e':
                 return self.update('buffer', self.buffer.curLast())
 
+            elif chr(key.c) == 'G':
+                lookupAddress = self.buffer.cursor.activeToPySexp()
+                #newViewAddress = self.buffer.root.getNodeAtNVS(lookupAddress)
+                newBuff = TNode.Buffer(self.buffer.root, lookupAddress)
+                return self.update('buffer', newBuff)
+
             elif chr(key.c) == 'J':
                 if self.buffer.onSubNode():
                     return self.update('buffer', self.buffer.viewToCursor())

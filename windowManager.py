@@ -63,14 +63,14 @@ class WindowManager(TNode.FuncObject):
 #        edAddPy = edAdd.toPySexp()
 #        print edAddPy
 
-        edAddPy = root.getNodeAtNVS(['origin', 'editor', 'address']).child.toPySexp()
+        edAddPy = root.getValueAtNVS(['origin', 'editor', 'address']).child.toPySexp()
 
 #        edCurNode = editor.next.next.next.child
 #        edCur = edCurNode.next.child
 #        edCurPy = edCur.toPySexp()
 #        print "edCurPy", edCurPy
 
-        edCurPy = root.getNodeAtNVS(['origin', 'editor', 'cursor']).child.toPySexp()
+        edCurPy = root.getValueAtNVS(['origin', 'editor', 'cursor']).child.toPySexp()
 
         listEd = Editors.TreeEditor(root, edAddPy, edCurPy)
 
@@ -238,6 +238,7 @@ class WindowManager(TNode.FuncObject):
 
         elif chr(key.c) == 's' and key.lctrl:
             self.writeImage()
+            print "saving"
 
 
         else:

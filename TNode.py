@@ -187,7 +187,10 @@ def copyTNodeAsNewTreeClass(node, newTreeClass):
 class Buffer(FuncObject):
     def __init__(self, root, viewAdd=[0], cursorAdd=[0]):
         self.root = root
-        self.view, self.viewAdd = self.root.gotoNearestAddress(viewAdd)
+        if isinstance(viewAdd[0], reader.Symbol):
+            self.view, self.viewAdd = self.root.gotoNodeAtNVS(viewAdd)
+        else:
+            self.view, self.viewAdd = self.root.gotoNearestAddress(viewAdd)
         self.cursor, self.cursorAdd = self.view.gotoNearestAddress(cursorAdd)
 
     def onSubNode(self):
@@ -451,23 +454,30 @@ class TNode(FuncObject):
             return True
         return False
 
-    def getNodeAtNVS(self, nvs):
-        add = list(nvs)
+    def getValueAtNVS(self, nvs):
+        value, add = self.gotoNodeAtNVS(nvs)
+        return value.child.next
+
+    def gotoNodeAtNVS(self, nvs):
+        curNvs = list(nvs)
+        curAdd = [0]
         iter = self
-        while add:
-            curDest = add.pop(0)
+        while curNvs:
+            curDest = curNvs.pop(0)
             while curDest != iter.child.child:
                 if iter.next:
                     iter = iter.next
+                    curAdd[-1] += 1
                 else: return None
 
             # check if still have sublevels to follow and go to them if possible
-            if add:
+            if curNvs:
                 if iter.isSubNode():
                     iter = iter.child.next
+                    curAdd.append(1)
                 else: return None
 
-        return iter.child.next
+        return iter, curAdd
 
     def gotoAddress(self, address):
         add = list(address)
