@@ -25,11 +25,13 @@ class FuncObject(object):
 def isList(lst):
     return isinstance(lst, list)
 
+
 def transform(obj, property, func):
     newObj = obj.copy()
     newProp = func(getattr(newObj, property))
     setattr(newObj, property, newProp)
     return newObj
+
 
 def transformList(obj, *propFuncList):
     newObj = obj.copy()
@@ -39,6 +41,7 @@ def transformList(obj, *propFuncList):
         setattr(newObj, prop, newProp)
 
     return newObj
+
 
 def createTreeFromSexp(sexp):
     startNode = None
@@ -298,6 +301,23 @@ class Buffer(FuncObject):
         if isinstance(self.cursor.child, reader.Symbol):
             return self.replaceAtCursor(str(self.cursor.child))
         else: return self
+
+    def findLexicalValue(self, lexeme):
+        #env = self.curUp().curUp()
+        env = self.curUp()
+        while True:
+            try:
+                env = env.curUp()
+            except ValueError: break
+
+            if env.curChild() == lexeme: # check the name
+                return env.next
+            for i in env.cursor.child.next:  # check the name list
+                if i.child.child == lexeme:
+                    return i.child.next.activeToPySexp()
+
+        return None
+
 
     def viewUp(self):
         # from curUp

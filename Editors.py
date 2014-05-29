@@ -312,6 +312,11 @@ class TreeEditor(TNode.FuncObject):
                     ('buffer', self.buffer.appendAtCursor(toInsert)),
                     ('updateUndo', True))
 
+            elif chr(key.c) == 'q':
+                var = self.buffer.cursor.child
+                value = self.buffer.findLexicalValue(var)
+                return self.update('yankBuffer', value)
+
             elif chr(key.c) == 'R':
                 return self.update('buffer', self.buffer.viewToRoot())
 
