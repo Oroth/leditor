@@ -79,17 +79,17 @@ class Pen(object):
         lineSpaceLeft = self.x2 - self.x1
         inputLength = len(input)
         if inputLength < lineSpaceLeft:
-            cprint(self.x1, self.y1, input, bgcolour, fgcolour)
+            self.topPrint(self.x1, self.y1, input, bgcolour, fgcolour)
             self.x1 += len(input)
-        elif self.y1 < self.y2:
+        elif self.y1 - self.top < self.y2:
 
             if inputLength < screenWidth():
                 self.y1 += 1
                 self.x1 = 0
-                cprint(self.x1, self.y1, input, bgcolour, fgcolour)
+                self.topPrint(self.x1, self.y1, input, bgcolour, fgcolour)
                 self.x1 = len(input)
             else:
-                cprint(self.x1, self.y1, input[0:lineSpaceLeft], bgcolour, fgcolour)
+                self.topPrint(self.x1, self.y1, input[0:lineSpaceLeft], bgcolour, fgcolour)
                 self.y1 += 1
                 self.x1 = 0
                 self.write2(input[lineSpaceLeft:],bgcolour, fgcolour)
@@ -108,7 +108,7 @@ class Pen(object):
         self.write(input)
 
     def writeNL(self):
-        if self.y1 + 1 != self.y2:
+        if self.y1 - self.top + 1 != self.y2:
             self.y1 += 1
             self.x1 = 0
         else: raise windowBorderException
