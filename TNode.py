@@ -190,11 +190,13 @@ def copyTNodeAsNewTreeClass(node, newTreeClass):
 class Buffer(FuncObject):
     def __init__(self, root, viewAdd=[0], cursorAdd=[0]):
         self.root = root
+
         if isinstance(viewAdd[0], reader.Symbol):
             self.view, self.viewAdd = self.root.gotoNodeAtNVS(viewAdd)
         else:
             self.view, self.viewAdd = self.root.gotoNearestAddress(viewAdd)
         self.cursor, self.cursorAdd = self.view.gotoNearestAddress(cursorAdd)
+        self.topLine = 0
 
     def onSubNode(self):
         return self.cursor.isSubNode()

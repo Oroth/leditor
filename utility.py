@@ -33,9 +33,10 @@ def cprint(x, y, fmt, bgcolour=defaultBG(), fgcolour=defaultFG()):
 
 
 class Pen(object):
-    def __init__(self, x1, y1, x2=None, y2=None):
+    def __init__(self, x1, y1, x2=None, y2=None, top=0):
         self.x1 = x1
         self.y1 = y1
+        self.top = top
         if x2 is None:
             self.x2 = libtcod.console_get_width(0)
         else:
@@ -48,6 +49,12 @@ class Pen(object):
     def skip(self, x, y):
         self.x1 += x
         self.y1 += y
+
+    def topPrint(self, x, y, fmt, bgcolour=defaultBG(), fgcolour=defaultFG()):
+        if self.y1 < self.top:
+            self.skip(len(fmt), 0)
+        else:
+            cprint(x, y - self.top, fmt, bgcolour, fgcolour)
 
     def write(self, input, bgcolour=defaultBG()):
         if len(input) > 0 and input[0] == '"':

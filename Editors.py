@@ -332,6 +332,9 @@ class TreeEditor(TNode.FuncObject):
                 newBuff = TNode.Buffer(newImage)
                 return self.update('buffer', newBuff)
 
+            elif chr(key.c) == 'T':
+                self.buffer.topLine += 1
+
             elif chr(key.c) == 'u':
                 return "UNDO"
 
@@ -415,7 +418,7 @@ class TreeEditor(TNode.FuncObject):
     def draw(self, posx, posy, maxx, maxy, hlcol):
 
         def drawHorizontal(posx, posy, hlcol, indent=True):
-            pen = utility.Pen(posx, posy, maxx, maxy)
+            pen = utility.Pen(posx, posy, maxx, 0)
 
             def drawChild(node, nesting, parentCol=libtcod.black):
 
