@@ -23,13 +23,13 @@ class windowBorderException(Exception):
     pass
 
 def cprint(x, y, fmt, bgcolour=defaultBG(), fgcolour=defaultFG()):
-    defaultbg = defaultBG()
-    defaultfg = defaultFG()
+    #defaultbg = defaultBG()
+    #defaultfg = defaultFG()
     libtcod.console_set_default_background(0, bgcolour)
     libtcod.console_set_default_foreground(0, fgcolour)
     libtcod.console_print(0, x, y, fmt)
-    libtcod.console_set_default_background(0, defaultbg)
-    libtcod.console_set_default_foreground(0, defaultfg)
+    #libtcod.console_set_default_background(0, defaultbg)
+    #libtcod.console_set_default_foreground(0, defaultfg)
 
 
 class Pen(object):
@@ -50,11 +50,17 @@ class Pen(object):
         self.x1 += x
         self.y1 += y
 
-    def topPrint(self, x, y, fmt, bgcolour=defaultBG(), fgcolour=defaultFG()):
+    def topPrint(self, x, y, fmt, bgcolour, fgcolour):
         if self.y1 < self.top:
-            self.skip(len(fmt), 0)
+            self.x1 += len(fmt)
         else:
-            cprint(x, y - self.top, fmt, bgcolour, fgcolour)
+            defaultbg = defaultBG()
+            #cprint(x, y - self.top, fmt, bgcolour, fgcolour)
+            libtcod.console_set_default_background(0, bgcolour)
+            libtcod.console_set_default_foreground(0, fgcolour)
+            libtcod.console_print(0, x, y - self.top, fmt)
+
+            libtcod.console_set_default_background(0, defaultbg)
 
     def write(self, input, bgcolour=defaultBG()):
         if len(input) > 0 and input[0] == '"':

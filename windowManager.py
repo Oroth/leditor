@@ -40,7 +40,6 @@ class Column(object):
 
 
 
-
 class WindowManager(TNode.FuncObject):
     def __init__(self, ImageRoot):
         self.ImageRoot = ImageRoot
@@ -57,22 +56,15 @@ class WindowManager(TNode.FuncObject):
         editor = root.child.next.child
         code = root.child.next.next
 
-#        edId = editor.next.child
-#        edAddNode = editor.next.next.child
-#        edAdd = edAddNode.next.child
-#        edAddPy = edAdd.toPySexp()
-#        print edAddPy
 
         edAddPy = root.getValueAtNVS(['origin', 'editor', 'address']).child.toPySexp()
-
-#        edCurNode = editor.next.next.next.child
-#        edCur = edCurNode.next.child
-#        edCurPy = edCur.toPySexp()
-#        print "edCurPy", edCurPy
-
         edCurPy = root.getValueAtNVS(['origin', 'editor', 'cursor']).child.toPySexp()
+        edZipped = root.getValueAtNVS(['origin', 'editor', 'zipped']).child.toPySexp()
 
         listEd = Editors.TreeEditor(root, edAddPy, edCurPy)
+
+        for i in edZipped:
+            listEd.zippedNodes[i] = True
 
         return TNode.TNode(listEd)
 
@@ -81,6 +73,14 @@ class WindowManager(TNode.FuncObject):
         pyObj = self.ImageRoot.child.toPySexp()
         text = reader.to_string(pyObj)
         f = open("image", 'w')
+        f.write(text)
+        f.close()
+
+    def testNewWrite(self):
+
+        pyObj = self.ImageRoot.child.toNodeIDValuePySexp()
+        text = reader.to_string(pyObj)
+        f = open("testIDImage", 'w')
         f.write(text)
         f.close()
 
@@ -237,7 +237,8 @@ class WindowManager(TNode.FuncObject):
             print "windowing"
 
         elif chr(key.c) == 's' and key.lctrl:
-            self.writeImage()
+            #self.writeImage()
+            self.testNewWrite()
             print "saving"
 
 

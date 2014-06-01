@@ -51,10 +51,63 @@ def createTreeFromSexp(sexp):
         if isList(sexp):
             for i in sexp:
                 if startNode:
-                    lastNode.insertAfter(createTreeFromSexp(i))
-                    lastNode = lastNode.next
+                    #lastNode.insertAfter(createTreeFromSexp(i))
+                    newNode = TNode(createTreeFromSexp(i))
+                    lastNode.next = newNode
+
+                    lastNode = lastNode.next   #move the pointer along
                 else:
                     startNode = TNode(createTreeFromSexp(i))
+                    lastNode = startNode
+        else:  #atom
+            return sexp
+
+    return startNode
+
+# Must be length two and without subexpressions
+def isNodeAtom(atom):
+    if len(atom) == 2 and not isList(atom[0]) and not isList(atom[1]):
+        return True
+    else:
+        return False
+
+
+def createTree(sexp):
+    if isNodeAtom(sexp):
+        return TNode(sexp[1], sexp[0])
+
+    else:  # sexp = (id (sexp|atom ...))
+        nodeID = sexp[0]
+        values = sexp[1]
+
+        startNode = None
+        lastNode = None
+        for i in values:
+            if startNode:
+                node = createTree(i)
+                lastNode.next = node
+                lastNode = lastNode.next
+            else:
+                startNode = createTree(i)
+                lastNode = startNode
+
+        return TNode(startNode, nodeID)
+
+# parse (nodeID value)
+def createTreeFromNodeIDValueSexp(sexp):
+    startNode = None
+    lastNode = None
+
+    if sexp is not None:
+        if not isNodeAtom(sexp):
+            for i in sexp[1]:
+                if startNode:
+                    newNode = TNode(createTreeFromNodeIDValueSexp(i[1]), i[0])
+                    lastNode.next = newNode
+
+                    lastNode = lastNode.next
+                else:
+                    startNode = TNode(createTreeFromNodeIDValueSexp(i[1]), i[0])
                     lastNode = startNode
         else:  #atom
             return sexp
@@ -452,6 +505,17 @@ class TNode(FuncObject):
             return createTreeFromSexp(val)
         else:
             return val
+
+    def toNodeIDValuePySexp(self):
+        ret = list()
+        for i in self:
+            newNode = [i.nodeID]
+            if i.isSubNode():
+                newNode.append(i.child.toNodeIDValuePySexp())
+            else: newNode.append(i.child)
+            ret.append(newNode)
+
+        return ret
 
     def toPySexp(self):
         ret = list()

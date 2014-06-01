@@ -107,6 +107,7 @@ class TreeEditor(TNode.FuncObject):
         self.revealedNodes = {}
         self.zippedNodes = {}
         self.topLine = 0
+        self.firstNode = self.buffer.view
 
 #        status = TNode.TNode(TNode.createTreeFromSexp(
 #                [reader.Symbol('Editor')
@@ -237,6 +238,10 @@ class TreeEditor(TNode.FuncObject):
                         ('cellEditor', CellEditor(Symbol(''))),
                         ('editing', True))
 
+            elif chr(key.c) == 'f':
+                self.firstNode = self.buffer.cursor
+
+
             elif chr(key.c) == 'i':
                 if self.buffer.cursor != self.buffer.view:    # maybe the correct behaviour is to sub and ins
                     newBuff = self.buffer.insertAtCursor('').curPrev()
@@ -327,14 +332,15 @@ class TreeEditor(TNode.FuncObject):
                     ('editing', True))
 
             elif chr(key.c) == 't':
+                self.topLine += 1
                 #print self.buffer.root.getNodeAtNVS(['origin', 'editor', 'address']).toPySexp()
-                op = lambda addNode: TNode.cons('test', addNode)
-                newImage = TNode.opAtNVSAdd(self.buffer.root, ['origin', 'editor', 'cursor'], op)
-                newBuff = TNode.Buffer(newImage)
-                return self.update('buffer', newBuff)
+#                op = lambda addNode: TNode.cons('test', addNode)
+#                newImage = TNode.opAtNVSAdd(self.buffer.root, ['origin', 'editor', 'cursor'], op)
+#                newBuff = TNode.Buffer(newImage)
+#                return self.update('buffer', newBuff)
 
             elif chr(key.c) == 'T':
-                self.topLine += 1
+                self.topLine -= 1
 
             elif chr(key.c) == 'u':
                 return "UNDO"
@@ -344,10 +350,10 @@ class TreeEditor(TNode.FuncObject):
                 print self.yankBuffer
 
             elif chr(key.c) == 'z':
-                if self.buffer.cursor in self.zippedNodes:
-                    self.zippedNodes[self.buffer.cursor] = not(self.zippedNodes[self.buffer.cursor])
+                if self.buffer.cursor.nodeID in self.zippedNodes:
+                    self.zippedNodes[self.buffer.cursor.nodeID] = not(self.zippedNodes[self.buffer.cursor.nodeID])
                 else:
-                    self.zippedNodes[self.buffer.cursor] = True
+                    self.zippedNodes[self.buffer.cursor.nodeID] = True
 
             elif chr(key.c) == "'":
                 #return self.update('buffer', self.buffer.quoteAtCursor())
@@ -385,6 +391,18 @@ class TreeEditor(TNode.FuncObject):
 #                    self.buffer.cursor.displayValue = False
 #                else: self.buffer.cursor.displayValue = True
 
+            elif key.vk == libtcod.KEY_F2:
+                zipped, zipAdd = self.buffer.root.gotoNodeAtNVS(['origin', 'editor', 'zipped'])
+                zipAdd += [1]
+                #newBuff = TNode.Buffer(self.buffer.root, [0], zipAdd)
+                zipList = []
+                for k, v in self.zippedNodes.iteritems():
+                    if v is True:
+                        zipList.append(k)
+                newImage = TNode.replaceAdd(self.buffer.root, zipAdd, zipList)
+                newBuff = TNode.Buffer(newImage, self.buffer.viewAdd, self.buffer.cursorAdd)
+                return self.update('buffer', newBuff)
+
             elif key.vk == libtcod.KEY_LEFT or chr(key.c) == 'h':
                 try:
                     newBuff = self.buffer.curPrevUpAlong()
@@ -393,7 +411,7 @@ class TreeEditor(TNode.FuncObject):
 
             elif key.vk == libtcod.KEY_RIGHT or chr(key.c) == 'l':
                 try:
-                    if self.buffer.cursor in self.zippedNodes and self.zippedNodes[self.buffer.cursor]:
+                    if self.buffer.cursor.nodeID in self.zippedNodes and self.zippedNodes[self.buffer.cursor.nodeID]:
                         newBuff = self.buffer.curUp().curNextUpAlong()
                     else:
                         newBuff = self.buffer.curNextUpAlong()
@@ -419,7 +437,8 @@ class TreeEditor(TNode.FuncObject):
     def draw(self, posx, posy, maxx, maxy, hlcol):
 
         def drawHorizontal(posx, posy, hlcol, indent=True):
-            pen = utility.Pen(posx, posy, maxx, maxy, self.topLine)
+            pen = utility.Pen(posx, posy, maxx, maxy-1, self.topLine)
+            firstNodeSeen = False
 
             def drawChild(node, nesting, parentCol=libtcod.black):
 
@@ -427,7 +446,12 @@ class TreeEditor(TNode.FuncObject):
                     pen.write("'", parentCol)
 
                 if node == self.buffer.cursor:
+#                    if self.topLine > pen.y1:
+#                        self.topLine = pen.y1
+#                    if self.topLine + maxy < pen.y1:
+#                        self.topLine = pen.y1 - maxy
                     bgcolour = hlcol
+                    firstNodeSeen = True
                 else:
                     bgcolour = parentCol
 
@@ -460,7 +484,7 @@ class TreeEditor(TNode.FuncObject):
             def drawr(node, nesting, parentCol=libtcod.black, reindent=False):
 
                 try:
-                    if self.zippedNodes[node]:
+                    if self.zippedNodes[node.nodeID]:
                         pen.write("...", hlcol if node == self.buffer.cursor else parentCol)
                         return
                 except KeyError: pass
@@ -495,7 +519,7 @@ class TreeEditor(TNode.FuncObject):
                 pen.write(str(self.buffer.view.child))
 
             if self.statusBar:
-                self.statusBar.draw(0, maxy - 2, maxx, maxy, libtcod.darker_gray)
+                self.statusBar.draw(0, maxy - 1, maxx, maxy, libtcod.darker_gray)
 
 
         def drawVert(posx, posy, levels):

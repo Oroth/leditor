@@ -26,9 +26,20 @@ libtcod.console_set_background_flag(0, libtcod.BKGND_SET)
 libtcod.console_set_default_foreground(0, libtcod.white)
 
 
-rootNode = TNode.TNode()
-rootNode.setChild(TNode.createTreeFromSexp(reader.loadFile("image")))
-wm = windowManager.WindowManager(rootNode)
+#rootNode = TNode.TNode()
+#rootNode.setChild(TNode.createTreeFromSexp(reader.loadFile("image")))
+#
+#wm = windowManager.WindowManager(rootNode)
+
+pyLoad = reader.loadFile("testIDImage")
+pyImage = [0]
+pyImage.append(pyLoad)
+#nodeTree = TNode.createTreeFromNodeIDValueSexp(pyImage)
+nodeTree = TNode.createTree(pyImage)
+
+wm = windowManager.WindowManager(nodeTree)
+
+
 Eval.wm = lambda: wm
 
 
