@@ -53,10 +53,6 @@ class WindowManager(TNode.FuncObject):
         self.hist = ImageRoot
 
     def parse_memory(self, root):
-        editor = root.child.next.child
-        code = root.child.next.next
-
-
         edAddPy = root.getValueAtNVS(['origin', 'editor', 'address']).child.toPySexp()
         edCurPy = root.getValueAtNVS(['origin', 'editor', 'cursor']).child.toPySexp()
         edZipped = root.getValueAtNVS(['origin', 'editor', 'zipped']).child.toPySexp()
@@ -246,7 +242,8 @@ class WindowManager(TNode.FuncObject):
             result = self.winTree.cursor.child.handleKeys(key)
             #print "result ", result
             if result == 'ESC':
-                self.writeImage()
+                #self.writeImage()
+                self.testNewWrite()
                 return False
 
             if result == 'UNDO':

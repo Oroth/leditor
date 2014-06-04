@@ -400,6 +400,17 @@ class TreeEditor(TNode.FuncObject):
                     if v is True:
                         zipList.append(k)
                 newImage = TNode.replaceAdd(self.buffer.root, zipAdd, zipList)
+
+                view, viewAdd = self.buffer.root.gotoNodeAtNVS(['origin', 'editor', 'address'])
+                viewAdd += [1]
+                viewList = self.buffer.viewAdd
+                newImage = TNode.replaceAdd(newImage, viewAdd, viewList)
+
+                cursor, cursorSaveAdd = self.buffer.root.gotoNodeAtNVS(['origin', 'editor', 'cursor'])
+                cursorSaveAdd += [1]
+                currentCursorAdd = self.buffer.cursorAdd
+                newImage = TNode.replaceAdd(newImage, cursorSaveAdd, currentCursorAdd)
+
                 newBuff = TNode.Buffer(newImage, self.buffer.viewAdd, self.buffer.cursorAdd)
                 return self.update('buffer', newBuff)
 
