@@ -145,13 +145,17 @@ class TreeEditor(TNode.FuncObject):
             finished = self.cellEditor.handle_key(key)
             if finished == 'END':
                 if self.cellEditor.getContent() == '':
-                    content = reader.atom('nullSymbol')
+                    isChanged = False if self.cellEditor.original == '' else True
+                    return self.updateList(
+                        ('buffer', self.buffer.deleteAtCursor()),
+                        ('editing', False),
+                        ('updateUndo', isChanged))
                 else:
                     content = self.cellEditor.getContent()
-                return self.updateList(
-                    ('buffer', self.buffer.replaceAtCursor(content)),
-                    ('editing', False),
-                    ('updateUndo', True))
+                    return self.updateList(
+                        ('buffer', self.buffer.replaceAtCursor(content)),
+                        ('editing', False),
+                        ('updateUndo', True))
 
             elif finished == 'CANCEL':
                 if self.cellEditor.original == '':
@@ -588,7 +592,78 @@ class TreeEditor(TNode.FuncObject):
                 drawVert(posx, posy, 1)
         except utility.windowBorderException: pass
 
+#    def drawImage(self, maxx, maxy):
 #
+#        def convertToLines(posx, posy, hlcol, indent=True):
+#
+#            pen = utility.Pen(posx, posy, maxx, maxy-1, self.topLine)
+#
+#            def drawChild(node, nesting, parentCol=libtcod.black):
+#
+#                if not node.evaled:
+#                    pen.write("'", parentCol)
+#
+#                if node == self.buffer.cursor:
+#                    bgcolour = hlcol
+#                else:
+#                    bgcolour = parentCol
+#
+#
+#                if node.isSubNode():
+#                    pen.write('(', bgcolour)
+#                    drawr(node.child, nesting, bgcolour)
+#                    pen.write(')', bgcolour)
+#
+#                elif node.child is None:
+#                    pen.write('()', bgcolour)
+#
+#                else:
+#                    output = reader.to_string(node.child)
+#
+#                    if node == self.buffer.cursor and self.editing:
+#                        self.cellEditor.draw(pen)
+#                    else:
+#                        pen.write(output, bgcolour)
+#
+#
+#            def drawr(node, nesting, parentCol=libtcod.black, reindent=False):
+#
+#                try:
+#                    if self.zippedNodes[node.nodeID]:
+#                        pen.write("...", hlcol if node == self.buffer.cursor else parentCol)
+#                        return
+#                except KeyError: pass
+#
+#                drawChild(node, nesting + 1, parentCol)
+#                #reindent = False
+#
+#                if node.next and node.next.next:
+#                    for i in node.next:
+#                        if i.isSubNode():
+#                            for subi in i.child:
+#                                if subi.isSubNode(): reindent = True
+#
+#
+#                if node.next:
+#                    if indent and reindent:
+#                        pen.writeNL()
+#                        pen.write(' ' * (2 * nesting), parentCol)
+#
+#                    else:
+#                        pen.write(' ', parentCol)
+#
+#                    drawr(node.next, nesting, parentCol, reindent)
+#
+#            if self.buffer.view.isSubNode():
+#                drawChild(self.buffer.view, 1)
+#            else:
+#                pen.write(str(self.buffer.view.child))
+#
+#
+#        def convertToImage():
+
+
+
 class StatusBar(TreeEditor):
     def __init__(self, *args, **kwargs):
         #super(statusBar, self).__init__(*args, **kwargs)
