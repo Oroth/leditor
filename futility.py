@@ -157,6 +157,12 @@ def createStucturalLineIndentList(buffer):
             currentLineNumber = currentLineNumber + 1
             node = node.next
 
+            # reindenting rule:
+            # if there are two or more expressions after the current expression
+            # and one of those expressions is complex - is a sexp with one subnested sexp
+            # then start a new line and increase the indentation
+            # Q: should this only apply at the start?
+
         return lineList
 
     def buildLineItems(node):
@@ -171,6 +177,13 @@ def createStucturalLineIndentList(buffer):
             #newLineItems.append(lineItemNode(node.child)
 
         if node.next:
+
+#            if node.next and node.next.next:
+#                for i in node.next:
+#                    if i.isSubNode():
+#                        for subi in i.child:
+#                            if subi.isSubNode(): reindent = True
+
             newLineItems.extend(buildLineItems(node.next))
             return newLineItems
         else:
@@ -178,30 +191,110 @@ def createStucturalLineIndentList(buffer):
 
     return prepareList(buffer.view)
 
+
+
+def createStucturalLineIndentList3(buffer):
+#simpler recur
+#    def recur(node, nesting):
+#        if node.isSubnode():
+#            return [lineListNode(0, nesting+1), lineItemNode(node, '('),
+#                    recur(node.child, nesting+1), lineItemNode(node, ')')]  ### needs cons??
+#
+#        elif node.next is None:
+#            return lineItemNode(node, node.child)
+#        else:
+#            return cons(lineItemNode(node, node.child), recur(node.next, nesting))
+
+    def isComplex(node):
+        if node.next:
+            for i in node:
+                if i.isSubNode():
+                    for subi in i.child:
+                        if subi.isSubNode(): return True
+
+        return False
+
+    # More complex recur:
+    def recur(node, nesting, indent=False):
+        if node.isSubNode():
+            ret = [lineItemNode(node, '(')]
+            ret.extend(recur(node.child, nesting))
+            ret.append(lineItemNode(node, ')'))
+        else:
+            ret = [lineItemNode(node, node.child)]
+
+        reindent = False
+        if node.next and isComplex(node.next):
+            reindent = True
+
+        # new rule: if only two values (exp1 exp2) and exp2 is very complex, indent anyway
+        if node.next and node.next.isSubNode() and isComplex(node.next.child):
+            reindent = True
+
+        if node.next:
+            if indent:
+                ret.append(lineListNode(0, nesting))
+                ret.extend(recur(node.next, nesting, indent=True))
+            elif reindent:        # can only apply to the first expression
+                ret.append(lineListNode(0, nesting+1))
+                ret.extend(recur(node.next, nesting+1, indent=True))
+            else:
+                ret.extend(recur(node.next, nesting, indent))
+
+        return ret
+
+    def unflatten(stream):
+        lines = [lineListNode(0, 0)]
+        currentLineNumber = 1
+        currentLineLength = 0
+        for i in stream:
+            if isinstance(i, lineListNode):
+                lines.append(lineListNode(currentLineNumber, i.indent))
+                currentLineNumber += 1
+                currentLineLength = i.indent
+            else:
+                itemNodeLength = len(i.nodeToString()) + 1  ## technically parens will only be 1 char
+                if (currentLineLength + itemNodeLength) > 80: ## Line Width
+                    lines.append(lineListNode(currentLineNumber, i.indent))
+                    currentLineNumber += 1
+                    currentLineLength = i.indent
+
+                lines[-1].nodeList.append(i)
+                currentLineLength += itemNodeLength
+
+        return lines
+
+    lineStream = recur(buffer.view, nesting=0)
+    lineList = unflatten(lineStream)
+    return lineList
+
+
+#def createStucturalLineIndentList2(buffer):
+#
 #    def drawChild(node, nesting, parentCol=libtcod.black):
 #
-#        if node == buffer.cursor:
-#            bgcolour = hlcol
-#        else:
-#            bgcolour = parentCol
+##        if node == buffer.cursor:
+##            bgcolour = hlcol
+##        else:
+##            bgcolour = parentCol
 #
 #
 #        if node.isSubNode():
 #
-#            pen.write('(', bgcolour)
-#            drawr(node.child, nesting, bgcolour)
-#            pen.write(')', bgcolour)
+#            newLineItems = [lineItemNode(node, '(')]
+#            newLineItems.extend(drawr(node.child))
+#            newLineItems.append(lineItemNode(node, ')'))
 #
 #        elif node.child is None:
 #            pen.write('()', bgcolour)
 #
 #        else:
-#            output = reader.to_string(node.child)
+#            newLineItems = [lineItemNode(node, node.child)]
 #
-#            if node == self.buffer.cursor and self.editing:
-#                self.cellEditor.draw(pen)
-#            else:
-#                pen.write(output, bgcolour)
+##            if node == self.buffer.cursor and self.editing:
+##                self.cellEditor.draw(pen)
+##            else:
+##                pen.write(output, bgcolour)
 #
 #
 #    def drawr(node, nesting, parentCol=libtcod.black, reindent=False):
@@ -223,7 +316,7 @@ def createStucturalLineIndentList(buffer):
 #
 #
 #        if node.next:
-#            if indent and reindent:
+#            if reindent:
 #                newNode = lineListNode(currentLineNumber, (2*nesting), node)    #end
 #                lineList += newNode
 #                pen.write(' ' * (2 * nesting), parentCol)
@@ -270,7 +363,8 @@ if __name__ == '__main__':
     libtcod.console_set_background_flag(0, libtcod.BKGND_SET)
     libtcod.console_set_default_foreground(0, libtcod.white)
 
-    lst = ['some', 'text', ['code', 'words'], 'to', 'write']
+    #lst = ['some', 'text', ['code', 'words'], 'to', 'write']
+    lst = [['function', ['let', ['x', '15'], ['y', '10'], ['+', ['*', 'x', 'x'], ['*', 'y', 'y']]]]]
 
 
     #printLst = makeSimplePrintList(lst, SCREEN_WIDTH)
@@ -279,7 +373,7 @@ if __name__ == '__main__':
 
     tree = TNode.createTreeFromSexp(lst)
     buff = TNode.Buffer(tree)
-    lineList = createStucturalLineIndentList(buff)
+    lineList = createStucturalLineIndentList3(buff)
     fakeWin = drawLineList(lineList)
     # draw(lst)
     # draw((make-screen lst, cursorAddress, topRowNum))
