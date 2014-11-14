@@ -2,15 +2,26 @@ __author__ = 'chephren'
 
 import TNode
 import libtcodpy as libtcod
+import utility
+import reader
+
+class Cell(TNode.FuncObject):
+    def __init__(self, character=' ', nodeReference=None, bgColour=utility.defaultBG(), fgColour=utility.defaultFG()):
+        self.character = character
+        self.nodeReference = nodeReference
+        self.bgColour = bgColour
+        self.fgColour = fgColour
 
 def createBlank(maxx, maxy):
-    return [[' ' for x in range(0, maxx)] for x in range(0, maxy)]
+    return [[Cell() for x in range(0, maxx)] for x in range(0, maxy)]
 
-def addText(image, x, y, text):
+def putNodeOnImage(image, x, y, text, node, bgcol):
     newImage = [list(row) for row in image]
 
     for i in text:
-        newImage[y][x] = i
+        (newImage[y][x]).character = i
+        (newImage[y][x]).nodeReference = node
+        (newImage[y][x]).bgColour = bgcol
         x += 1
 
     return newImage
@@ -21,51 +32,13 @@ def printToScreen(image):
 
     for x in xrange(0, maxx):
         for y in xrange(0, maxy):
-
-            libtcod.console_print(0, x, y, image[y][x])
-
-# convert symbol list into a print-structure
-# (text (line indent (symbols)) (line indent (symbols)) ...)
-# symbols example: [leftParen '+' '1' '2' rightParen]
-def makeSimplePrintList(lst, maxx):
-    printList = []
-    newLine = []
-    x = 0
-    y = 0
-
-    for i in lst:
-        if x + len(i) >= maxx:
-            printList.append([0, newLine])
-            y += 1
-            x = 0
-            newLine = []
-
-        newLine.append(i)
-        x += len(i)
-
-    printList.append([0, newLine])
-
-    return printList
+            cell = image[y][x]
+            libtcod.console_set_default_background(0, cell.bgColour)
+            libtcod.console_set_default_foreground(0, cell.fgColour)
+            libtcod.console_print(0, x, y, cell.character)
 
 
-
-def simpleBufferPrint(buffer, maxx):
-    return
-
-# draw entire lst to window
-def drawPrintListToFakeWin(printList):
-    image = createBlank(50, 256)
-    y = 0
-
-    #def drawCycle(lst, image):
-    for line in printList:
-        x = line[0]
-        for symbol in line[1]:
-            image = addText(image, x, y, symbol)
-            x += len(symbol)
-        y += 1
-
-    return image
+# ======================== Creating the List =======================================================
 
 def sliceFakeWindow(fakeWindow, topline, maxHeight):
     return fakeWindow[topline:topline+maxHeight]
@@ -74,23 +47,22 @@ def sliceFakeWindow(fakeWindow, topline, maxHeight):
 class lineItemNode(TNode.FuncObject):
     def __init__(self, nodeReference, parenSymbol=None, isCursor=False):
         self.nodeReference = nodeReference
-        self.isCursor = isCursor
         self.parenSymbol = parenSymbol
+        self.isCursor = isCursor
+        self.stringSplit = None
 
     def nodeToString(self):
         if self.parenSymbol is not None:
             return self.parenSymbol
         else:
-            return self.nodeReference.child
+            #return self.nodeReference.child
+            return reader.to_string(self.nodeReference.child)
 
 class lineListNode(TNode.FuncObject):
     def __init__(self, lineNumber, indent, nodeList=[]):
         self.lineNumber = lineNumber
         self.indent = indent
         self.nodeList = list(nodeList)
-        #self.startNode = startNode
-        #self.endNode = endNode
-        #self.isCursor = isCursor
 
     #def __str__(self):
        # return "(lineListNode " + str(self.indent) + " " + str(self.startNode) + ")"
@@ -99,42 +71,39 @@ class lineListNode(TNode.FuncObject):
         self.nodeList += lineItemNode(nodeReference, parenSymbol, isCursor)
 
 
-
-#    def nodeToString(self):
-#        def drawr(node):
-#            curString = ""
-#            if node.isSubNode():
-#                curString = "(" + drawr(node.child) + ")"
-#            else:
-#                curString = node.child
-#
-#            if node == self.endNode:
-#                return curString
-#            elif node.next:
-#                rest = drawr(node.next)
-#                return curString + " " + rest
-#            else:
-#                return curString
-#
-#        return drawr(self.startNode)
-
-
-
 def drawLineList(lineList):
-    image = createBlank(50, 256)
-    y = 0
+    image = createBlank(80, 512)
+    hlcol = libtcod.azure
+    standardBG = utility.defaultBG()
 
     for line in lineList:
         x = line.indent
         y = line.lineNumber
 
+        if line.indent > 0:
+            firstItem = line.nodeList[0]
+            if firstItem.isCursor:
+                bgcol = hlcol
+            else:
+                bgcol = standardBG
+            indentString = ''.join([' ' for i in xrange(line.indent)])
+            image = putNodeOnImage(image, 0, y, indentString, firstItem, bgcol)
+
         for item in line.nodeList:
+            if item.isCursor:
+                bgcol = hlcol
+            else:
+                bgcol = standardBG
+
             text = item.nodeToString()
             if text == ')':
                 x -= 1
-            image = addText(image, x, y, text)
+
+            image = putNodeOnImage(image, x, y, text, item.nodeReference, bgcol)
             x += len(text)
-            if text != '(':
+
+            if text != '(' and item != line.nodeList[-1]:
+                image = putNodeOnImage(image, x, y, ' ', item.nodeReference, bgcol)
                 x += 1
 
     return image
@@ -177,13 +146,6 @@ def createStucturalLineIndentList(buffer):
             #newLineItems.append(lineItemNode(node.child)
 
         if node.next:
-
-#            if node.next and node.next.next:
-#                for i in node.next:
-#                    if i.isSubNode():
-#                        for subi in i.child:
-#                            if subi.isSubNode(): reindent = True
-
             newLineItems.extend(buildLineItems(node.next))
             return newLineItems
         else:
@@ -194,16 +156,6 @@ def createStucturalLineIndentList(buffer):
 
 
 def createStucturalLineIndentList3(buffer):
-#simpler recur
-#    def recur(node, nesting):
-#        if node.isSubnode():
-#            return [lineListNode(0, nesting+1), lineItemNode(node, '('),
-#                    recur(node.child, nesting+1), lineItemNode(node, ')')]  ### needs cons??
-#
-#        elif node.next is None:
-#            return lineItemNode(node, node.child)
-#        else:
-#            return cons(lineItemNode(node, node.child), recur(node.next, nesting))
 
     def isComplex(node):
         if node.next:
@@ -214,14 +166,22 @@ def createStucturalLineIndentList3(buffer):
 
         return False
 
-    # More complex recur:
-    def recur(node, nesting, indent=False):
-        if node.isSubNode():
-            ret = [lineItemNode(node, '(')]
-            ret.extend(recur(node.child, nesting))
-            ret.append(lineItemNode(node, ')'))
+    def recur(node, nesting, isParentCursor=False, indent=False):
+
+        if node == buffer.cursor:
+            isCursor = True
         else:
-            ret = [lineItemNode(node, node.child)]
+            isCursor = isParentCursor
+
+        if node.isSubNode():
+            ret = [lineItemNode(node, '(', isCursor)]
+            ret.extend(recur(node.child, nesting, isCursor))
+            ret.append(lineItemNode(node, ')', isCursor))
+        elif node.child is None:
+            ret = [lineItemNode(node, '(', isCursor), lineItemNode(node, ')', isCursor)]
+        else:
+            #ret = [lineItemNode(node, node.child, isCursor)]
+            ret = [lineItemNode(node, None, isCursor)]
 
         reindent = False
         if node.next and isComplex(node.next):
@@ -234,12 +194,12 @@ def createStucturalLineIndentList3(buffer):
         if node.next:
             if indent:
                 ret.append(lineListNode(0, nesting))
-                ret.extend(recur(node.next, nesting, indent=True))
+                ret.extend(recur(node.next, nesting, isCursor, indent=True))
             elif reindent:        # can only apply to the first expression
                 ret.append(lineListNode(0, nesting+1))
-                ret.extend(recur(node.next, nesting+1, indent=True))
+                ret.extend(recur(node.next, nesting+1, isCursor, indent=True))
             else:
-                ret.extend(recur(node.next, nesting, indent))
+                ret.extend(recur(node.next, nesting, isCursor, indent))
 
         return ret
 
@@ -247,109 +207,37 @@ def createStucturalLineIndentList3(buffer):
         lines = [lineListNode(0, 0)]
         currentLineNumber = 1
         currentLineLength = 0
+        currentLineIndent = 0
         for i in stream:
             if isinstance(i, lineListNode):
                 lines.append(lineListNode(currentLineNumber, i.indent))
                 currentLineNumber += 1
                 currentLineLength = i.indent
+                currentLineIndent = i.indent
             else:
                 itemNodeLength = len(i.nodeToString()) + 1  ## technically parens will only be 1 char
                 if (currentLineLength + itemNodeLength) > 80: ## Line Width
-                    lines.append(lineListNode(currentLineNumber, i.indent))
+                    lines.append(lineListNode(currentLineNumber, 0))
                     currentLineNumber += 1
-                    currentLineLength = i.indent
+                    currentLineLength = 0
+
+                    #if isinstance(i.child, str):
+                    #    wordlist = i.child.split(' ')
 
                 lines[-1].nodeList.append(i)
                 currentLineLength += itemNodeLength
 
         return lines
 
-    lineStream = recur(buffer.view, nesting=0)
+    lineStream = recur(buffer.view, isParentCursor=False, nesting=0)
     lineList = unflatten(lineStream)
     return lineList
 
 
-#def createStucturalLineIndentList2(buffer):
-#
-#    def drawChild(node, nesting, parentCol=libtcod.black):
-#
-##        if node == buffer.cursor:
-##            bgcolour = hlcol
-##        else:
-##            bgcolour = parentCol
-#
-#
-#        if node.isSubNode():
-#
-#            newLineItems = [lineItemNode(node, '(')]
-#            newLineItems.extend(drawr(node.child))
-#            newLineItems.append(lineItemNode(node, ')'))
-#
-#        elif node.child is None:
-#            pen.write('()', bgcolour)
-#
-#        else:
-#            newLineItems = [lineItemNode(node, node.child)]
-#
-##            if node == self.buffer.cursor and self.editing:
-##                self.cellEditor.draw(pen)
-##            else:
-##                pen.write(output, bgcolour)
-#
-#
-#    def drawr(node, nesting, parentCol=libtcod.black, reindent=False):
-#
-#        try:
-#            if self.zippedNodes[node.nodeID]:
-#                pen.write("...", hlcol if node == self.buffer.cursor else parentCol)
-#                return
-#        except KeyError: pass
-#
-#        drawChild(node, nesting + 1, parentCol)
-#        #reindent = False
-#
-#        if node.next and node.next.next:
-#            for i in node.next:
-#                if i.isSubNode():
-#                    for subi in i.child:
-#                        if subi.isSubNode(): reindent = True
-#
-#
-#        if node.next:
-#            if reindent:
-#                newNode = lineListNode(currentLineNumber, (2*nesting), node)    #end
-#                lineList += newNode
-#                pen.write(' ' * (2 * nesting), parentCol)
-#
-#            # try to avoid hiding the cursor in a cell editor
-#            #elif node == self.buffer.cursor and self.editing:
-#            #    pen.skip(1, 0)
-#            else:
-#                pen.write(' ', parentCol)
-#
-#            drawr(node.next, nesting, parentCol, reindent)
-#
-#    if self.buffer.view.isSubNode():
-#        drawChild(self.buffer.view, 1)
-#    else:
-#        pen.write(str(self.buffer.view.child))
-
-# convert list to print-instructions
-
-# print list-section (window, top-row, window-height)
-
-# draw first x lines on window
-# draw after first x lines to window
-# draw around cursor
-
-# calculate cursor line position
-#
-
 if __name__ == '__main__':
     SCREEN_WIDTH = 80
     SCREEN_HEIGHT = 50
-
-    LIMIT_FPS = 20  # 20 frames-per-second maximum
+    LIMIT_FPS = 20
 
 
     #############################################
@@ -364,26 +252,18 @@ if __name__ == '__main__':
     libtcod.console_set_default_foreground(0, libtcod.white)
 
     #lst = ['some', 'text', ['code', 'words'], 'to', 'write']
-    lst = [['function', ['let', ['x', '15'], ['y', '10'], ['+', ['*', 'x', 'x'], ['*', 'y', 'y']]]]]
-
-
-    #printLst = makeSimplePrintList(lst, SCREEN_WIDTH)
-    #fakeWin = drawPrintListToFakeWin(printLst)
-
+    lst = [[reader.Symbol('function'), ['let', ['x', 15], ['y', 10], \
+                                        ['+', ['*', 'x', 'x'], ['*', 'y', 'y'], \
+                                        "This is a very long string designed to test the screen width"]]]]
 
     tree = TNode.createTreeFromSexp(lst)
     buff = TNode.Buffer(tree)
+    buff.cursor = buff.cursor.child
     lineList = createStucturalLineIndentList3(buff)
     fakeWin = drawLineList(lineList)
-    # draw(lst)
-    # draw((make-screen lst, cursorAddress, topRowNum))
 
     finalWin = sliceFakeWindow(fakeWin, 0, SCREEN_HEIGHT)
     libtcod.console_clear(0)
-
-    #blankImage = createBlank(SCREEN_WIDTH, SCREEN_HEIGHT)
-    #writtenImage = addText(blankImage, 3, 3, "some text")
-    #printToScreen(writtenImage)
 
     printToScreen(finalWin)
     libtcod.console_flush()

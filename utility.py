@@ -28,6 +28,7 @@ def cprint(x, y, fmt, bgcolour=defaultBG(), fgcolour=defaultFG()):
     libtcod.console_set_default_background(0, bgcolour)
     libtcod.console_set_default_foreground(0, fgcolour)
     libtcod.console_print(0, x, y, fmt)
+    #libtcod.console_print_ex(0, x, y, libtcod.TCOD_BKGND_SET, libtcod.TCOD_LEFT, )
     #libtcod.console_set_default_background(0, defaultbg)
     #libtcod.console_set_default_foreground(0, defaultfg)
 

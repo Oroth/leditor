@@ -1,6 +1,7 @@
 __author__ = 'chephren'
 import libtcodpy as libtcod
 import utility
+import futility
 import reader
 from reader import Symbol
 import Eval
@@ -447,6 +448,15 @@ class TreeEditor(TNode.FuncObject):
                 except ValueError: pass
 
         return self
+
+    def draw2(self, posx, posy, maxx, maxy, hlcol):
+        lineList = futility.createStucturalLineIndentList3(self.buffer)
+        fakeWin = futility.drawLineList(lineList)
+
+        finalWin = futility.sliceFakeWindow(fakeWin, 0, maxy)
+        #libtcod.console_clear(0)
+
+        futility.printToScreen(finalWin)
 
 
     def draw(self, posx, posy, maxx, maxy, hlcol):
