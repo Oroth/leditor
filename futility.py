@@ -45,18 +45,22 @@ def sliceFakeWindow(fakeWindow, topline, maxHeight):
 
 
 class lineItemNode(TNode.FuncObject):
-    def __init__(self, nodeReference, parenSymbol=None, isCursor=False):
+    def __init__(self, nodeReference, text=None, isCursor=False, stringSplit=None):
         self.nodeReference = nodeReference
-        self.parenSymbol = parenSymbol
+        if text is None:
+            self.text = reader.to_string(nodeReference.child)
+        else:
+            self.text = text
         self.isCursor = isCursor
-        self.stringSplit = None
+        self.stringSplit = stringSplit
 
     def nodeToString(self):
-        if self.parenSymbol is not None:
-            return self.parenSymbol
-        else:
+        return self.text
+        #if self.parenSymbol is not None:
+            #return self.parenSymbol
+        #else:
             #return self.nodeReference.child
-            return reader.to_string(self.nodeReference.child)
+            #return reader.to_string(self.nodeReference.child)
 
 class lineListNode(TNode.FuncObject):
     def __init__(self, lineNumber, indent, nodeList=[]):
@@ -203,6 +207,31 @@ def createStucturalLineIndentList3(buffer):
 
         return ret
 
+    def splitStringAcrossLines(string, firstBoundary, remainingBoundary):
+        stringList = []
+        lastSpaceFirstLine = string.rfind(' ', 0, firstBoundary)
+        if lastSpaceFirstLine != -1:
+            stringList.append(string[:lastSpaceFirstLine])
+            curLineStart = lastSpaceFirstLine + 1
+        else:
+            stringList.append('')
+            curLineStart = 0
+
+        curLineFind = string.rfind(' ', curLineStart, remainingBoundary)
+
+        while curLineFind != -1 and curLineStart+remainingBoundary < len(string):
+            #curLineEnd = curLineStart + curLineFind
+            curLineEnd = curLineFind
+            stringList.append(string[curLineStart:curLineEnd])
+            curLineStart = curLineEnd+1
+            curLineFind = string.rfind(' ', curLineStart, curLineStart+remainingBoundary)
+
+        stringList.append(string[curLineStart:])
+
+        return stringList
+
+
+
     def unflatten(stream):
         lines = [lineListNode(0, 0)]
         currentLineNumber = 1
@@ -217,15 +246,45 @@ def createStucturalLineIndentList3(buffer):
             else:
                 itemNodeLength = len(i.nodeToString()) + 1  ## technically parens will only be 1 char
                 if (currentLineLength + itemNodeLength) > 80: ## Line Width
-                    lines.append(lineListNode(currentLineNumber, 0))
-                    currentLineNumber += 1
-                    currentLineLength = 0
+                    lineLengthLeft = 80 - currentLineLength
 
-                    #if isinstance(i.child, str):
-                    #    wordlist = i.child.split(' ')
+                    if isinstance(i.nodeReference.child, str):
+                        stringList = splitStringAcrossLines(i.text, lineLengthLeft, 80)
+                        if stringList[0] != '':
+                            currentLineNode = lineItemNode(i.nodeReference, stringList[0], i.isCursor, 'start')
+                            lines[-1].nodeList.append(currentLineNode)
 
-                lines[-1].nodeList.append(i)
-                currentLineLength += itemNodeLength
+                        for string in stringList[1:]:
+                            currentLineNode = lineItemNode(i.nodeReference, string, i.isCursor, 'start')
+                            lines.append(lineListNode(currentLineNumber, 0))
+                            currentLineNumber += 1
+
+                            lines[-1].nodeList.append(currentLineNode)
+
+                        currentLineLength = len(currentLineNode.text)
+
+#                        lastSpace = i.text.rfind(' ', 0, lineLengthLeft)
+#                        if lastSpace != -1:
+#                            start = i.text[:lastSpace]
+#                            end = i.text[lastSpace+1:]
+#                            currentLineNode = lineItemNode(i.nodeReference, start, i.isCursor, 'start')
+#                            newlineNode = lineItemNode(i.nodeReference, end, i.isCursor, 'end')
+#                            lines[-1].nodeList.append(currentLineNode)
+#                        else:   ## need to check at some point about carrying across multiple lines
+#                            newlineNode = lineItemNode(i.nodeReference, i.text, i.isCursor)
+                    #else:
+                    #    newlineNode = i
+                    else:
+                        lines.append(lineListNode(currentLineNumber, 0))
+                        currentLineNumber += 1
+                        currentLineLength = 0
+
+                        lines[-1].nodeList.append(i)
+                        currentLineLength += len(i.nodeToString())
+
+                else:
+                    lines[-1].nodeList.append(i)
+                    currentLineLength += itemNodeLength
 
         return lines
 
@@ -254,7 +313,14 @@ if __name__ == '__main__':
     #lst = ['some', 'text', ['code', 'words'], 'to', 'write']
     lst = [[reader.Symbol('function'), ['let', ['x', 15], ['y', 10], \
                                         ['+', ['*', 'x', 'x'], ['*', 'y', 'y'], \
-                                        "This is a very long string designed to test the screen width"]]]]
+                                        "This is a very long string designed" \
+                                        ,"Yetanother fairly long test string to see if it workslikepromised" \
+                        ,"Finally a super long string that won't fit on two lines, let alone one, just to make"
+                        "sure it works like the good lord intended it should, if this is long enough"]]]]
+
+#    lst = [["one very long string indeed unencumbered by any other strings in the"
+#           ,"vicinity shall we say, but if this one grows exponentially, terribly, indeed horribly"
+#           ", unstoppably, and revoltingly without rhyme or reason, folly or madness only wonderment"]]
 
     tree = TNode.createTreeFromSexp(lst)
     buff = TNode.Buffer(tree)

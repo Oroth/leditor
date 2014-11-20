@@ -449,7 +449,7 @@ class TreeEditor(TNode.FuncObject):
 
         return self
 
-    def draw2(self, posx, posy, maxx, maxy, hlcol):
+    def draw(self, posx, posy, maxx, maxy, hlcol):
         lineList = futility.createStucturalLineIndentList3(self.buffer)
         fakeWin = futility.drawLineList(lineList)
 
@@ -459,7 +459,7 @@ class TreeEditor(TNode.FuncObject):
         futility.printToScreen(finalWin)
 
 
-    def draw(self, posx, posy, maxx, maxy, hlcol):
+    def draw2(self, posx, posy, maxx, maxy, hlcol):
 
         def drawHorizontal(posx, posy, hlcol, indent=True):
             pen = utility.Pen(posx, posy, maxx, maxy-1, self.topLine)
