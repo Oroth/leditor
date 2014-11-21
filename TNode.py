@@ -416,6 +416,11 @@ class Buffer(FuncObject):
         else:
             raise ValueError
 
+    def curFirst(self):
+        newAddress = list(self.cursorAdd)
+        newAddress[-1] = 0
+        return Buffer(self.root, self.viewAdd, newAddress)
+
     def curLast(self):
         cur = self
         while cur.cursor.next:

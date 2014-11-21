@@ -22,9 +22,20 @@ def putNodeOnImage(image, x, y, text, node, bgcol):
         (newImage[y][x]).character = i
         (newImage[y][x]).nodeReference = node
         (newImage[y][x]).bgColour = bgcol
+        (newImage[y][x]).bgColour = bgcol
         x += 1
 
     return newImage
+
+def putNodeOnImage2(image, x, y, text, node, bgcol, fgcol=utility.defaultFG()):
+
+    for i in text:
+        (image[y][x]).character = i
+        (image[y][x]).nodeReference = node
+        (image[y][x]).bgColour = bgcol
+        (image[y][x]).fgColour = fgcol
+        x += 1
+
 
 def printToScreen(image):
     maxy = len(image) - 1
@@ -76,97 +87,75 @@ class lineListNode(TNode.FuncObject):
 
 
 def drawLineList(lineList):
-    image = createBlank(80, 512)
+    image = createBlank(80, 50)
     hlcol = libtcod.azure
     standardBG = utility.defaultBG()
 
+    prevLine = None
+    y = 0
     for line in lineList:
         x = line.indent
-        y = line.lineNumber
+        #y = line.lineNumber
 
+        # highlight the indented space if it is part of the cursor
         if line.indent > 0:
             firstItem = line.nodeList[0]
-            if firstItem.isCursor:
+            if firstItem.isCursor and prevLine and prevLine.nodeList[-1].isCursor:
                 bgcol = hlcol
             else:
                 bgcol = standardBG
             indentString = ''.join([' ' for i in xrange(line.indent)])
-            image = putNodeOnImage(image, 0, y, indentString, firstItem, bgcol)
+            #image = putNodeOnImage(image, 0, y, indentString, firstItem, bgcol)
+            putNodeOnImage2(image, 0, y, indentString, firstItem, bgcol)
 
+        prevLine = line
+
+        prevItem = None
         for item in line.nodeList:
             if item.isCursor:
                 bgcol = hlcol
             else:
                 bgcol = standardBG
 
+            if isinstance(item.nodeReference.child, reader.Symbol):
+                fgcol = utility.defaultFG()
+            elif isinstance(item.nodeReference.child, str):
+                fgcol = libtcod.light_green
+            elif isinstance(item.nodeReference.child, int):
+                fgcol = libtcod.light_sky
+            else:
+                fgcol = utility.defaultFG()
+
             text = item.nodeToString()
-            if text == ')':
+            if text == ')' and prevItem and prevItem.text != '(':
                 x -= 1
 
-            image = putNodeOnImage(image, x, y, text, item.nodeReference, bgcol)
+            #image = putNodeOnImage(image, x, y, text, item.nodeReference, bgcol)
+            putNodeOnImage2(image, x, y, text, item.nodeReference, bgcol, fgcol)
             x += len(text)
 
             if text != '(' and item != line.nodeList[-1]:
-                image = putNodeOnImage(image, x, y, ' ', item.nodeReference, bgcol)
+                #image = putNodeOnImage(image, x, y, ' ', item.nodeReference, bgcol)
+                putNodeOnImage2(image, x, y, ' ', item.nodeReference, bgcol, fgcol)
                 x += 1
+
+            prevItem = item
+
+        y += 1
 
     return image
 
-def createStucturalLineIndentList(buffer):
 
-    def prepareList(node):
-        lineList = []
-        currentLineNumber = 0
-
-        while node:
-            if node.isSubNode():
-                newLineItems = [(lineItemNode(node, '('))]
-                newLineItems.extend(buildLineItems(node.child))
-                newLineItems.append(lineItemNode(node, ')'))
-            else:
-                newLineItems = [lineItemNode(node)]
-            newLineNode = lineListNode(currentLineNumber, 0, newLineItems)
-            lineList.append(newLineNode)
-            currentLineNumber = currentLineNumber + 1
-            node = node.next
-
-            # reindenting rule:
-            # if there are two or more expressions after the current expression
-            # and one of those expressions is complex - is a sexp with one subnested sexp
-            # then start a new line and increase the indentation
-            # Q: should this only apply at the start?
-
-        return lineList
-
-    def buildLineItems(node):
-        newLineItems = []
-        if node.isSubNode():
-            #newLineItems = [lineItemNode(node, '('), buildLineItems(node.child), lineItemNode(node, ')')]
-            newLineItems.append(lineItemNode(node, '('))
-            newLineItems.extend(buildLineItems(node.child))
-            newLineItems.append(lineItemNode(node, ')'))
-        else:
-            newLineItems = [lineItemNode(node)]
-            #newLineItems.append(lineItemNode(node.child)
-
-        if node.next:
-            newLineItems.extend(buildLineItems(node.next))
-            return newLineItems
-        else:
-            return newLineItems
-
-    return prepareList(buffer.view)
-
-
-
-def createStucturalLineIndentList3(buffer):
+def createStucturalLineIndentList(buffer, winWidth, winHeight, unzippedNodes, topLine):
 
     def isComplex(node):
         if node.next:
             for i in node:
-                if i.isSubNode():
+                if i.isSubNode() and not (i.nodeID in unzippedNodes and unzippedNodes[i.nodeID]):
                     for subi in i.child:
-                        if subi.isSubNode(): return True
+                        if subi.isSubNode() and \
+                           not (subi.nodeID in unzippedNodes and unzippedNodes[subi.nodeID]):
+                            return True
 
         return False
 
@@ -176,6 +165,10 @@ def createStucturalLineIndentList3(buffer):
             isCursor = True
         else:
             isCursor = isParentCursor
+
+        if node.nodeID in unzippedNodes and unzippedNodes[node.nodeID]:
+            ret = [lineItemNode(node, '...', isCursor)]
+            return ret
 
         if node.isSubNode():
             ret = [lineItemNode(node, '(', isCursor)]
@@ -198,12 +191,12 @@ def createStucturalLineIndentList3(buffer):
         if node.next:
             if indent:
                 ret.append(lineListNode(0, nesting))
-                ret.extend(recur(node.next, nesting, isCursor, indent=True))
+                ret.extend(recur(node.next, nesting, isParentCursor, indent=True))
             elif reindent:        # can only apply to the first expression
                 ret.append(lineListNode(0, nesting+1))
-                ret.extend(recur(node.next, nesting+1, isCursor, indent=True))
+                ret.extend(recur(node.next, nesting+1, isParentCursor, indent=True))
             else:
-                ret.extend(recur(node.next, nesting, isCursor, indent))
+                ret.extend(recur(node.next, nesting, isParentCursor, indent))
 
         return ret
 
@@ -238,18 +231,21 @@ def createStucturalLineIndentList3(buffer):
         currentLineLength = 0
         currentLineIndent = 0
         for i in stream:
+
             if isinstance(i, lineListNode):
+                if currentLineNumber == topLine + winHeight:
+                    break
                 lines.append(lineListNode(currentLineNumber, i.indent))
                 currentLineNumber += 1
                 currentLineLength = i.indent
                 currentLineIndent = i.indent
             else:
                 itemNodeLength = len(i.nodeToString()) + 1  ## technically parens will only be 1 char
-                if (currentLineLength + itemNodeLength) > 80: ## Line Width
-                    lineLengthLeft = 80 - currentLineLength
+                if (currentLineLength + itemNodeLength) > winWidth:
+                    lineLengthLeft = winWidth - currentLineLength
 
                     if isinstance(i.nodeReference.child, str):
-                        stringList = splitStringAcrossLines(i.text, lineLengthLeft, 80)
+                        stringList = splitStringAcrossLines(i.text, lineLengthLeft, winWidth)
                         if stringList[0] != '':
                             currentLineNode = lineItemNode(i.nodeReference, stringList[0], i.isCursor, 'start')
                             lines[-1].nodeList.append(currentLineNode)
@@ -263,17 +259,6 @@ def createStucturalLineIndentList3(buffer):
 
                         currentLineLength = len(currentLineNode.text)
 
-#                        lastSpace = i.text.rfind(' ', 0, lineLengthLeft)
-#                        if lastSpace != -1:
-#                            start = i.text[:lastSpace]
-#                            end = i.text[lastSpace+1:]
-#                            currentLineNode = lineItemNode(i.nodeReference, start, i.isCursor, 'start')
-#                            newlineNode = lineItemNode(i.nodeReference, end, i.isCursor, 'end')
-#                            lines[-1].nodeList.append(currentLineNode)
-#                        else:   ## need to check at some point about carrying across multiple lines
-#                            newlineNode = lineItemNode(i.nodeReference, i.text, i.isCursor)
-                    #else:
-                    #    newlineNode = i
                     else:
                         lines.append(lineListNode(currentLineNumber, 0))
                         currentLineNumber += 1
@@ -290,7 +275,8 @@ def createStucturalLineIndentList3(buffer):
 
     lineStream = recur(buffer.view, isParentCursor=False, nesting=0)
     lineList = unflatten(lineStream)
-    return lineList
+    toppedLineList = lineList[topLine:]
+    return toppedLineList
 
 
 if __name__ == '__main__':
@@ -325,7 +311,7 @@ if __name__ == '__main__':
     tree = TNode.createTreeFromSexp(lst)
     buff = TNode.Buffer(tree)
     buff.cursor = buff.cursor.child
-    lineList = createStucturalLineIndentList3(buff)
+    lineList = createStucturalLineIndentList(buff, 50)
     fakeWin = drawLineList(lineList)
 
     finalWin = sliceFakeWindow(fakeWin, 0, SCREEN_HEIGHT)

@@ -219,7 +219,7 @@ class TreeEditor(TNode.FuncObject):
                 print "evaluating"
 
             elif chr(key.c) == 'b':
-                return self.update('buffer', self.buffer.cursorToFirst())
+                return self.update('buffer', self.buffer.curFirst())
 
             elif chr(key.c) == 'd':
                 if self.buffer.cursor != self.buffer.root:
@@ -345,7 +345,8 @@ class TreeEditor(TNode.FuncObject):
 #                return self.update('buffer', newBuff)
 
             elif chr(key.c) == 'T':
-                self.topLine -= 1
+                if self.topLine > 0:
+                    self.topLine -= 1
 
             elif chr(key.c) == 'u':
                 return "UNDO"
@@ -450,8 +451,14 @@ class TreeEditor(TNode.FuncObject):
         return self
 
     def draw(self, posx, posy, maxx, maxy, hlcol):
-        lineList = futility.createStucturalLineIndentList3(self.buffer)
+        #if self.buffer.cursor > self.bottomNode:
+        #    self.bottomNode = self.buffer.cursor  # or something
+        #    self.topLine = self.bottomLine - 50
+
+        lineList = futility.createStucturalLineIndentList(self.buffer, 80, 50, self.zippedNodes, self.topLine)
         fakeWin = futility.drawLineList(lineList)
+        self.topNode = lineList[0].nodeList[0].nodeReference
+        self.bottomNode = lineList[-1].nodeList[-1].nodeReference
 
         finalWin = futility.sliceFakeWindow(fakeWin, 0, maxy)
         #libtcod.console_clear(0)
