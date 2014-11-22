@@ -86,14 +86,14 @@ class lineListNode(TNode.FuncObject):
         self.nodeList += lineItemNode(nodeReference, parenSymbol, isCursor)
 
 
-def drawLineList(lineList):
-    image = createBlank(80, 50)
+def drawLineList(lineList, winWidth, winHeight):
+    image = createBlank(winWidth, winHeight)
     hlcol = libtcod.azure
     standardBG = utility.defaultBG()
 
     prevLine = None
     y = 0
-    for line in lineList:
+    for line in lineList[:winHeight]:
         x = line.indent
         #y = line.lineNumber
 
@@ -146,7 +146,8 @@ def drawLineList(lineList):
     return image
 
 
-def createStucturalLineIndentList(buffer, winWidth, winHeight, unzippedNodes, topLine):
+def createStucturalLineIndentList(
+        buffer, winWidth, winHeight, unzippedNodes, windowFramingMode, winReference):
 
     def isComplex(node):
         if node.next:
@@ -230,16 +231,44 @@ def createStucturalLineIndentList(buffer, winWidth, winHeight, unzippedNodes, to
         currentLineNumber = 1
         currentLineLength = 0
         currentLineIndent = 0
+        bottomNodeFound = False
+        cursorTopLine = None
+        cursorBottomLine = None
+
+        newTopLine = winReference
+
         for i in stream:
 
             if isinstance(i, lineListNode):
-                if currentLineNumber == topLine + winHeight:
-                    break
+                if windowFramingMode == 'cursor':
+                    if cursorTopLine is not None and cursorBottomLine is not None:
+                        if cursorTopLine <= winReference:
+                            newTopLine = cursorTopLine - 1
+                        elif cursorTopLine >= winReference + winHeight:
+                            newTopLine = cursorBottomLine - winHeight +1
+
+                        if currentLineNumber >= newTopLine + winHeight:
+                            break
+
+
                 lines.append(lineListNode(currentLineNumber, i.indent))
                 currentLineNumber += 1
                 currentLineLength = i.indent
                 currentLineIndent = i.indent
             else:
+
+
+#                if i.nodeReference.nodeID == positionNode.nodeID:
+#                    if nodeDescriptor == 'topNode':
+#                        newTopLine = currentLineNumber
+#                    elif nodeDescriptor == 'bottomNode':
+#                        bottomNodeFound = True
+
+                if i.isCursor:
+                    if cursorTopLine is None:
+                        cursorTopLine = currentLineNumber
+                    cursorBottomLine = currentLineNumber
+
                 itemNodeLength = len(i.nodeToString()) + 1  ## technically parens will only be 1 char
                 if (currentLineLength + itemNodeLength) > winWidth:
                     lineLengthLeft = winWidth - currentLineLength
@@ -271,10 +300,15 @@ def createStucturalLineIndentList(buffer, winWidth, winHeight, unzippedNodes, to
                     lines[-1].nodeList.append(i)
                     currentLineLength += itemNodeLength
 
-        return lines
+        #check if we found the last line
+        if cursorTopLine >= winReference + winHeight:
+            newTopLine = cursorBottomLine - winHeight +1
+
+        return lines, newTopLine
+
 
     lineStream = recur(buffer.view, isParentCursor=False, nesting=0)
-    lineList = unflatten(lineStream)
+    lineList, topLine = unflatten(lineStream)
     toppedLineList = lineList[topLine:]
     return toppedLineList
 

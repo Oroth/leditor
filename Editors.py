@@ -107,8 +107,10 @@ class TreeEditor(TNode.FuncObject):
 #        self.context = None
         self.revealedNodes = {}
         self.zippedNodes = {}
+        self.drawMode = 'cursor'
         self.topLine = 0
         self.firstNode = self.buffer.view
+        self.topNode = self.buffer.cursorToFirst().curBottom().cursor
 
 #        status = TNode.TNode(TNode.createTreeFromSexp(
 #                [reader.Symbol('Editor')
@@ -455,13 +457,17 @@ class TreeEditor(TNode.FuncObject):
         #    self.bottomNode = self.buffer.cursor  # or something
         #    self.topLine = self.bottomLine - 50
 
-        lineList = futility.createStucturalLineIndentList(self.buffer, 80, 50, self.zippedNodes, self.topLine)
-        fakeWin = futility.drawLineList(lineList)
-        self.topNode = lineList[0].nodeList[0].nodeReference
-        self.bottomNode = lineList[-1].nodeList[-1].nodeReference
+        lineList = futility.createStucturalLineIndentList(
+            self.buffer, 80, 50, self.zippedNodes, self.drawMode, self.topLine)
+
+        self.topLine = lineList[0].lineNumber
+
+        fakeWin = futility.drawLineList(lineList, 80, 50)
+        #self.topNode = lineList[0].nodeList[0].nodeReference
+        #self.topNode = self.buffer.cursorToFirst().curBottom().cursor
+        #self.bottomNode = lineList[-1].nodeList[-1].nodeReference
 
         finalWin = futility.sliceFakeWindow(fakeWin, 0, maxy)
-        #libtcod.console_clear(0)
 
         futility.printToScreen(finalWin)
 

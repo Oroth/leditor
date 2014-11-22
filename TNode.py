@@ -428,6 +428,15 @@ class Buffer(FuncObject):
 
         return cur
 
+    def curBottom(self):
+        cur = self
+        while cur.cursor.isSubNode():
+            cur = cur.curChild()
+
+        return cur
+
+        #return self.updateList(('cursorAdd', newAddress), ('cursor', cur.cursor))
+
     def curNextUpAlong(self):
         cur = self
 
