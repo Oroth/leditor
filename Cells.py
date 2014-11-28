@@ -98,8 +98,35 @@ class Cell(object):
     def __rdiv__(self, val):
         return val / self.value
 
-
-
 graph = Graph()
+
+if __name__ == '__main__':
+    x = Cell([1, 2, 3])
+
+    def f():
+        ret = 0
+        for i in x.value:
+            ret += i
+
+        return ret
+
+    z = Cell(f, [x])
+
+    print z.value
+    x.value.append(4)
+    x.updateValue()
+    graph.updateCells()
+    print z.value
+
+    # cell stream:
+    # modify ops: append (change next), modify (change from modification), deleteLast(backtrack)
+    # dependent operations: map, foldr, filter...
+
+    # output stream = map-accumulate-stream input-stream, function(ins)
+
+    # more complex map:
+    # cmap(input, selector, function)
+    # selector receives a zip
+    # or.. map(input1, input2, func(x y))
 
 

@@ -87,6 +87,17 @@ class CellEditor(object):
         else:
             pen.writeHL(''.join(self.content) + ' ', libtcod.azure, self.index)
 
+    def getImage(self):
+        if self.isString:
+            text = '"' + ''.join(self.content) + '" '
+        else:
+            text = ''.join(self.content) + ' '
+        image = futility.createBlank(len(text), 1)
+        futility.putNodeOnImage2(image, 0, 0, text, None)
+        image[0][self.index].bgColour = libtcod.azure
+
+        return image
+
 
 class TreeEditor(TNode.FuncObject):
     editors = 0
@@ -164,8 +175,7 @@ class TreeEditor(TNode.FuncObject):
                 if self.cellEditor.original == '':
                     return self.updateList(
                         ('buffer', self.buffer.deleteAtCursor()),
-                        ('editing', False)
-                    )
+                        ('editing', False))
                 else:
                     return self.update('editing', False)
 
@@ -453,13 +463,8 @@ class TreeEditor(TNode.FuncObject):
         return self
 
     def draw(self, posx, posy, maxx, maxy, hlcol):
-        #if self.buffer.cursor > self.bottomNode:
-        #    self.bottomNode = self.buffer.cursor  # or something
-        #    self.topLine = self.bottomLine - 50
 
-        lineList = futility.createStucturalLineIndentList(
-            self.buffer, 80, 50, self.zippedNodes, self.drawMode, self.topLine)
-
+        lineList = futility.createStucturalLineIndentList(self, 80, 50)
         self.topLine = lineList[0].lineNumber
 
         fakeWin = futility.drawLineList(lineList, 80, 50)

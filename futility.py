@@ -27,7 +27,7 @@ def putNodeOnImage(image, x, y, text, node, bgcol):
 
     return newImage
 
-def putNodeOnImage2(image, x, y, text, node, bgcol, fgcol=utility.defaultFG()):
+def putNodeOnImage2(image, x, y, text, node, bgcol=utility.defaultBG(), fgcol=utility.defaultFG()):
 
     for i in text:
         (image[y][x]).character = i
@@ -64,6 +64,8 @@ class lineItemNode(TNode.FuncObject):
             self.text = text
         self.isCursor = isCursor
         self.stringSplit = stringSplit
+        self.printRule = None
+        self.highlightIndex = None
 
     def nodeToString(self):
         return self.text
@@ -132,6 +134,8 @@ def drawLineList(lineList, winWidth, winHeight):
 
             #image = putNodeOnImage(image, x, y, text, item.nodeReference, bgcol)
             putNodeOnImage2(image, x, y, text, item.nodeReference, bgcol, fgcol)
+            if item.printRule == 'cellEditor':
+                (image[y][x+item.highlightIndex]).bgColour = libtcod.azure
             x += len(text)
 
             if text != '(' and item != line.nodeList[-1]:
@@ -147,31 +151,37 @@ def drawLineList(lineList, winWidth, winHeight):
 
 
 def createStucturalLineIndentList(
-        buffer, winWidth, winHeight, unzippedNodes, windowFramingMode, winReference):
+        editor, winWidth, winHeight):
 
     def isComplex(node):
         if node.next:
             for i in node:
-                if i.isSubNode() and not (i.nodeID in unzippedNodes and unzippedNodes[i.nodeID]):
+                if i.isSubNode() and not (i.nodeID in editor.zippedNodes and editor.zippedNodes[i.nodeID]):
                     for subi in i.child:
                         if subi.isSubNode() and \
-                           not (subi.nodeID in unzippedNodes and unzippedNodes[subi.nodeID]):
+                           not (subi.nodeID in editor.zippedNodes and editor.zippedNodes[subi.nodeID]):
                             return True
 
         return False
 
     def recur(node, nesting, isParentCursor=False, indent=False):
 
-        if node == buffer.cursor:
+        if node == editor.buffer.cursor:
             isCursor = True
         else:
             isCursor = isParentCursor
 
-        if node.nodeID in unzippedNodes and unzippedNodes[node.nodeID]:
+        if node.nodeID in editor.zippedNodes and editor.zippedNodes[node.nodeID]:
             ret = [lineItemNode(node, '...', isCursor)]
             return ret
 
-        if node.isSubNode():
+        if node == editor.buffer.cursor and editor.editing:
+            # slightly hacky, isCursor is technically True, but we call it false to stop it
+            # from highlighting the entire node. need to re-engineer the rules really
+            ret = [lineItemNode(node, editor.cellEditor.getContent(), False)]
+            ret[0].printRule = 'cellEditor'
+            ret[0].highlightIndex = editor.cellEditor.index
+        elif node.isSubNode():
             ret = [lineItemNode(node, '(', isCursor)]
             ret.extend(recur(node.child, nesting, isCursor))
             ret.append(lineItemNode(node, ')', isCursor))
@@ -235,16 +245,16 @@ def createStucturalLineIndentList(
         cursorTopLine = None
         cursorBottomLine = None
 
-        newTopLine = winReference
+        newTopLine = editor.topLine
 
         for i in stream:
 
             if isinstance(i, lineListNode):
-                if windowFramingMode == 'cursor':
+                if editor.drawMode == 'cursor':
                     if cursorTopLine is not None and cursorBottomLine is not None:
-                        if cursorTopLine <= winReference:
+                        if cursorTopLine <= editor.topLine:
                             newTopLine = cursorTopLine - 1
-                        elif cursorTopLine >= winReference + winHeight:
+                        elif cursorTopLine >= editor.topLine + winHeight:
                             newTopLine = cursorBottomLine - winHeight +1
 
                         if currentLineNumber >= newTopLine + winHeight:
@@ -301,13 +311,13 @@ def createStucturalLineIndentList(
                     currentLineLength += itemNodeLength
 
         #check if we found the last line
-        if cursorTopLine >= winReference + winHeight:
+        if cursorTopLine >= editor.topLine + winHeight:
             newTopLine = cursorBottomLine - winHeight +1
 
         return lines, newTopLine
 
 
-    lineStream = recur(buffer.view, isParentCursor=False, nesting=0)
+    lineStream = recur(editor.buffer.view, isParentCursor=False, nesting=0)
     lineList, topLine = unflatten(lineStream)
     toppedLineList = lineList[topLine:]
     return toppedLineList
