@@ -112,7 +112,7 @@ class WindowManager(TNode.FuncObject):
                 libtcod.console_hline(0, 0, curY - 1, utility.screenWidth())
 
 
-    def handleKeys(self, key):
+    def handleKeys(self, key, mouse):
         #return self.active.child.function.handleKeys(key)
 
         if self.winCmd:
@@ -239,7 +239,7 @@ class WindowManager(TNode.FuncObject):
 
 
         else:
-            result = self.winTree.cursor.child.handleKeys(key)
+            result = self.winTree.cursor.child.handleKeys(key, mouse)
             #print "result ", result
             if result == 'ESC':
                 #self.writeImage()

@@ -64,21 +64,20 @@ def getKeypress():
     else:
         return key.vk
 
+key = libtcod.Key()
+mouse = libtcod.Mouse()
+
 while not libtcod.console_is_window_closed():
 
     libtcod.console_clear(0)
     wm.draw()
     libtcod.console_flush()
 
-    #handle keys and exit game if needed
-    key = libtcod.console_check_for_keypress(libtcod.KEY_PRESSED)
+    #key = libtcod.console_check_for_keypress(libtcod.KEY_PRESSED)
+    libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS|libtcod.EVENT_MOUSE,key,mouse)
 
-    result = wm.handleKeys(key)
+    result = wm.handleKeys(key, mouse)
     if result:
         wm = result
     else:
         break
-
-#    exit = wm.handleKeys(key)
-#    if exit:
-#        break

@@ -122,6 +122,7 @@ class TreeEditor(TNode.FuncObject):
         self.topLine = 0
         self.firstNode = self.buffer.view
         self.topNode = self.buffer.cursorToFirst().curBottom().cursor
+        self.image = None
 
 #        status = TNode.TNode(TNode.createTreeFromSexp(
 #                [reader.Symbol('Editor')
@@ -140,7 +141,7 @@ class TreeEditor(TNode.FuncObject):
         else:
             return self
 
-    def handleKeys(self, key):
+    def handleKeys(self, key, mouse):
         self.updateUndo = False
         self.statusBar.item1 = reader.Symbol('Editor')
         self.statusBar.item2 = self.buffer.viewAdd
@@ -153,7 +154,26 @@ class TreeEditor(TNode.FuncObject):
 #            [reader.Symbol('Editor')
 #            ,self.buffer.viewAdd
 #            ,self.buffer.cursorAdd])
+        if mouse.lbutton_pressed:
+            cell = self.image[mouse.cy][mouse.cx]
+            if cell.lineItemNodeReference:
+                newBuff = self.buffer.cursorToAddress(cell.lineItemNodeReference.nodeAddress)
+                return self.update('buffer', newBuff)
+        elif mouse.wheel_down:
+            self.topLine += 3
+        elif mouse.wheel_up:
+            if self.topLine > 2:
+                self.topLine -= 3
+            else:
+                self.topLine = 0
 
+#            try:
+#                if self.buffer.cursor.nodeID in self.zippedNodes and self.zippedNodes[self.buffer.cursor.nodeID]:
+#                    newBuff = self.buffer.curUp().curNextUpAlong()
+#                else:
+#                    newBuff = self.buffer.curNextUpAlong()
+#                return self.update('buffer', newBuff)
+#            except ValueError: pass
 
         if self.editing:
             finished = self.cellEditor.handle_key(key)
@@ -473,6 +493,7 @@ class TreeEditor(TNode.FuncObject):
         #self.bottomNode = lineList[-1].nodeList[-1].nodeReference
 
         finalWin = futility.sliceFakeWindow(fakeWin, 0, maxy)
+        self.image = finalWin
 
         futility.printToScreen(finalWin)
 
@@ -620,75 +641,6 @@ class TreeEditor(TNode.FuncObject):
                 drawVert(posx, posy, 1)
         except utility.windowBorderException: pass
 
-#    def drawImage(self, maxx, maxy):
-#
-#        def convertToLines(posx, posy, hlcol, indent=True):
-#
-#            pen = utility.Pen(posx, posy, maxx, maxy-1, self.topLine)
-#
-#            def drawChild(node, nesting, parentCol=libtcod.black):
-#
-#                if not node.evaled:
-#                    pen.write("'", parentCol)
-#
-#                if node == self.buffer.cursor:
-#                    bgcolour = hlcol
-#                else:
-#                    bgcolour = parentCol
-#
-#
-#                if node.isSubNode():
-#                    pen.write('(', bgcolour)
-#                    drawr(node.child, nesting, bgcolour)
-#                    pen.write(')', bgcolour)
-#
-#                elif node.child is None:
-#                    pen.write('()', bgcolour)
-#
-#                else:
-#                    output = reader.to_string(node.child)
-#
-#                    if node == self.buffer.cursor and self.editing:
-#                        self.cellEditor.draw(pen)
-#                    else:
-#                        pen.write(output, bgcolour)
-#
-#
-#            def drawr(node, nesting, parentCol=libtcod.black, reindent=False):
-#
-#                try:
-#                    if self.zippedNodes[node.nodeID]:
-#                        pen.write("...", hlcol if node == self.buffer.cursor else parentCol)
-#                        return
-#                except KeyError: pass
-#
-#                drawChild(node, nesting + 1, parentCol)
-#                #reindent = False
-#
-#                if node.next and node.next.next:
-#                    for i in node.next:
-#                        if i.isSubNode():
-#                            for subi in i.child:
-#                                if subi.isSubNode(): reindent = True
-#
-#
-#                if node.next:
-#                    if indent and reindent:
-#                        pen.writeNL()
-#                        pen.write(' ' * (2 * nesting), parentCol)
-#
-#                    else:
-#                        pen.write(' ', parentCol)
-#
-#                    drawr(node.next, nesting, parentCol, reindent)
-#
-#            if self.buffer.view.isSubNode():
-#                drawChild(self.buffer.view, 1)
-#            else:
-#                pen.write(str(self.buffer.view.child))
-#
-#
-#        def convertToImage():
 
 
 

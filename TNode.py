@@ -263,6 +263,9 @@ class Buffer(FuncObject):
             ('cursorAdd', [0, 0])     # actually want first in thing
         )
 
+    def cursorToAddress(self, add):
+        return Buffer(self.root, self.viewAdd, add)
+
     def syncToNewRoot(self, newRoot):
 #        return Buffer(newRoot, self.viewAdd, self.cursorAdd)
         newView, newViewAdd = self.root.gotoAddressOnNewRoot(self.viewAdd, newRoot)
@@ -578,6 +581,9 @@ class TNode(FuncObject):
                 else: return None
 
         return iter, curAdd
+
+    #def getAddress(self):
+
 
     def gotoAddress(self, address):
         add = list(address)
