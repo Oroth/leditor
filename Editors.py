@@ -495,7 +495,10 @@ class TreeEditor(TNode.FuncObject):
         finalWin = futility.sliceFakeWindow(fakeWin, 0, maxy)
         self.image = finalWin
 
-        futility.printToScreen(finalWin)
+        futility.printToScreen(finalWin, posx, posy)
+
+        if self.statusBar:
+            self.statusBar.draw(0, maxy - 1, maxx, maxy, libtcod.darker_gray)
 
 
     def draw2(self, posx, posy, maxx, maxy, hlcol):

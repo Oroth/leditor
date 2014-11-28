@@ -38,16 +38,16 @@ def putNodeOnImage2(image, x, y, text, lineItemNodeRef, bgcol=utility.defaultBG(
         x += 1
 
 
-def printToScreen(image):
+def printToScreen(image, posx, posy):
     maxy = len(image) - 1
     maxx = len(image[0]) - 1
 
-    for x in xrange(0, maxx):
-        for y in xrange(0, maxy):
+    for x in xrange(maxx):
+        for y in xrange(maxy):
             cell = image[y][x]
             libtcod.console_set_default_background(0, cell.bgColour)
             libtcod.console_set_default_foreground(0, cell.fgColour)
-            libtcod.console_print(0, x, y, cell.character)
+            libtcod.console_print(0, posx+x, posy+y, cell.character)
 
 
 # ======================== Creating the List =======================================================
@@ -166,7 +166,7 @@ def createStucturalLineIndentList(
 
         return False
 
-    def recur(node, address, nesting, isParentCursor=False, indent=False):
+    def recur(node, address, nesting, isParentCursor=False, indent=False, topNode=False):
         newAddress = list(address)
 
         if node == editor.buffer.cursor:
@@ -196,6 +196,9 @@ def createStucturalLineIndentList(
         else:
             #ret = [lineItemNode(node, node.child, isCursor)]
             ret = [lineItemNode(node, address, None, isCursor)]
+
+        if topNode:
+            return ret
 
         reindent = False
         if node.next and isComplex(node.next):
@@ -326,7 +329,7 @@ def createStucturalLineIndentList(
         return lines, newTopLine
 
 
-    lineStream = recur(editor.buffer.view, [0], nesting=0, isParentCursor=False)
+    lineStream = recur(editor.buffer.view, [0], nesting=0, isParentCursor=False, topNode=True)
     lineList, topLine = unflatten(lineStream)
     toppedLineList = lineList[topLine:]
     return toppedLineList
