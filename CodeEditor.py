@@ -43,8 +43,8 @@ class CodeEditor(Editors.TreeEditor):
 
     # a bit of a hack, necessary because everything is handled in handleKeys. We need to make sure that
     # the codeEditor returns with a newly evaluated buffer if there were any significant changes.
-    def handleKeys(self, key):
-        result = super(CodeEditor, self).handleKeys(key)
+    def handleKeys(self, key, mouse):
+        result = super(CodeEditor, self).handleKeys(key, mouse)
         self.evalBuffer()
         return result
 
@@ -134,7 +134,7 @@ class evalIOHandler(CodeEditor):
         self.output = ''
         self.evalBuffer()
 
-    def handleKeys(self, key):
+    def handleKeys(self, key, mouse):
         if key.c != 0:
             self.keyHistory.append(chr(key.c))
             self.lastKey = key.c

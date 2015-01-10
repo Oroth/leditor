@@ -62,7 +62,7 @@ class lineItemNode(TNode.FuncObject):
         if text is None:
             self.text = reader.to_string(nodeReference.child)
         else:
-            self.text = text
+            self.text = str(text)
         self.isCursor = isCursor
         self.stringSplit = stringSplit
         self.printRule = None
@@ -116,6 +116,17 @@ def drawLineList(lineList, winWidth, winHeight):
 
         prevItem = None
         for item in line.nodeList:
+
+            #Add space between symbols
+            if prevItem and prevItem.nodeToString() != '(' and item.nodeToString() != ')':
+                if item.isCursor and prevItem.isCursor:
+                    bgcol = hlcol
+                else:
+                    bgcol = standardBG
+                putNodeOnImage2(image, x, y, ' ', item, bgcol, utility.defaultFG())
+                x += 1
+
+
             if item.isCursor:
                 bgcol = hlcol
             else:
@@ -123,7 +134,7 @@ def drawLineList(lineList, winWidth, winHeight):
 
             if isinstance(item.nodeReference.child, reader.Symbol):
                 fgcol = utility.defaultFG()
-            elif isinstance(item.nodeReference.child, str):
+            elif isinstance(item.nodeReference.child, str) and item.printRule != 'cellEditor':
                 fgcol = libtcod.light_green
             elif isinstance(item.nodeReference.child, int):
                 fgcol = libtcod.light_sky
@@ -131,19 +142,21 @@ def drawLineList(lineList, winWidth, winHeight):
                 fgcol = utility.defaultFG()
 
             text = item.nodeToString()
-            if text == ')' and prevItem and prevItem.text != '(':
-                x -= 1
+            #if text == ')' and prevItem and prevItem.text != '(':
+            #    x -= 1
 
             #image = putNodeOnImage(image, x, y, text, item.nodeReference, bgcol)
             putNodeOnImage2(image, x, y, text, item, bgcol, fgcol)
             if item.printRule == 'cellEditor':
                 (image[y][x+item.highlightIndex]).bgColour = libtcod.azure
+                x += 1
             x += len(text)
 
-            if text != '(' and item != line.nodeList[-1]:
-                #image = putNodeOnImage(image, x, y, ' ', item.nodeReference, bgcol)
-                putNodeOnImage2(image, x, y, ' ', item, bgcol, fgcol)
-                x += 1
+#            #Add space between symbols
+#            if text != '(' and item != line.nodeList[-1]:
+#                #image = putNodeOnImage(image, x, y, ' ', item.nodeReference, bgcol)
+#                putNodeOnImage2(image, x, y, ' ', item, bgcol, fgcol)
+#                x += 1
 
             prevItem = item
 
