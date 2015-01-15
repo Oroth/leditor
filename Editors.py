@@ -347,6 +347,7 @@ class TreeEditor(TNode.FuncObject):
                 newBuff = TNode.Buffer(self.buffer.root, [0], [0, 0]).curLast()
                 newBuff = newBuff.appendAtCursor([reader.Symbol('newNode')]).curNext()
                 newBuff = newBuff.viewToCursor().curChild()
+                self.topLine = 0
                 return self.update('buffer', newBuff)
 
             elif chr(key.c) == 'p':

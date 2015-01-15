@@ -48,7 +48,9 @@ class CodeEditor(Editors.TreeEditor):
         self.evalBuffer()
         return result
 
-    def draw(self, posx, posy, maxx, maxy, hlcol):
+    #def drawAfter
+
+    def draw2(self, posx, posy, maxx, maxy, hlcol):
 
 
         def drawHorizontal(posx, posy, hlcol, indent=True):

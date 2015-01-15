@@ -165,8 +165,7 @@ def drawLineList(lineList, winWidth, winHeight):
     return image
 
 
-def createStucturalLineIndentList(
-        editor, winWidth, winHeight):
+def createStucturalLineIndentList(editor, winWidth, winHeight):
 
     def isComplex(node):
         if node.next:
@@ -209,6 +208,18 @@ def createStucturalLineIndentList(
         else:
             #ret = [lineItemNode(node, node.child, isCursor)]
             ret = [lineItemNode(node, address, None, isCursor)]
+
+        # code editor, needs to go with the code editor code
+
+        try:
+            if editor.revealedNodes[node]:
+                #pen.write("=>", parentCol)
+                #pen.write(reader.to_string(self.nodeValues[node]), parentCol)
+                ret.append(lineItemNode(node, address, '=>', isCursor))
+                ret.append(lineItemNode(node, address, reader.to_string(editor.nodeValues[node]), isCursor))
+        except KeyError: pass
+        except AttributeError: pass
+
 
         if topNode:
             return ret
