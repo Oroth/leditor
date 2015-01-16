@@ -150,6 +150,8 @@ class WindowManager(TNode.FuncObject):
             else: i.child.draw(0, curY, maxX, curYStep, libtcod.grey)
             curY += curYStep + 1
             if i.next:
+                libtcod.console_set_default_background(0, libtcod.black)
+                libtcod.console_set_default_foreground(0, libtcod.white)
                 libtcod.console_hline(0, 0, curY - 1, utility.screenWidth())
 
 

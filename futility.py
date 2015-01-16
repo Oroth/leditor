@@ -12,8 +12,8 @@ class Cell(TNode.FuncObject):
         self.bgColour = bgColour
         self.fgColour = fgColour
 
-def createBlank(maxx, maxy):
-    return [[Cell() for x in range(0, maxx)] for x in range(0, maxy)]
+def createBlank(maxx, maxy, bgColour=utility.defaultBG(), fgColour=utility.defaultFG()):
+    return [[Cell(bgColour=bgColour, fgColour=fgColour) for x in range(0, maxx)] for x in range(0, maxy)]
 
 # Functional version
 #def putNodeOnImage(image, x, y, text, node, bgcol):
@@ -28,7 +28,7 @@ def createBlank(maxx, maxy):
 #
 #    return newImage
 
-def putNodeOnImage2(image, x, y, text, lineItemNodeRef, bgcol=utility.defaultBG(), fgcol=utility.defaultFG()):
+def putNodeOnImage2(image, x, y, text, lineItemNodeRef, bgcol, fgcol):
 
     for i in text:
         (image[y][x]).character = i
@@ -90,10 +90,11 @@ class lineListNode(TNode.FuncObject):
     #    self.nodeList += lineItemNode(nodeReference, parenSymbol, isCursor)
 
 
-def drawLineList(lineList, winWidth, winHeight):
-    image = createBlank(winWidth, winHeight)
-    hlcol = libtcod.azure
-    standardBG = utility.defaultBG()
+def drawLineList(lineList, winWidth, winHeight, standardBG, standardFG, hlcol=libtcod.azure):
+    image = createBlank(winWidth, winHeight, standardBG, standardFG)
+    #hlcol = libtcod.azure
+    #standardBG = utility.defaultBG()
+    #standardFG = utility.defaultFG()
 
     prevLine = None
     y = 0
@@ -110,7 +111,7 @@ def drawLineList(lineList, winWidth, winHeight):
                 bgcol = standardBG
             indentString = ''.join([' ' for i in xrange(line.indent)])
             #image = putNodeOnImage(image, 0, y, indentString, firstItem, bgcol)
-            putNodeOnImage2(image, 0, y, indentString, firstItem, bgcol)
+            putNodeOnImage2(image, 0, y, indentString, firstItem, bgcol, standardFG)
 
         prevLine = line
 
@@ -123,7 +124,7 @@ def drawLineList(lineList, winWidth, winHeight):
                     bgcol = hlcol
                 else:
                     bgcol = standardBG
-                putNodeOnImage2(image, x, y, ' ', item, bgcol, utility.defaultFG())
+                putNodeOnImage2(image, x, y, ' ', item, bgcol, standardFG)
                 x += 1
 
 
@@ -133,13 +134,13 @@ def drawLineList(lineList, winWidth, winHeight):
                 bgcol = standardBG
 
             if isinstance(item.nodeReference.child, reader.Symbol):
-                fgcol = utility.defaultFG()
+                fgcol = standardFG
             elif isinstance(item.nodeReference.child, str) and item.printRule != 'cellEditor':
                 fgcol = libtcod.light_green
             elif isinstance(item.nodeReference.child, int):
                 fgcol = libtcod.light_sky
             else:
-                fgcol = utility.defaultFG()
+                fgcol = standardFG
 
             text = item.nodeToString()
             #if text == ')' and prevItem and prevItem.text != '(':

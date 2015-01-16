@@ -69,7 +69,7 @@ mouse = libtcod.Mouse()
 
 while not libtcod.console_is_window_closed():
 
-    libtcod.console_clear(0)
+    #libtcod.console_clear(0)
     wm.draw()
     libtcod.console_flush()
 
