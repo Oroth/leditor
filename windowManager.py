@@ -104,8 +104,8 @@ class WindowManager(TNode.FuncObject):
         maxX = utility.screenWidth()
         curY = 0
 
-        numberOfBorders = self.wins - 1
-        screenForWins = utility.screenHeight() - numberOfBorders
+        #numberOfBorders = self.wins - 1
+        screenForWins = utility.screenHeight() #- numberOfBorders
         minYStep = screenForWins / self.wins
         leftover = screenForWins % self.wins
 
@@ -121,8 +121,8 @@ class WindowManager(TNode.FuncObject):
             curY += curYStep
 
             # leave gap for border
-            if i.next:
-                curY += 1
+            #if i.next:
+               # curY += 1
 
 
     def draw(self):
@@ -132,8 +132,8 @@ class WindowManager(TNode.FuncObject):
         maxX = utility.screenWidth()
         curY = 0
 
-        numberOfBorders = self.wins - 1
-        screenForWins = utility.screenHeight() - numberOfBorders
+        #numberOfBorders = self.wins - 1
+        screenForWins = utility.screenHeight() #- numberOfBorders
         minYStep = screenForWins / self.wins
         curYStep = minYStep
         leftover = screenForWins % self.wins
@@ -148,11 +148,11 @@ class WindowManager(TNode.FuncObject):
             if i == self.winTree.cursor:
                 i.child.draw(0, curY, maxX, curYStep, libtcod.azure)
             else: i.child.draw(0, curY, maxX, curYStep, libtcod.grey)
-            curY += curYStep + 1
-            if i.next:
-                libtcod.console_set_default_background(0, libtcod.black)
-                libtcod.console_set_default_foreground(0, libtcod.white)
-                libtcod.console_hline(0, 0, curY - 1, utility.screenWidth())
+            curY += curYStep
+#            if i.next:
+#                libtcod.console_set_default_background(0, libtcod.black)
+#                libtcod.console_set_default_foreground(0, libtcod.white)
+#                libtcod.console_hline(0, 0, curY - 1, utility.screenWidth())
 
 
     def handleKeys(self, key, mouse):
