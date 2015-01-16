@@ -178,6 +178,37 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
 
         return False
 
+    def recurCode(ret, node, newAddress, nesting, isParentCursor=False, indent=False, topNode=False):
+        #newAddress = list(address)
+
+        reindent = False
+        if node.next and isComplex(node.next):
+            reindent = True
+
+        # new rule: if only two values (exp1 exp2) and exp2 is very complex, indent anyway
+        if node.next and node.next.isSubNode() and isComplex(node.next.child):
+            reindent = True
+
+        if node.next:
+            newAddress[-1] += 1
+            if indent:
+                ret.append(lineListNode(0, nesting))
+                ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent=True))
+            elif reindent:        # can only apply to the first expression
+                ret.append(lineListNode(0, nesting+1))
+                ret.extend(recur(node.next, newAddress, nesting+1, isParentCursor, indent=True))
+            else:
+                ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent))
+
+        return ret
+
+    def recurHorizontal(ret, node, newAddress, nesting, isParentCursor=False, indent=False, topNode=False):
+        newAddress[-1] += 1
+        if node.next:
+            ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent))
+
+        return ret
+
     def recur(node, address, nesting, isParentCursor=False, indent=False, topNode=False):
         newAddress = list(address)
 
@@ -210,11 +241,8 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
             ret = [lineItemNode(node, address, None, isCursor)]
 
         # code editor, needs to go with the code editor code
-
         try:
             if editor.revealedNodes[node]:
-                #pen.write("=>", parentCol)
-                #pen.write(reader.to_string(self.nodeValues[node]), parentCol)
                 ret.append(lineItemNode(node, address, '=>', isCursor))
                 ret.append(lineItemNode(node, address, reader.to_string(editor.nodeValues[node]), isCursor))
         except KeyError: pass
@@ -224,26 +252,30 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
         if topNode:
             return ret
 
-        reindent = False
-        if node.next and isComplex(node.next):
-            reindent = True
+        modeRet = recurMode(ret, node, newAddress, nesting, isParentCursor, indent)
 
-        # new rule: if only two values (exp1 exp2) and exp2 is very complex, indent anyway
-        if node.next and node.next.isSubNode() and isComplex(node.next.child):
-            reindent = True
+        return modeRet
 
-        if node.next:
-            newAddress[-1] += 1
-            if indent:
-                ret.append(lineListNode(0, nesting))
-                ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent=True))
-            elif reindent:        # can only apply to the first expression
-                ret.append(lineListNode(0, nesting+1))
-                ret.extend(recur(node.next, newAddress, nesting+1, isParentCursor, indent=True))
-            else:
-                ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent))
-
-        return ret
+#        reindent = False
+#        if node.next and isComplex(node.next):
+#            reindent = True
+#
+#        # new rule: if only two values (exp1 exp2) and exp2 is very complex, indent anyway
+#        if node.next and node.next.isSubNode() and isComplex(node.next.child):
+#            reindent = True
+#
+#        if node.next:
+#            newAddress[-1] += 1
+#            if indent:
+#                ret.append(lineListNode(0, nesting))
+#                ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent=True))
+#            elif reindent:        # can only apply to the first expression
+#                ret.append(lineListNode(0, nesting+1))
+#                ret.extend(recur(node.next, newAddress, nesting+1, isParentCursor, indent=True))
+#            else:
+#                ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent))
+#
+#        return ret
 
     def splitStringAcrossLines(string, firstBoundary, remainingBoundary):
         stringList = []
@@ -352,7 +384,10 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
 
         return lines, newTopLine
 
-
+    if editor.printingMode == 'code':
+        recurMode = recurCode
+    elif editor.printingMode == 'horizontal':
+        recurMode = recurHorizontal
     lineStream = recur(editor.buffer.view, [0], nesting=0, isParentCursor=False, topNode=True)
     lineList, topLine = unflatten(lineStream)
     toppedLineList = lineList[topLine:]

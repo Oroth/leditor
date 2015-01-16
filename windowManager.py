@@ -98,7 +98,37 @@ class WindowManager(TNode.FuncObject):
         newWinTree = self.winTree.appendAtCursor(newFunc).curNext()
         return newWinTree
 
+    # calculates and sets posx, posy, maxx, maxy for all windows trying to allocate available screen real estate
+    # as equally as possible
+    def calculateWindowPositions(self):
+        maxX = utility.screenWidth()
+        curY = 0
+
+        numberOfBorders = self.wins - 1
+        screenForWins = utility.screenHeight() - numberOfBorders
+        minYStep = screenForWins / self.wins
+        leftover = screenForWins % self.wins
+
+        for i in self.winTree.root.child:
+            if leftover > 0:
+                curYStep = minYStep + 1
+                leftover -= 1
+            else:
+                curYStep = minYStep
+
+            i.child.setPosition(0, curY, maxX, curYStep)
+
+            curY += curYStep
+
+            # leave gap for border
+            if i.next:
+                curY += 1
+
+
     def draw(self):
+
+        self.calculateWindowPositions()
+
         maxX = utility.screenWidth()
         curY = 0
 

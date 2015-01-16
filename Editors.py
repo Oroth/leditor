@@ -105,17 +105,18 @@ class TreeEditor(TNode.FuncObject):
     def __init__(self, root, rootCursorAdd=[0], cursorAdd=[0]):
         #self.root = root
         self.buffer = TNode.Buffer(root, rootCursorAdd, cursorAdd)
+        self.posx = 0
+        self.posy = 0
+        self.maxx = 80
+        self.maxy = 50
 
         self.editing = False
         self.cellEditor = None
         self.yankBuffer = None
-        self.printingMode = 'horizontal'
+        self.printingMode = 'code'
         self.syncWithRoot = True
         self.updateUndo = False
         self.showValues = False
-       # self.statusBar = None
-#        self.env = None
-#        self.context = None
         self.revealedNodes = {}
         self.zippedNodes = {}
         self.drawMode = 'cursor'
@@ -124,11 +125,7 @@ class TreeEditor(TNode.FuncObject):
         self.topNode = self.buffer.cursorToFirst().curBottom().cursor
         self.image = None
 
-#        status = TNode.TNode(TNode.createTreeFromSexp(
-#                [reader.Symbol('Editor')
-#                ,reader.Symbol('View')
-#                ,reader.Symbol('Address')]
-#        ))
+
         self.statusBar = StatusBar()
 
         self.id = TreeEditor.editors
@@ -140,6 +137,13 @@ class TreeEditor(TNode.FuncObject):
             return self.update('buffer', self.buffer.syncToNewRoot(newImageRoot))
         else:
             return self
+
+    def setPosition(self, newPosx, newPosy, newMaxx, newMaxy):
+        self.posx = newPosx
+        self.posy = newPosy
+        self.maxx = newMaxx
+        self.maxy = newMaxy
+
 
     def handleKeys(self, key, mouse):
         self.updateUndo = False
@@ -155,7 +159,7 @@ class TreeEditor(TNode.FuncObject):
 #            ,self.buffer.viewAdd
 #            ,self.buffer.cursorAdd])
         if mouse.lbutton_pressed:
-            cell = self.image[mouse.cy][mouse.cx]
+            cell = self.image[mouse.cy - self.posy][mouse.cx - self.posx]
             if cell.lineItemNodeReference:
                 newBuff = self.buffer.cursorToAddress(cell.lineItemNodeReference.nodeAddress)
                 return self.update('buffer', newBuff)
@@ -336,11 +340,11 @@ class TreeEditor(TNode.FuncObject):
                         ('cellEditor', CellEditor(Symbol(''))),
                         ('editing', True))
 
-#            elif chr(key.c) == 'm':
-#                if self.printingMode == 'horizontal':
-#                    self.printingMode = 'vertical'
-#                else:
-#                    self.printingMode = 'horizontal'
+            elif chr(key.c) == 'm':
+                if self.printingMode == 'horizontal':
+                    self.printingMode = 'code'
+                else:
+                    self.printingMode = 'horizontal'
 #                print "print mode is set to:", self.printingMode
 
             elif chr(key.c) == 'N':
