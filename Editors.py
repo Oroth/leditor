@@ -485,10 +485,10 @@ class TreeEditor(TNode.FuncObject):
 
     def draw(self, posx, posy, maxx, maxy, hlcol):
 
-        lineList = futility.createStucturalLineIndentList(self, 80, 50)
+        lineList = futility.createStucturalLineIndentList(self, maxx, maxy)
         self.topLine = lineList[0].lineNumber
 
-        fakeWin = futility.drawLineList(lineList, 80, 50)
+        fakeWin = futility.drawLineList(lineList, maxx, maxy)
         #self.topNode = lineList[0].nodeList[0].nodeReference
         #self.topNode = self.buffer.cursorToFirst().curBottom().cursor
         #self.bottomNode = lineList[-1].nodeList[-1].nodeReference
@@ -499,7 +499,7 @@ class TreeEditor(TNode.FuncObject):
         futility.printToScreen(finalWin, posx, posy)
 
         if self.statusBar:
-            self.statusBar.draw(0, maxy - 1, maxx, maxy, libtcod.darker_gray)
+            self.statusBar.draw(0, posy + maxy - 1, maxx, 2, libtcod.darker_gray)
 
 
     def draw2(self, posx, posy, maxx, maxy, hlcol):
