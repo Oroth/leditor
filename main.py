@@ -5,6 +5,7 @@ import windowManager
 import time
 import Eval
 
+# version 0.2
 #import peak.
 
 #actual size of the window
