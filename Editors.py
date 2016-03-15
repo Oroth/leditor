@@ -321,10 +321,8 @@ class TreeEditor(TNode.FuncObject):
                     return self.update('buffer', self.buffer.viewNext())
                 except ValueError: pass
 
-
             elif chr(key.c) == '(':
                 return self.update('buffer', self.buffer.nestCursor())
-
 
             elif chr(key.c) == 'o':
                 if self.buffer.cursor != self.buffer.view:
@@ -343,15 +341,12 @@ class TreeEditor(TNode.FuncObject):
                         ('editing', True))
 
             elif chr(key.c) == 'm':
-                #modes = {1: 'code', 2: 'horizontal', 3: 'vertical'}
                 modes = ['code', 'horizontal', 'vertical']
                 currentModePos = modes.index(self.printingMode)
                 self.printingMode = modes[(currentModePos + 1) % len(modes)]
-                #if self.printingMode == 'horizontal':
-                   #self.printingMode = 'code'
-                #else:
-                    #self.printingMode = 'horizontal'
-#                print "print mode is set to:", self.printingMode
+                #self.statusBar.displayMessage("DisplayMode: " + self.printingMode)
+                self.statusBar.message = 'DisplayMode: ' + self.printingMode
+
 
             elif chr(key.c) == 'N':
                 newBuff = TNode.Buffer(self.buffer.root, [0], [0, 0]).curLast()
@@ -439,6 +434,14 @@ class TreeEditor(TNode.FuncObject):
 #                if self.buffer.cursor.displayValue:
 #                    self.buffer.cursor.displayValue = False
 #                else: self.buffer.cursor.displayValue = True
+
+            # Go to help pages, will need to be updated
+            elif chr(key.c) == '?':
+                helpIter, helpAddress = self.buffer.root.gotoNodeAtNVS(['origin', 'help'])
+                newBuff = TNode.Buffer(self.buffer.root, helpAddress)
+                self.printingMode = 'vertical'
+                return self.update('buffer', newBuff)
+
 
             # Save the current state of the image
             elif key.vk == libtcod.KEY_F2:

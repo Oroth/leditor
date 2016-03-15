@@ -216,7 +216,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
         reindent = False
         if node.next and node.next.isSubNode():
             reindent = True
-            
+
         if node.next:
             newAddress[-1] += 1
             if indent:
