@@ -179,30 +179,6 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
 
         return False
 
-    def recurCode(ret, node, newAddress, nesting, isParentCursor=False, indent=False, topNode=False):
-        #newAddress = list(address)
-
-        reindent = False
-        if node.next and isComplex(node.next):
-            reindent = True
-
-        # new rule: if only two values (exp1 exp2) and exp2 is very complex, indent anyway
-        if node.next and node.next.isSubNode() and isComplex(node.next.child):
-            reindent = True
-
-        if node.next:
-            newAddress[-1] += 1
-            if indent:
-                ret.append(lineListNode(0, nesting))
-                ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent=True))
-            elif reindent:        # can only apply to the first expression
-                ret.append(lineListNode(0, nesting+1))
-                ret.extend(recur(node.next, newAddress, nesting+1, isParentCursor, indent=True))
-            else:
-                ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent))
-
-        return ret
-
     # Everything is printed without linebreaks
     def recurHorizontal(ret, node, newAddress, nesting, isParentCursor=False, indent=False, topNode=False):
         newAddress[-1] += 1
@@ -211,12 +187,8 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
 
         return ret
 
-    # Add linebreaks for everything apart from the last sexp
-    def recurVertical(ret, node, newAddress, nesting, isParentCursor=False, indent=False, topNode=False):
-        reindent = False
-        if node.next and node.next.isSubNode():
-            reindent = True
-
+    def recurVerticalTemplate(ret, node, newAddress, nesting, isParentCursor=False, indent=False, topNode=False,
+                              reindent=False):
         if node.next:
             newAddress[-1] += 1
             if indent:
@@ -229,6 +201,25 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
                 ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent))
 
         return ret
+
+    def recurCode(ret, node, newAddress, nesting, isParentCursor=False, indent=False, topNode=False):
+        reindent = False
+        if node.next and isComplex(node.next):
+            reindent = True
+
+        # new rule: if only two values (exp1 exp2) and exp2 is very complex, indent anyway
+        if node.next and node.next.isSubNode() and isComplex(node.next.child):
+            reindent = True
+
+        return recurVerticalTemplate(ret, node, newAddress, nesting, isParentCursor, indent, topNode, reindent)
+
+    # Add linebreaks for everything apart from the last sexp
+    def recurVertical(ret, node, newAddress, nesting, isParentCursor=False, indent=False, topNode=False):
+        reindent = False
+        if node.next and node.next.isSubNode():
+            reindent = True
+
+        return recurVerticalTemplate(ret, node, newAddress, nesting, isParentCursor, indent, topNode, reindent)
 
     def recur(node, address, nesting, isParentCursor=False, indent=False, topNode=False):
         newAddress = list(address)
@@ -440,10 +431,10 @@ if __name__ == '__main__':
     libtcod.console_set_default_foreground(0, libtcod.white)
 
     #lst = ['some', 'text', ['code', 'words'], 'to', 'write']
-    lst = [[reader.Symbol('function'), ['let', ['x', 15], ['y', 10], \
-                                        ['+', ['*', 'x', 'x'], ['*', 'y', 'y'], \
-                                        "This is a very long string designed" \
-                                        ,"Yetanother fairly long test string to see if it workslikepromised" \
+    lst = [[reader.Symbol('function'), ['let', ['x', 15], ['y', 10],
+                                        ['+', ['*', 'x', 'x'], ['*', 'y', 'y'],
+                                        "This is a very long string designed"
+                                        ,"Yetanother fairly long test string to see if it workslikepromised"
                         ,"Finally a super long string that won't fit on two lines, let alone one, just to make"
                         "sure it works like the good lord intended it should, if this is long enough"]]]]
 

@@ -1,6 +1,5 @@
 __author__ = 'chephren'
 import libtcodpy as libtcod
-import utility
 import futility
 import reader
 from reader import Symbol
@@ -20,17 +19,14 @@ class CellEditor(object):
             self.isString = True
         else: self.isString = False
 
-    def getContent(self):
-        text = ''.join(self.content)
-        if self.isString:
-            text = '"' + text + '"'
-        return reader.atom(text)
-
     def getContentAsString(self):
         text = ''.join(self.content)
         if self.isString:
             text = '"' + text + '"'
         return text
+
+    def getContent(self):
+        return reader.atom(self.getContentAsString())
 
     def handle_key(self, key):
 
@@ -84,22 +80,22 @@ class CellEditor(object):
             self.content.insert(self.index, chr(key.c))
             self.index += 1
 
-    def draw(self, pen):
-        if self.isString:
-            pen.writeHL('"' + ''.join(self.content) + '" ', libtcod.azure, self.index+1)
-        else:
-            pen.writeHL(''.join(self.content) + ' ', libtcod.azure, self.index)
-
-    def getImage(self):
-        if self.isString:
-            text = '"' + ''.join(self.content) + '" '
-        else:
-            text = ''.join(self.content) + ' '
-        image = futility.createBlank(len(text), 1)
-        futility.putNodeOnImage2(image, 0, 0, text, None)
-        image[0][self.index].bgColour = libtcod.azure
-
-        return image
+    # def draw(self, pen):
+    #     if self.isString:
+    #         pen.writeHL('"' + ''.join(self.content) + '" ', libtcod.azure, self.index+1)
+    #     else:
+    #         pen.writeHL(''.join(self.content) + ' ', libtcod.azure, self.index)
+    #
+    # def getImage(self):
+    #     if self.isString:
+    #         text = '"' + ''.join(self.content) + '" '
+    #     else:
+    #         text = ''.join(self.content) + ' '
+    #     image = futility.createBlank(len(text), 1)
+    #     futility.putNodeOnImage2(image, 0, 0, text, None)
+    #     image[0][self.index].bgColour = libtcod.azure
+    #
+    #     return image
 
 
 class TreeEditor(TNode.FuncObject):
@@ -517,151 +513,6 @@ class TreeEditor(TNode.FuncObject):
 
         if self.statusBar:
             self.statusBar.draw(0, posy + maxy - 1, maxx, 2, libtcod.white)
-
-
-    def draw2(self, posx, posy, maxx, maxy, hlcol):
-
-        def drawHorizontal(posx, posy, hlcol, indent=True):
-            pen = utility.Pen(posx, posy, maxx, maxy-1, self.topLine)
-            firstNodeSeen = False
-
-            def drawChild(node, nesting, parentCol=libtcod.black):
-
-                if not node.evaled:
-                    pen.write("'", parentCol)
-
-                if node == self.buffer.cursor:
-#                    if self.topLine > pen.y1:
-#                        self.topLine = pen.y1
-#                    if self.topLine + maxy < pen.y1:
-#                        self.topLine = pen.y1 - maxy
-                    bgcolour = hlcol
-                    firstNodeSeen = True
-                else:
-                    bgcolour = parentCol
-
-
-                if node.isSubNode():
-
-
-#                    if node.child.child == "quote" and node.child.next and not node.child.next.next:
-#                        pen.write("'", bgcolour)
-#                        drawr(node.child.next, nesting, bgcolour)
-#                    else:
-                    if node.child.child == "=>":
-                        pen.writeNL()
-                    pen.write('(', bgcolour)
-                    drawr(node.child, nesting, bgcolour)
-                    pen.write(')', bgcolour)
-
-                elif node.child is None:
-                    pen.write('()', bgcolour)
-
-                else:
-                    output = reader.to_string(node.child)
-
-                    if node == self.buffer.cursor and self.editing:
-                        self.cellEditor.draw(pen)
-                    else:
-                        pen.write(output, bgcolour)
-
-
-            def drawr(node, nesting, parentCol=libtcod.black, reindent=False):
-
-                try:
-                    if self.zippedNodes[node.nodeID]:
-                        pen.write("...", hlcol if node == self.buffer.cursor else parentCol)
-                        return
-                except KeyError: pass
-
-                drawChild(node, nesting + 1, parentCol)
-                #reindent = False
-
-                if node.next and node.next.next:
-                    for i in node.next:
-                        if i.isSubNode():
-                            for subi in i.child:
-                                if subi.isSubNode(): reindent = True
-
-
-                if node.next:
-                    if indent and reindent:
-                        pen.writeNL()
-                        #pen.skip(2 * nesting, 0)
-                        pen.write(' ' * (2 * nesting), parentCol)
-
-                    # try to avoid hiding the cursor in a cell editor
-                    #elif node == self.buffer.cursor and self.editing:
-                    #    pen.skip(1, 0)
-                    else:
-                        pen.write(' ', parentCol)
-
-                    drawr(node.next, nesting, parentCol, reindent)
-
-            if self.buffer.view.isSubNode():
-                drawChild(self.buffer.view, 1)
-            else:
-                pen.write(str(self.buffer.view.child))
-
-            if self.statusBar:
-                self.statusBar.draw(0, maxy - 1, maxx, maxy, libtcod.darker_gray)
-
-
-        def drawVert(posx, posy, levels):
-            pen = utility.Pen(posx, posy)
-
-            def drawr(node, nesting, parentCol=libtcod.black,):
-
-                if node.isSubNode():
-                    if node == self.active:
-                        bgcolour = libtcod.azure
-                    else:
-                        bgcolour = parentCol
-
-                    pen.write('(', bgcolour)
-                    drawr(node.child, nesting + 1, bgcolour)
-                    pen.write(')', bgcolour)
-                else:
-                    output = str(node.child)
-                    if node == self.active:
-
-                        if self.editing:
-                            self.cellEditor.draw(pen)
-                        else:
-                            pen.write(output, libtcod.azure)
-
-                    else:
-                        pen.write(output, parentCol)
-
-                if node.next:
-                    if nesting == levels:
-                        pen.writeNL()
-                    elif node == self.active and self.editing:
-                        pen.write(' ', libtcod.azure)
-                    else:
-                        pen.write(' ', parentCol)
-                    drawr(node.next, nesting, parentCol)
-
-            drawr(self.curRoot, 0)
-
-#        if self.showValues:
-#            if self.context:
-#                args = []
-#                if self.context.next:
-#                    for i in self.context.next:
-#                        args.append(i.getValue(self.contextParent))
-#                (newTree, env) = self.context.getValue(self.contextParent)('inspect', *args)
-#                self.env = env
-#
-#            self.root.calcValue(self.id, self.env)
-
-        try:
-            if self.printingMode == 'horizontal':
-                drawHorizontal(posx, posy, hlcol)
-            else:
-                drawVert(posx, posy, 1)
-        except utility.windowBorderException: pass
-
 
 
 
