@@ -26,6 +26,12 @@ class CellEditor(object):
             text = '"' + text + '"'
         return reader.atom(text)
 
+    def getContentAsString(self):
+        text = ''.join(self.content)
+        if self.isString:
+            text = '"' + text + '"'
+        return text
+
     def handle_key(self, key):
 
         if key.vk == libtcod.KEY_ENTER:
@@ -55,10 +61,10 @@ class CellEditor(object):
             if self.content and self.index != len(self.content):
                 del self.content[self.index]
 
-        elif chr(key.c) == '(':
+        elif not self.isString and chr(key.c) == '(':
             return 'NEST'
 
-        elif chr(key.c) == ')':
+        elif not self.isString and chr(key.c) == ')':
             return 'UNNEST'
 
         elif chr(key.c) == '"':
@@ -69,11 +75,8 @@ class CellEditor(object):
                 if temp.find(' ') == -1:
                     self.isString = False
 
-        elif key.vk == libtcod.KEY_SPACE:
-            if self.isString:
-                self.content.insert(self.index, chr(key.c))
-                self.index += 1
-            elif len(self.content) > 0:
+        elif not self.isString and key.vk == libtcod.KEY_SPACE:
+            if len(self.content) > 0:
                 return 'SPACE'
 
         #elif chr(key.c).isalnum():
@@ -344,8 +347,8 @@ class TreeEditor(TNode.FuncObject):
                 modes = ['code', 'horizontal', 'vertical']
                 currentModePos = modes.index(self.printingMode)
                 self.printingMode = modes[(currentModePos + 1) % len(modes)]
-                #self.statusBar.displayMessage("DisplayMode: " + self.printingMode)
-                self.statusBar.message = 'DisplayMode: ' + self.printingMode
+                self.statusBar.displayMessage("DisplayMode: " + self.printingMode)
+                #self.statusBar.message = 'DisplayMode: ' + self.printingMode
 
 
             elif chr(key.c) == 'N':

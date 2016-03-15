@@ -135,7 +135,7 @@ def drawLineList(lineList, winWidth, winHeight, standardBG, standardFG, hlcol=li
 
             if isinstance(item.nodeReference.child, reader.Symbol):
                 fgcol = standardFG
-            elif isinstance(item.nodeReference.child, str) and item.printRule != 'cellEditor':
+            elif isinstance(item.nodeReference.child, str) and item.printRule != 'cellEditorNonString':
                 fgcol = libtcod.light_green
             elif isinstance(item.nodeReference.child, int):
                 fgcol = libtcod.light_sky
@@ -148,7 +148,7 @@ def drawLineList(lineList, winWidth, winHeight, standardBG, standardFG, hlcol=li
 
             #image = putNodeOnImage(image, x, y, text, item.nodeReference, bgcol)
             putNodeOnImage2(image, x, y, text, item, bgcol, fgcol)
-            if item.printRule == 'cellEditor':
+            if item.printRule in [ 'cellEditorString', 'cellEditorNonString']:
                 (image[y][x+item.highlightIndex]).bgColour = libtcod.azure
                 x += 1
             x += len(text)
@@ -245,9 +245,13 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
         if node == editor.buffer.cursor and editor.editing:
             # slightly hacky, isCursor is technically True, but we call it false to stop it
             # from highlighting the entire node. need to re-engineer the rules really
-            ret = [lineItemNode(node, address, editor.cellEditor.getContent(), False)]
-            ret[0].printRule = 'cellEditor'
-            ret[0].highlightIndex = editor.cellEditor.index
+            ret = [lineItemNode(node, address, editor.cellEditor.getContentAsString(), False)]
+            if editor.cellEditor.isString:
+                ret[0].printRule = 'cellEditorString'
+                ret[0].highlightIndex = editor.cellEditor.index + 1
+            else:
+                ret[0].printRule = 'cellEditorNonString'
+                ret[0].highlightIndex = editor.cellEditor.index
         elif node.isSubNode():
             ret = [lineItemNode(node, address, '(', isCursor)]
             subAddress = list(newAddress)
