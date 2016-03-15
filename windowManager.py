@@ -55,12 +55,17 @@ class WindowManager(TNode.FuncObject):
     def parse_memory(self, root):
         edAddPy = root.getValueAtNVS(['origin', 'editor', 'address']).child.toPySexp()
         edCurPy = root.getValueAtNVS(['origin', 'editor', 'cursor']).child.toPySexp()
-        edZipped = root.getValueAtNVS(['origin', 'editor', 'zipped']).child.toPySexp()
+
+        edZipNode = root.getValueAtNVS(['origin', 'editor', 'zipped']).child
+
+
 
         listEd = Editors.TreeEditor(root, edAddPy, edCurPy)
 
-        for i in edZipped:
-            listEd.zippedNodes[i] = True
+        if edZipNode != None:
+            edZipped = edZipNode.toPySexp()
+            for i in edZipped:
+                listEd.zippedNodes[i] = True
 
         return TNode.TNode(listEd)
 

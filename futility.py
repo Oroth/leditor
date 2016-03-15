@@ -203,10 +203,30 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
 
         return ret
 
+    # Everything is printed without linebreaks
     def recurHorizontal(ret, node, newAddress, nesting, isParentCursor=False, indent=False, topNode=False):
         newAddress[-1] += 1
         if node.next:
             ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent))
+
+        return ret
+
+    # Add linebreaks for everything apart from the last sexp
+    def recurVertical(ret, node, newAddress, nesting, isParentCursor=False, indent=False, topNode=False):
+        reindent = False
+        if node.next and node.next.isSubNode():
+            reindent = True
+            
+        if node.next:
+            newAddress[-1] += 1
+            if indent:
+                ret.append(lineListNode(0, nesting))
+                ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent=True))
+            elif reindent:        # can only apply to the first expression
+                ret.append(lineListNode(0, nesting+1))
+                ret.extend(recur(node.next, newAddress, nesting+1, isParentCursor, indent=True))
+            else:
+                ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent))
 
         return ret
 
@@ -389,6 +409,9 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
         recurMode = recurCode
     elif editor.printingMode == 'horizontal':
         recurMode = recurHorizontal
+    elif editor.printingMode == 'vertical':
+        recurMode = recurVertical
+
     lineStream = recur(editor.buffer.view, [0], nesting=0, isParentCursor=False, topNode=True)
     lineList, topLine = unflatten(lineStream)
     toppedLineList = lineList[topLine:]

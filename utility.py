@@ -13,6 +13,9 @@ def screenWidth():
 def screenHeight():
     return libtcod.console_get_height(0)
 
+#def setScreenHeight():
+
+
 def get_key(key):
     if key.vk == libtcod.KEY_CHAR:
         return chr(key.c)

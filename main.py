@@ -9,7 +9,7 @@ import Eval
 #import peak.
 
 #actual size of the window
-SCREEN_WIDTH = 80
+SCREEN_WIDTH = 150
 SCREEN_HEIGHT = 50
 
 LIMIT_FPS = 20  # 20 frames-per-second maximum

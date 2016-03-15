@@ -343,10 +343,14 @@ class TreeEditor(TNode.FuncObject):
                         ('editing', True))
 
             elif chr(key.c) == 'm':
-                if self.printingMode == 'horizontal':
-                    self.printingMode = 'code'
-                else:
-                    self.printingMode = 'horizontal'
+                #modes = {1: 'code', 2: 'horizontal', 3: 'vertical'}
+                modes = ['code', 'horizontal', 'vertical']
+                currentModePos = modes.index(self.printingMode)
+                self.printingMode = modes[(currentModePos + 1) % len(modes)]
+                #if self.printingMode == 'horizontal':
+                   #self.printingMode = 'code'
+                #else:
+                    #self.printingMode = 'horizontal'
 #                print "print mode is set to:", self.printingMode
 
             elif chr(key.c) == 'N':
@@ -436,6 +440,7 @@ class TreeEditor(TNode.FuncObject):
 #                    self.buffer.cursor.displayValue = False
 #                else: self.buffer.cursor.displayValue = True
 
+            # Save the current state of the image
             elif key.vk == libtcod.KEY_F2:
                 zipped, zipAdd = self.buffer.root.gotoNodeAtNVS(['origin', 'editor', 'zipped'])
                 zipAdd += [1]
