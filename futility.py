@@ -145,10 +145,11 @@ def drawLineList(lineList, winWidth, winHeight, standardBG, standardFG, hlcol=li
                 fgcol = standardFG
 
             text = item.nodeToString()
-            #if text == ')' and prevItem and prevItem.text != '(':
-            #    x -= 1
 
-            #image = putNodeOnImage(image, x, y, text, item.nodeReference, bgcol)
+            # Truncate long strings (e.g. evaluation results)
+            if len(text) >= winWidth:
+                text = text[0:winWidth - 5] + '...'
+
             putNodeOnImage2(image, x, y, text, item, bgcol, fgcol)
             if item.printRule in [ 'cellEditorString', 'cellEditorNonString']:
                 (image[y][x+item.highlightIndex]).bgColour = libtcod.azure
