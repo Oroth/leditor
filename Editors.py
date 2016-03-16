@@ -106,7 +106,7 @@ class CellEditor(object):
 class TreeEditor(TNode.FuncObject):
     editors = 0
 
-    def __init__(self, root, rootCursorAdd=[0], cursorAdd=[0]):
+    def __init__(self, root, rootCursorAdd=[0], cursorAdd=[0], zippedNodes=None):
         #self.root = root
         self.buffer = TNode.Buffer(root, rootCursorAdd, cursorAdd)
         self.posx = 0
@@ -122,7 +122,13 @@ class TreeEditor(TNode.FuncObject):
         self.updateUndo = False
         self.showValues = False
         self.revealedNodes = {}
-        self.zippedNodes = {}
+
+        #self.zippedNodes = {}
+        if zippedNodes == None:
+            self.zippedNodes = {}
+        else:
+            self.zippedNodes = zippedNodes.copy()
+
         self.drawMode = 'cursor'
         self.topLine = 0
         self.firstNode = self.buffer.view

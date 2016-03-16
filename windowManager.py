@@ -205,7 +205,8 @@ class WindowManager(TNode.FuncObject):
                 #abomination
                 #cursorToView
                 curEd = self.winTree.cursor.child
-                newEd = Editors.TreeEditor(self.ImageRoot, curEd.buffer.rootToCursorAdd())
+                newEd = Editors.TreeEditor(self.ImageRoot, curEd.buffer.rootToCursorAdd(),
+                                           zippedNodes=curEd.zippedNodes)
                 newWinTree = self.addWindow(newEd)
                 return self.updateList(
                     ('winTree', newWinTree),
@@ -255,7 +256,8 @@ class WindowManager(TNode.FuncObject):
 
             elif key.vk == libtcod.KEY_ENTER:
                 curEd = self.winTree.cursor.child
-                newEd = CodeEditor.CodeEditor(self.ImageRoot, curEd.buffer.rootToCursorAdd())
+                newEd = CodeEditor.CodeEditor(self.ImageRoot, curEd.buffer.rootToCursorAdd(),
+                                              zippedNodes=curEd.zippedNodes)
 
                 newEd.evalBuffer()
                 newWinTree = self.addWindow(newEd)
@@ -281,7 +283,8 @@ class WindowManager(TNode.FuncObject):
 
                     #(newTree, env) = curNode.child.getValue(curEd.id)('inspect', *args)
                     (newTree, env) = curEd.nodeValues[curNode.child]('inspect', *args)
-                    newEd = CodeEditor.CodeEditor(newTree.root, newTree.rootToCursorAdd())
+                    newEd = CodeEditor.CodeEditor(newTree.root, newTree.rootToCursorAdd(),
+                                                  zippedNodes=curEd.zippedNodes)
                     newEd.context = curEd.buffer
                     newEd.contextParent = curEd.id    # not really needed?
                     newEd.showValues = True
@@ -298,6 +301,7 @@ class WindowManager(TNode.FuncObject):
 
         elif chr(key.c) == 'w' and key.lctrl:
             self.winCmd = True
+            self.winTree.cursor.child.statusBar.displayMessage("Window Mode")
             print "windowing"
 
         elif chr(key.c) == 's' and key.lctrl:

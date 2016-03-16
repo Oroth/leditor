@@ -213,6 +213,9 @@ def eval(exprBuf, env=global_env, memoize=None):
                 else:
                     return False
 
+    elif exprChild.cursor.child == 'quote':
+        ret = exprChild.curNext().cursorToPySexp()
+
     else:  # i.e. a procedure call
         childExpr = []
         procExpr = exprChild
