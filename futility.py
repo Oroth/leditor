@@ -6,8 +6,9 @@ import utility
 import reader
 
 class Cell(TNode.FuncObject):
-    def __init__(self, character=' ', lineItemNodeRef=None, bgColour=utility.defaultBG(), fgColour=utility.defaultFG()):
+    def __init__(self, character=' ', characterReference = 0, lineItemNodeRef=None, bgColour=utility.defaultBG(), fgColour=utility.defaultFG()):
         self.character = character
+        self.characterReference = characterReference
         self.lineItemNodeReference = lineItemNodeRef
         self.bgColour = bgColour
         self.fgColour = fgColour
@@ -30,8 +31,9 @@ def createBlank(maxx, maxy, bgColour=utility.defaultBG(), fgColour=utility.defau
 
 def putNodeOnImage2(image, x, y, text, lineItemNodeRef, bgcol, fgcol):
 
-    for i in text:
-        (image[y][x]).character = i
+    for cdx, c in enumerate(text):
+        (image[y][x]).character = c
+        (image[y][x]).characterReference = cdx
         (image[y][x]).lineItemNodeReference = lineItemNodeRef
         (image[y][x]).bgColour = bgcol
         (image[y][x]).fgColour = fgcol
@@ -204,12 +206,15 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
 
     def recurCode(ret, node, newAddress, nesting, isParentCursor=False, indent=False, topNode=False):
         reindent = False
-        if node.next and isComplex(node.next):
-            reindent = True
 
-        # new rule: if only two values (exp1 exp2) and exp2 is very complex, indent anyway
-        if node.next and node.next.isSubNode() and isComplex(node.next.child):
-            reindent = True
+        if node.next:
+            if node.next.nodeID in editor.zippedNodes and editor.zippedNodes[node.next.nodeID]:
+                reindent = False
+            elif isComplex(node.next):
+                reindent = True
+            # new rule: if only two values (exp1 exp2) and exp2 is very complex, indent anyway
+            elif node.next.isSubNode() and isComplex(node.next.child):
+                reindent = True
 
         return recurVerticalTemplate(ret, node, newAddress, nesting, isParentCursor, indent, topNode, reindent)
 
@@ -229,7 +234,8 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
         else:
             isCursor = isParentCursor
 
-        if node.nodeID in editor.zippedNodes and editor.zippedNodes[node.nodeID]:
+
+        if node.nodeID in editor.zippedNodes and editor.zippedNodes[node.nodeID] and editor.printingMode != 'help':
             ret = [lineItemNode(node, address, '...', isCursor)]
             return ret
 
@@ -404,7 +410,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
         recurMode = recurCode
     elif editor.printingMode == 'horizontal':
         recurMode = recurHorizontal
-    elif editor.printingMode == 'vertical':
+    elif editor.printingMode in ['vertical', 'help']:
         recurMode = recurVertical
 
     lineStream = recur(editor.buffer.view, [0], nesting=0, isParentCursor=False, topNode=True)

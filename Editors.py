@@ -28,7 +28,13 @@ class CellEditor(object):
     def getContent(self):
         return reader.atom(self.getContentAsString())
 
-    def handle_key(self, key):
+    def handleClick(self, characterRef):
+        if self.isString:
+            self.index = characterRef - 1
+        else:
+            self.index = characterRef
+
+    def handleKey(self, key):
 
         if key.vk == libtcod.KEY_ENTER:
             try:
@@ -75,7 +81,6 @@ class CellEditor(object):
             if len(self.content) > 0:
                 return 'SPACE'
 
-        #elif chr(key.c).isalnum():
         elif key.c != 0:
             self.content.insert(self.index, chr(key.c))
             self.index += 1
@@ -161,7 +166,15 @@ class TreeEditor(TNode.FuncObject):
 #            ,self.buffer.cursorAdd])
         if mouse.lbutton_pressed:
             cell = self.image[mouse.cy - self.posy][mouse.cx - self.posx]
-            if cell.lineItemNodeReference:
+
+            if self.editing:
+                if cell.lineItemNodeReference and cell.lineItemNodeReference.nodeReference == self.buffer.cursor:
+                    self.cellEditor.handleClick(cell.characterReference)
+                else:
+                    print 'Clicked Outside'
+                    # TODO: finish editing and move cursor
+
+            elif cell.lineItemNodeReference:
                 newBuff = self.buffer.cursorToAddress(cell.lineItemNodeReference.nodeAddress)
                 return self.update('buffer', newBuff)
         elif mouse.wheel_down:
@@ -181,7 +194,7 @@ class TreeEditor(TNode.FuncObject):
 #            except ValueError: pass
 
         if self.editing:
-            finished = self.cellEditor.handle_key(key)
+            finished = self.cellEditor.handleKey(key)
             if finished == 'END':
                 if self.cellEditor.getContent() == '':
                     isChanged = False if self.cellEditor.original == '' else True
@@ -341,7 +354,10 @@ class TreeEditor(TNode.FuncObject):
 
             elif chr(key.c) == 'm':
                 modes = ['code', 'horizontal', 'vertical']
-                currentModePos = modes.index(self.printingMode)
+                if self.printingMode == 'help':
+                    currentModePos = 2
+                else:
+                    currentModePos = modes.index(self.printingMode)
                 self.printingMode = modes[(currentModePos + 1) % len(modes)]
                 self.statusBar.displayMessage("DisplayMode: " + self.printingMode)
                 #self.statusBar.message = 'DisplayMode: ' + self.printingMode
@@ -360,10 +376,10 @@ class TreeEditor(TNode.FuncObject):
                     ('buffer', self.buffer.appendAtCursor(toInsert)),
                     ('updateUndo', True))
 
-            elif chr(key.c) == 'q':
-                var = self.buffer.cursor.child
-                value = self.buffer.findLexicalValue(var)
-                return self.update('yankBuffer', value)
+            #elif chr(key.c) == 'q':
+            #    var = self.buffer.cursor.child
+            #    value = self.buffer.findLexicalValue(var)
+            #    return self.update('yankBuffer', value)
 
             elif chr(key.c) == 'R':
                 return self.update('buffer', self.buffer.viewToRoot())
@@ -438,7 +454,7 @@ class TreeEditor(TNode.FuncObject):
             elif chr(key.c) == '?':
                 helpIter, helpAddress = self.buffer.root.gotoNodeAtNVS(['origin', 'help'])
                 newBuff = TNode.Buffer(self.buffer.root, helpAddress)
-                self.printingMode = 'vertical'
+                self.printingMode = 'help'
                 return self.update('buffer', newBuff)
 
 

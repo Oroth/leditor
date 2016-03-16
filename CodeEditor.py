@@ -152,5 +152,5 @@ class evalIOHandler(CodeEditor):
         if self.lastKey != 0:
             #self.output = self.function(chr(self.lastKey))
             self.output = self.function(self.keyHistory)
-        pen = utility.Pen(posx, posy, maxx, maxy)
+        pen = utility.Pen(posx, posy, maxx, posy+maxy)
         pen.write(str(self.output))

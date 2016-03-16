@@ -160,8 +160,28 @@ class WindowManager(TNode.FuncObject):
 #                libtcod.console_hline(0, 0, curY - 1, utility.screenWidth())
 
 
+    def matchWindowToClick(self, x, y):
+        winAdd = [0, 0]
+        for winNode in self.winTree.root.child:
+            win = winNode.child
+            if win.posx <= x < win.posx + win.maxx and win.posy <= y < win.posy + win.maxy:
+                return winNode, winAdd
+            winAdd[-1] += 1
+
+
+
     def handleKeys(self, key, mouse):
         #return self.active.child.function.handleKeys(key)
+
+        if mouse.lbutton_pressed:
+            windowClicked, windowAddress = self.matchWindowToClick(mouse.cx, mouse.cy)
+            if windowClicked != self.winTree.cursor:
+                new = self.winTree.cursorToAddress(windowAddress)
+                self.winTree = new # imperative at the moment to allow switching and selecting an expression
+
+                #return self.updateList(
+                #    ('winTree', new),
+                #    ('winCmd', False))
 
         if self.winCmd:
 
