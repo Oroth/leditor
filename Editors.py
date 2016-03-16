@@ -102,6 +102,16 @@ class CellEditor(object):
     #
     #     return image
 
+class ColourScheme(TNode.FuncObject):
+
+    def __init__(self, bgCol, symbolCol, stringCol, numberCol, activeHiCol, idleHiCol):
+        self.bgCol = bgCol
+        self.symbolCol = symbolCol
+        self.stringCol = stringCol
+        self.numberCol = numberCol
+        self.activeHiCol = activeHiCol
+        self.idleHiCol = idleHiCol
+
 
 class TreeEditor(TNode.FuncObject):
     editors = 0
@@ -134,6 +144,10 @@ class TreeEditor(TNode.FuncObject):
         self.firstNode = self.buffer.view
         self.topNode = self.buffer.cursorToFirst().curBottom().cursor
         self.image = None
+
+        self.colourScheme = ColourScheme(libtcod.black, libtcod.white,
+                                         libtcod.light_green, libtcod.light_sky,
+                                         libtcod.azure, libtcod.light_grey)
 
         self.fgCol = libtcod.white
         self.bgCol = libtcod.black
@@ -518,12 +532,13 @@ class TreeEditor(TNode.FuncObject):
 
         return self
 
-    def draw(self, posx, posy, maxx, maxy, hlcol):
+    def draw(self, posx, posy, maxx, maxy, isActive):
 
         lineList = futility.createStucturalLineIndentList(self, maxx, maxy)
         self.topLine = lineList[0].lineNumber
 
-        fakeWin = futility.drawLineList(lineList, maxx, maxy, self.bgCol, self.fgCol, hlcol)
+        #fakeWin = futility.drawLineList(lineList, maxx, maxy, self.bgCol, self.fgCol, hlcol)
+        fakeWin = futility.drawLineList(lineList, maxx, maxy, self.colourScheme, isActive)
         #self.topNode = lineList[0].nodeList[0].nodeReference
         #self.topNode = self.buffer.cursorToFirst().curBottom().cursor
         #self.bottomNode = lineList[-1].nodeList[-1].nodeReference
@@ -534,7 +549,7 @@ class TreeEditor(TNode.FuncObject):
         futility.printToScreen(finalWin, posx, posy)
 
         if self.statusBar:
-            self.statusBar.draw(0, posy + maxy - 1, maxx, 2, libtcod.white)
+            self.statusBar.draw(0, posy + maxy - 1, maxx, 2, isActive=False)
 
 
 
@@ -555,6 +570,10 @@ class StatusBar(TreeEditor):
         self.bgCol = libtcod.white
         self.fgCol = libtcod.black
 
+        self.colourScheme = ColourScheme(libtcod.white, libtcod.black,
+                                         libtcod.darker_green, libtcod.darker_sky,
+                                         libtcod.white, libtcod.white)
+
         status = TNode.TNode(TNode.createTreeFromSexp(
             [reader.Symbol('Editor')
             ,reader.Symbol('View')
@@ -563,8 +582,8 @@ class StatusBar(TreeEditor):
 
         self.buffer = TNode.Buffer(status)
 
-    def draw(self, posx, posy, maxx, maxy, hlcol):
-        return super(StatusBar, self).draw(posx, posy, maxx, maxy, hlcol)
+    def draw(self, posx, posy, maxx, maxy, isActive):
+        return super(StatusBar, self).draw(posx, posy, maxx, maxy, isActive)
 
     def refreshStatus(self):
         statusList = [x for x in [self.item1, self.item2, self.item3, self.message] if x is not None]

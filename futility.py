@@ -92,16 +92,15 @@ class lineListNode(TNode.FuncObject):
     #    self.nodeList += lineItemNode(nodeReference, parenSymbol, isCursor)
 
 
-def drawLineList(lineList, winWidth, winHeight, standardBG, standardFG, hlcol=libtcod.azure):
-    image = createBlank(winWidth, winHeight, standardBG, standardFG)
-    #hlcol = libtcod.azure
-    #standardBG = utility.defaultBG()
-    #standardFG = utility.defaultFG()
+def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
+    image = createBlank(winWidth, winHeight, colScheme.bgCol, colScheme.symbolCol)
+    hlcol = colScheme.activeHiCol if isActive else colScheme.idleHiCol
 
     prevLine = None
     y = 0
     for line in lineList[:winHeight]:
         x = line.indent
+
         #y = line.lineNumber
 
         # highlight the indented space if it is part of the cursor
@@ -110,10 +109,10 @@ def drawLineList(lineList, winWidth, winHeight, standardBG, standardFG, hlcol=li
             if firstItem.isCursor and prevLine and prevLine.nodeList[-1].isCursor:
                 bgcol = hlcol
             else:
-                bgcol = standardBG
+                bgcol = colScheme.bgCol
             indentString = ''.join([' ' for i in xrange(line.indent)])
             #image = putNodeOnImage(image, 0, y, indentString, firstItem, bgcol)
-            putNodeOnImage2(image, 0, y, indentString, firstItem, bgcol, standardFG)
+            putNodeOnImage2(image, 0, y, indentString, firstItem, bgcol, colScheme.symbolCol)
 
         prevLine = line
 
@@ -125,24 +124,24 @@ def drawLineList(lineList, winWidth, winHeight, standardBG, standardFG, hlcol=li
                 if item.isCursor and prevItem.isCursor:
                     bgcol = hlcol
                 else:
-                    bgcol = standardBG
-                putNodeOnImage2(image, x, y, ' ', item, bgcol, standardFG)
+                    bgcol = colScheme.bgCol
+                putNodeOnImage2(image, x, y, ' ', item, bgcol, colScheme.symbolCol)
                 x += 1
 
 
             if item.isCursor:
                 bgcol = hlcol
             else:
-                bgcol = standardBG
+                bgcol = colScheme.bgCol
 
             if isinstance(item.nodeReference.child, reader.Symbol):
-                fgcol = standardFG
+                fgcol = colScheme.symbolCol
             elif isinstance(item.nodeReference.child, str) and item.printRule != 'cellEditorNonString':
-                fgcol = libtcod.light_green
+                fgcol = colScheme.stringCol
             elif isinstance(item.nodeReference.child, int):
-                fgcol = libtcod.light_sky
+                fgcol = colScheme.numberCol
             else:
-                fgcol = standardFG
+                fgcol = colScheme.symbolCol
 
             text = item.nodeToString()
 
@@ -152,7 +151,7 @@ def drawLineList(lineList, winWidth, winHeight, standardBG, standardFG, hlcol=li
 
             putNodeOnImage2(image, x, y, text, item, bgcol, fgcol)
             if item.printRule in [ 'cellEditorString', 'cellEditorNonString']:
-                (image[y][x+item.highlightIndex]).bgColour = libtcod.azure
+                (image[y][x+item.highlightIndex]).bgColour = hlcol
                 x += 1
             x += len(text)
 

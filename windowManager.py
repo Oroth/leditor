@@ -151,8 +151,8 @@ class WindowManager(TNode.FuncObject):
                 curYStep = minYStep
 
             if i == self.winTree.cursor:
-                i.child.draw(0, curY, maxX, curYStep, libtcod.azure)
-            else: i.child.draw(0, curY, maxX, curYStep, libtcod.grey)
+                i.child.draw(0, curY, maxX, curYStep, isActive=True)
+            else: i.child.draw(0, curY, maxX, curYStep, isActive=False)
             curY += curYStep
 #            if i.next:
 #                libtcod.console_set_default_background(0, libtcod.black)
@@ -202,7 +202,6 @@ class WindowManager(TNode.FuncObject):
             #elif chr(key.c) == 'n':
 
             elif chr(key.c) == 'o':
-                #abomination
                 #cursorToView
                 curEd = self.winTree.cursor.child
                 newEd = Editors.TreeEditor(self.ImageRoot, curEd.buffer.rootToCursorAdd(),
