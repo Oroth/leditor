@@ -44,86 +44,35 @@ class CodeEditor(Editors.TreeEditor):
     # a bit of a hack, necessary because everything is handled in handleKeys. We need to make sure that
     # the codeEditor returns with a newly evaluated buffer if there were any significant changes.
     def handleKeys(self, key, mouse):
-        result = super(CodeEditor, self).handleKeys(key, mouse)
-        self.evalBuffer()
+
+        # evaluate the current context
+        if key.vk == libtcod.KEY_ENTER and not self.editing:
+
+            nodeValue = self.nodeValues[self.buffer.cursor]
+            if key.shift:
+                result = self.updateList(
+                    ('buffer', self.buffer.appendAtCursor(nodeValue).curNext()),
+                    ('yankBuffer', nodeValue),
+                    ('updateUndo', True))
+            else:
+                self.statusBar.displayMessage('Result to buffer')
+                result = self.update('yankBuffer', nodeValue)
+
+        # Create a repl like environment to evaluate code in
+        elif key.vk == libtcod.KEY_F8:
+            newBuff = self.buffer.curChild().curLast()
+            newBuff = newBuff.viewToCursor().curChild().curLast()
+            #newBuff = newBuff.appendAtCursor([reader.Symbol('newNode')]).curNext()
+            self.printingMode = 'vertical'
+            self.topLine = 0
+            return self.update('buffer', newBuff)
+
+
+        else:
+            result = super(CodeEditor, self).handleKeys(key, mouse)
+
+        self.evalBuffer()   # updating imperatively?
         return result
-
-    #def drawAfter
-
-    # def draw2(self, posx, posy, maxx, maxy, hlcol):
-    #
-    #
-    #     def drawHorizontal(posx, posy, hlcol, indent=True):
-    #         pen = utility.Pen(posx, posy, maxx, maxy)
-    #
-    #         def drawChild(node, nesting, parentCol=libtcod.black):
-    #
-    #             if not node.evaled:
-    #                 pen.write("'", parentCol)
-    #
-    #             if node.isSubNode():
-    #                 if node.child == "=>":
-    #                     pen.writeNL()
-    #                     # check view
-    #                 if node == self.buffer.cursor:
-    #                     bgcolour = hlcol
-    #                 else:
-    #                     bgcolour = parentCol
-    #
-    #                 pen.write('(', bgcolour)
-    #                 drawr(node.child, nesting, bgcolour)
-    #                 pen.write(')', bgcolour)
-    #
-    #             elif node.child is not None:
-    #                 output = reader.to_string(node.child)
-    #                 if node == self.buffer.cursor:
-    #
-    #                     if self.editing:
-    #                         self.cellEditor.draw(pen)
-    #                     else:
-    #                         pen.write(output, hlcol)
-    #
-    #                 else:
-    #                     pen.write(output, parentCol)
-    #
-    #             try:
-    #                 if self.revealedNodes[node]:
-    #                     pen.write("=>", parentCol)
-    #                     #pen.write(reader.to_string(node.getValue(self.id)), parentCol)
-    #                     pen.write(reader.to_string(self.nodeValues[node]), parentCol)
-    #             except KeyError: pass
-    #
-    #
-    #         def drawr(node, nesting, parentCol=libtcod.black, reindent=False):
-    #             drawChild(node, nesting + 1, parentCol)
-    #             #reindent = False
-    #
-    #             if node.next and node.next.next:
-    #                 for i in node.next:
-    #                     if i.isSubNode():
-    #                         reindent = True
-    #
-    #
-    #             if node.next:
-    #                 if indent and reindent:
-    #                     pen.writeNL()
-    #                     #pen.skip(2 * nesting, 0)
-    #                     pen.write(' ' * (2 * nesting), parentCol)
-    #
-    #                 # try to avoid hiding the cursor in a cell editor
-    #                 elif node == self.buffer.cursor and self.editing:
-    #                     pen.skip(1, 0)
-    #                 else:
-    #                     pen.write(' ', parentCol)
-    #
-    #                 drawr(node.next, nesting, parentCol, reindent)
-    #
-    #         if self.buffer.view.isSubNode():
-    #             drawChild(self.buffer.view, 1)
-    #         else:
-    #             pen.write(str(self.buffer.view.child))
-    #
-    #     drawHorizontal(posx, posy, hlcol)
 
 
 class evalIOHandler(CodeEditor):

@@ -80,10 +80,11 @@ class lineItemNode(TNode.FuncObject):
             #return reader.to_string(self.nodeReference.child)
 
 class lineListNode(TNode.FuncObject):
-    def __init__(self, lineNumber, indent, nodeList=[]):
+    def __init__(self, lineNumber, indent, nodeList=[], parenAlignment=0):
         self.lineNumber = lineNumber
         self.indent = indent
         self.nodeList = list(nodeList)
+        self.parenAlignment = parenAlignment
 
     #def __str__(self):
        # return "(lineListNode " + str(self.indent) + " " + str(self.startNode) + ")"
@@ -96,10 +97,17 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
     image = createBlank(winWidth, winHeight, colScheme.bgCol, colScheme.symbolCol)
     hlcol = colScheme.activeHiCol if isActive else colScheme.idleHiCol
 
+    indentWidth = 2
+
+
     prevLine = None
     y = 0
     for line in lineList[:winHeight]:
-        x = line.indent
+        pa = line.parenAlignment
+        #if pa > 0:
+        #    print 'paddingAlign'
+        totalLineIndent = line.indent * indentWidth + line.parenAlignment
+        x = totalLineIndent
 
         #y = line.lineNumber
 
@@ -110,7 +118,7 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
                 bgcol = hlcol
             else:
                 bgcol = colScheme.bgCol
-            indentString = ''.join([' ' for i in xrange(line.indent)])
+            indentString = ''.join([' ' for i in xrange(totalLineIndent)])
             #image = putNodeOnImage(image, 0, y, indentString, firstItem, bgcol)
             putNodeOnImage2(image, 0, y, indentString, firstItem, bgcol, colScheme.symbolCol)
 
@@ -182,7 +190,8 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
         return False
 
     # Everything is printed without linebreaks
-    def recurHorizontal(ret, node, newAddress, nesting, isParentCursor=False, indent=False, topNode=False):
+    def recurHorizontal(ret, node, newAddress, nesting,
+                        isParentCursor=False, indent=False, topNode=False, pa=0):
         newAddress[-1] += 1
         if node.next:
             ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent))
@@ -190,43 +199,65 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
         return ret
 
     def recurVerticalTemplate(ret, node, newAddress, nesting, isParentCursor=False, indent=False, topNode=False,
-                              reindent=False):
+                              reindent=False, pa=0):
         if node.next:
             newAddress[-1] += 1
             if indent:
-                ret.append(lineListNode(0, nesting))
-                ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent=True))
+                ret.append(lineListNode(0, nesting, parenAlignment=pa))
+                ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent=True, pa=pa))
             elif reindent:        # can only apply to the first expression
-                ret.append(lineListNode(0, nesting+1))
-                ret.extend(recur(node.next, newAddress, nesting+1, isParentCursor, indent=True))
+                ret.append(lineListNode(0, nesting+1, parenAlignment=pa))
+                ret.extend(recur(node.next, newAddress, nesting+1, isParentCursor, indent=True, pa=pa))
             else:
-                ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent))
+                ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent, pa=pa))
 
         return ret
 
-    def recurCode(ret, node, newAddress, nesting, isParentCursor=False, indent=False, topNode=False):
+    def recurCode(ret, node, newAddress, nesting,
+                  isParentCursor=False, indent=False, topNode=False, pa=0):
         reindent = False
+        #parenAlignment = 0
 
         if node.next:
             if node.next.nodeID in editor.zippedNodes and editor.zippedNodes[node.next.nodeID]:
                 reindent = False
             elif isComplex(node.next):
-                reindent = True
+                if node.isSubNode():
+                    if node.child.isSubNode():
+                        pa = 1
+                    pa = 1
+                    indent = True
+                else:
+                    reindent = True
             # new rule: if only two values (exp1 exp2) and exp2 is very complex, indent anyway
             elif node.next.isSubNode() and isComplex(node.next.child):
-                reindent = True
+                if node.isSubNode():
+                    if node.child.isSubNode():
+                        pa = 1
+                    #pa = 1
+                    indent = True
+                else:
+                    reindent = True
 
-        return recurVerticalTemplate(ret, node, newAddress, nesting, isParentCursor, indent, topNode, reindent)
+        return recurVerticalTemplate(ret, node, newAddress, nesting, isParentCursor,
+                                     indent, topNode, reindent, pa=pa)
 
     # Add linebreaks for everything apart from the last sexp
-    def recurVertical(ret, node, newAddress, nesting, isParentCursor=False, indent=False, topNode=False):
+    def recurVertical(ret, node, newAddress, nesting,
+                      isParentCursor=False, indent=False, topNode=False, pa=0):
         reindent = False
         if node.next and node.next.isSubNode():
-            reindent = True
+            if node.isSubNode():
+                if node.child.isSubNode():
+                    pa += 1
+                indent = True
+            else:
+                reindent = True
 
-        return recurVerticalTemplate(ret, node, newAddress, nesting, isParentCursor, indent, topNode, reindent)
+        return recurVerticalTemplate(ret, node, newAddress, nesting, isParentCursor,
+                                     indent, topNode, reindent, pa)
 
-    def recur(node, address, nesting, isParentCursor=False, indent=False, topNode=False):
+    def recur(node, address, nesting, isParentCursor=False, indent=False, topNode=False, pa=0):
         newAddress = list(address)
 
         if node == editor.buffer.cursor:
@@ -253,7 +284,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
             ret = [lineItemNode(node, address, '(', isCursor)]
             subAddress = list(newAddress)
             subAddress.append(0)
-            ret.extend(recur(node.child, subAddress, nesting, isCursor))
+            ret.extend(recur(node.child, subAddress, nesting, isCursor, pa=pa))
             ret.append(lineItemNode(node, address, ')', isCursor))
         elif node.child is None:
             ret = [lineItemNode(node, address, '(', isCursor),
@@ -274,7 +305,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
         if topNode:
             return ret
 
-        modeRet = recurMode(ret, node, newAddress, nesting, isParentCursor, indent)
+        modeRet = recurMode(ret, node, newAddress, nesting, isParentCursor, indent, pa=pa)
 
         return modeRet
 
@@ -349,9 +380,9 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
                             break
 
 
-                lines.append(lineListNode(currentLineNumber, i.indent))
+                lines.append(lineListNode(currentLineNumber, i.indent, parenAlignment=i.parenAlignment))
                 currentLineNumber += 1
-                currentLineLength = i.indent
+                currentLineLength = i.indent + i.parenAlignment
                 currentLineIndent = i.indent
             else:
 

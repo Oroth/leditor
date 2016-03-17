@@ -149,8 +149,8 @@ class TreeEditor(TNode.FuncObject):
                                          libtcod.light_green, libtcod.light_sky,
                                          libtcod.azure, libtcod.light_grey)
 
-        self.fgCol = libtcod.white
-        self.bgCol = libtcod.black
+        # self.fgCol = libtcod.white
+        # self.bgCol = libtcod.black
 
         self.statusBar = StatusBar()
 
@@ -271,29 +271,14 @@ class TreeEditor(TNode.FuncObject):
 
         else:
 
-            if key.vk == libtcod.KEY_ESCAPE:
-                return 'ESC'  # exit Editor
+            if key.vk == libtcod.KEY_ESCAPE:                                        # exit Editor
+                return 'ESC'
 
-            # evaluate the current context
-            elif key.vk == libtcod.KEY_ENTER:
-
-                result = Eval.eval(self.buffer)
-                self.statusBar.message = 'Result to buffer'
-                return self.update('yankBuffer', result)
-
-                #self.active.nestChild()
-                #self.active.child.insertAfter(TNode.createTreeFromSexp(evalResult))
-                #self.active.child.insertBefore("=>")  #needs to go after as will change child
-
-            elif key.vk == 'x' and key.lctrl:
-                print "evaluating"
-
-            elif chr(key.c) == 'b':
+            elif chr(key.c) == 'b':     # Go back to the first expression in the list
                 return self.update('buffer', self.buffer.curFirst())
 
             elif chr(key.c) == 'd':
                 if self.buffer.cursor != self.buffer.root:
-                    #self.yankBuffer = self.buffer.childToPySexp()
                     return self.updateList(
                         ('buffer', self.buffer.deleteAtCursor()),
                         ('yankBuffer', self.buffer.cursorToPySexp()),
@@ -313,8 +298,8 @@ class TreeEditor(TNode.FuncObject):
                         ('cellEditor', CellEditor(Symbol(''))),
                         ('editing', True))
 
-            elif chr(key.c) == 'f':
-                self.firstNode = self.buffer.cursor
+            # elif chr(key.c) == 'f':
+            #     self.firstNode = self.buffer.cursor
 
 
             elif chr(key.c) == 'i':
@@ -380,7 +365,6 @@ class TreeEditor(TNode.FuncObject):
                     currentModePos = modes.index(self.printingMode)
                 self.printingMode = modes[(currentModePos + 1) % len(modes)]
                 self.statusBar.displayMessage("DisplayMode: " + self.printingMode)
-                #self.statusBar.message = 'DisplayMode: ' + self.printingMode
 
 
             elif chr(key.c) == 'N':
@@ -394,6 +378,12 @@ class TreeEditor(TNode.FuncObject):
                 toInsert = TNode.createTreeFromSexp(self.yankBuffer)
                 return self.updateList(
                     ('buffer', self.buffer.appendAtCursor(toInsert)),
+                    ('updateUndo', True))
+
+            elif chr(key.c) == 'P':
+                toInsert = TNode.createTreeFromSexp(self.yankBuffer)
+                return self.updateList(
+                    ('buffer', self.buffer.insertAtCursor(toInsert)),
                     ('updateUndo', True))
 
             #elif chr(key.c) == 'q':
@@ -411,11 +401,6 @@ class TreeEditor(TNode.FuncObject):
 
             elif chr(key.c) == 't':
                 self.topLine += 1
-                #print self.buffer.root.getNodeAtNVS(['origin', 'editor', 'address']).toPySexp()
-#                op = lambda addNode: TNode.cons('test', addNode)
-#                newImage = TNode.opAtNVSAdd(self.buffer.root, ['origin', 'editor', 'cursor'], op)
-#                newBuff = TNode.Buffer(newImage)
-#                return self.update('buffer', newBuff)
 
             elif chr(key.c) == 'T':
                 if self.topLine > 0:
@@ -450,15 +435,13 @@ class TreeEditor(TNode.FuncObject):
                 #return self.update('yankBuffer', result)
                 return self.updateList(
                     ('buffer', newBuff),
-                    ('updateUndo', True)
-                )
+                    ('updateUndo', True))
 
 
             elif chr(key.c) == '"':
                 return self.updateList(
                     ('buffer', self.buffer.toggleStringAtCursor()),
-                    ('updateUndo', True)
-                )
+                    ('updateUndo', True))
 
             elif chr(key.c) == '=':
                 #return self.update()

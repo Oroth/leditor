@@ -295,8 +295,8 @@ class WindowManager(TNode.FuncObject):
             print "windowing"
 
         elif chr(key.c) == 's' and key.lctrl:
-            #self.writeImage()
-            self.testNewWrite()
+            self.writeImage()
+            self.winTree.cursor.child.statusBar.displayMessage("Saving Image")
             print "saving"
 
 
