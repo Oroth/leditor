@@ -6,7 +6,7 @@ import Editors
 import libtcodpy as libtcod
 import reader
 import CodeEditor
-
+import os.path
 
 
 # interface
@@ -45,7 +45,8 @@ class WindowManager(TNode.FuncObject):
         self.ImageRoot = imageRoot
 
         # root of windows
-        winRoot = TNode.TNode(self.parse_memory(imageRoot))
+        #winRoot = TNode.TNode(self.parse_memory(imageRoot))
+        winRoot = TNode.TNode(self.loadEditorSettings(imageRoot))
         self.winTree = Buffer(winRoot, [0], [0, 0])
         self.winCmd = False
         self.cols = 1
@@ -75,6 +76,57 @@ class WindowManager(TNode.FuncObject):
         f = open(self.imageFileName, 'w')
         f.write(text)
         f.close()
+
+    def getEditSexp(self):
+        curWin = self.winTree.cursor
+        curEd = curWin.child
+        viewAdd = curEd.buffer.viewAdd
+        cursorAdd = curEd.buffer.cursorAdd
+        zipList = []
+        for k, v in curEd.zippedNodes.iteritems():
+            if v is True:
+                zipList.append(k)
+
+        return [reader.Symbol('editor'),
+                    [reader.Symbol('window'), [reader.Symbol('id'), curEd.id],
+                    [reader.Symbol('maxx'), curEd.maxx], [reader.Symbol('maxy'), curEd.maxy],
+                    [reader.Symbol('address'), viewAdd], [reader.Symbol('cursor'), cursorAdd],
+                    [reader.Symbol('printingMode'), curEd.printingMode],
+                    [reader.Symbol('zippedNodes'), zipList]]]
+
+    def writeEditor(self):
+        pyObj = self.getEditSexp()
+        text = reader.to_string(pyObj)
+        f = open('EditorSettings', 'w')
+        f.write(text)
+        f.close()
+
+    def loadEditorSettings(self, root):
+        if os.path.isfile("EditorSettings"):
+            pyEditorLoad = reader.loadFile("EditorSettings")
+            window = dict(pyEditorLoad[1][1:])
+            edZipNode = dict(zip(window['zippedNodes'], [True]*len(window['zippedNodes'])))
+
+            listEd = Editors.TreeEditor(root, window['address'], window['cursor'], edZipNode)
+
+        else:
+            listEd = Editors.TreeEditor(root)
+
+
+        # editorRoot = TNode.TNode(TNode.createTreeFromSexp(pyEditorLoad))
+        # edAddPy = editorRoot.getValueAtNVS(['editor', 'window', 'address']).child.toPySexp()
+        # edCurPy = editorRoot.getValueAtNVS(['editor', 'window', 'cursor']).child.toPySexp()
+        #
+        # edZipNode = editorRoot.getValueAtNVS(['editor', 'window', 'zippedNodes']).child
+        #
+        # listEd = Editors.TreeEditor(root, edAddPy, edCurPy)
+        #
+        # if edZipNode != None:
+        #     edZipped = edZipNode.toPySexp()
+        #     for i in edZipped:
+        #         listEd.zippedNodes[i] = True
+
+        return TNode.TNode(listEd)
 
 #    def addCol(self):
 #        self.cols += 1
@@ -260,6 +312,7 @@ class WindowManager(TNode.FuncObject):
                 pass
 
             elif chr(key.c) == '>':
+                print 'inspecting'
                 curEd = self.winTree.cursor.child
                 curNode = curEd.buffer.cursor
 
@@ -295,7 +348,8 @@ class WindowManager(TNode.FuncObject):
             print "windowing"
 
         elif chr(key.c) == 's' and key.lctrl:
-            self.writeImage()
+            #self.writeImage()
+            self.writeEditor()
             self.winTree.cursor.child.statusBar.displayMessage("Saving Image")
             print "saving"
 
@@ -305,6 +359,7 @@ class WindowManager(TNode.FuncObject):
             #print "result ", result
             if result == 'ESC':
                 self.writeImage()
+                self.writeEditor()
                 return False
 
             if result == 'UNDO':

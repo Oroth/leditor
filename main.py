@@ -39,6 +39,8 @@ pyImage.append(pyLoad)
 #nodeTree = TNode.createTreeFromNodeIDValueSexp(pyImage)
 nodeTree = TNode.createTree(pyImage)
 
+
+
 wm = windowManager.WindowManager(nodeTree, imageFileName)
 
 

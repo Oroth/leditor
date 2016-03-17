@@ -214,6 +214,7 @@ class TreeEditor(TNode.FuncObject):
 #            except ValueError: pass
 
         if self.editing:
+
             finished = self.cellEditor.handleKey(key)
             if finished == 'END':
                 if self.cellEditor.getContent() == '':
@@ -224,6 +225,7 @@ class TreeEditor(TNode.FuncObject):
                         ('updateUndo', isChanged))
                 else:
                     content = self.cellEditor.getContent()
+
                     return self.updateList(
                         ('buffer', self.buffer.replaceAtCursor(content)),
                         ('editing', False),
@@ -268,6 +270,9 @@ class TreeEditor(TNode.FuncObject):
                 return self.updateList(
                     ('buffer', newBuff3),
                     ('cellEditor', CellEditor(Symbol(''))))
+
+            else:
+                self.statusBar.message = "Editing"
 
         else:
 

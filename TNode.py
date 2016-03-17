@@ -71,7 +71,7 @@ def isNodeAtom(atom):
     else:
         return False
 
-
+# like createTreeFromSexp, but picks up the nodeID
 def createTree(sexp):
     if isNodeAtom(sexp):
         return TNode(sexp[1], sexp[0])
