@@ -41,24 +41,23 @@ class Column(object):
 
 
 class WindowManager(TNode.FuncObject):
-    def __init__(self, ImageRoot):
-        self.ImageRoot = ImageRoot
+    def __init__(self, imageRoot, imageFileName):
+        self.ImageRoot = imageRoot
 
         # root of windows
-        winRoot = TNode.TNode(self.parse_memory(ImageRoot))
+        winRoot = TNode.TNode(self.parse_memory(imageRoot))
         self.winTree = Buffer(winRoot, [0], [0, 0])
         self.winCmd = False
         self.cols = 1
         self.wins = 1
-        self.hist = ImageRoot
+        self.hist = imageRoot
+        self.imageFileName = imageFileName
 
     def parse_memory(self, root):
         edAddPy = root.getValueAtNVS(['origin', 'editor', 'address']).child.toPySexp()
         edCurPy = root.getValueAtNVS(['origin', 'editor', 'cursor']).child.toPySexp()
 
         edZipNode = root.getValueAtNVS(['origin', 'editor', 'zipped']).child
-
-
 
         listEd = Editors.TreeEditor(root, edAddPy, edCurPy)
 
@@ -69,19 +68,11 @@ class WindowManager(TNode.FuncObject):
 
         return TNode.TNode(listEd)
 
+
     def writeImage(self):
-
-        pyObj = self.ImageRoot.child.toPySexp()
-        text = reader.to_string(pyObj)
-        f = open("image", 'w')
-        f.write(text)
-        f.close()
-
-    def testNewWrite(self):
-
         pyObj = self.ImageRoot.child.toNodeIDValuePySexp()
         text = reader.to_string(pyObj)
-        f = open("testIDImage", 'w')
+        f = open(self.imageFileName, 'w')
         f.write(text)
         f.close()
 
@@ -313,8 +304,7 @@ class WindowManager(TNode.FuncObject):
             result = self.winTree.cursor.child.handleKeys(key, mouse)
             #print "result ", result
             if result == 'ESC':
-                #self.writeImage()
-                self.testNewWrite()
+                self.writeImage()
                 return False
 
             if result == 'UNDO':

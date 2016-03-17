@@ -4,6 +4,7 @@ import reader
 import windowManager
 import time
 import Eval
+import os.path
 
 # version 0.2
 #import peak.
@@ -27,18 +28,18 @@ libtcod.console_set_background_flag(0, libtcod.BKGND_SET)
 libtcod.console_set_default_foreground(0, libtcod.white)
 
 
-#rootNode = TNode.TNode()
-#rootNode.setChild(TNode.createTreeFromSexp(reader.loadFile("image")))
-#
-#wm = windowManager.WindowManager(rootNode)
+if os.path.isfile("testIDImage"):
+    imageFileName = "testIDImage"
+else:
+    imageFileName = "Image"
 
-pyLoad = reader.loadFile("testIDImage")
+pyLoad = reader.loadFile(imageFileName)
 pyImage = [0]
 pyImage.append(pyLoad)
 #nodeTree = TNode.createTreeFromNodeIDValueSexp(pyImage)
 nodeTree = TNode.createTree(pyImage)
 
-wm = windowManager.WindowManager(nodeTree)
+wm = windowManager.WindowManager(nodeTree, imageFileName)
 
 
 Eval.wm = lambda: wm
