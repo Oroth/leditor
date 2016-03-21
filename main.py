@@ -1,4 +1,5 @@
 import libtcodpy as libtcod
+import io
 import TNode
 import reader
 import windowManager
@@ -52,21 +53,21 @@ print "height is: ", libtcod.console_get_height(0)
 
 
 
-def print_time(threadName, delay):
-    count = 0
-    while count < 5:
-        time.sleep(delay)
-        count += 1
-        #print "%s: %s" % ( threadName, time.ctime(time.time()) )
-        libtcod.console_print(0, 0, 30, "%s: %s" % ( threadName, time.ctime(time.time())))
-        libtcod.console_flush()
-
-def getKeypress():
-    key = libtcod.console_check_for_keypress()
-    if key.c:
-        return chr(key.c)
-    else:
-        return key.vk
+# def print_time(threadName, delay):
+#     count = 0
+#     while count < 5:
+#         time.sleep(delay)
+#         count += 1
+#         #print "%s: %s" % ( threadName, time.ctime(time.time()) )
+#         libtcod.console_print(0, 0, 30, "%s: %s" % ( threadName, time.ctime(time.time())))
+#         libtcod.console_flush()
+#
+# def getKeypress():
+#     key = libtcod.console_check_for_keypress()
+#     if key.c:
+#         return chr(key.c)
+#     else:
+#         return key.vk
 
 key = libtcod.Key()
 mouse = libtcod.Mouse()
@@ -79,6 +80,7 @@ while not libtcod.console_is_window_closed():
 
     #key = libtcod.console_check_for_keypress(libtcod.KEY_PRESSED)
     libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS|libtcod.EVENT_MOUSE,key,mouse)
+    #newKey = io.Key(key)
 
     result = wm.handleKeys(key, mouse)
     if result:

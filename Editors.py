@@ -6,7 +6,7 @@ from reader import Symbol
 import Eval
 import TNode
 import operator
-
+import time
 
 
 class CellEditor(object):
@@ -279,6 +279,13 @@ class TreeEditor(TNode.FuncObject):
 
             if key.vk == libtcod.KEY_ESCAPE:                                        # exit Editor
                 return 'ESC'
+
+            elif chr(key.c) == 'x':
+                image = libtcod.image_load('fonts\\arial10x10.png')
+                libtcod.image_blit(image, 0, 10, 10, libtcod.BKGND_DEFAULT, 2, 2, 0)
+                libtcod.console_flush()
+                time.sleep(2)
+
 
             elif chr(key.c) == 'b':     # Go back to the first expression in the list
                 return self.update('buffer', self.buffer.curFirst())

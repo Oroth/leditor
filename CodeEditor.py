@@ -1,7 +1,7 @@
 __author__ = 'chephren'
 import Editors
 import utility
-import libtcodpy as libtcod
+import io
 import reader
 import TNode
 import Eval
@@ -45,7 +45,7 @@ class CodeEditor(Editors.TreeEditor):
     def handleKeys(self, key, mouse):
 
         # evaluate the current context
-        if key.vk == libtcod.KEY_ENTER and not self.editing:
+        if io.isKey(key, io.KEY_ENTER) and not self.editing:
 
             nodeValue = self.nodeValues[self.buffer.cursor]
             if key.shift:
@@ -58,7 +58,7 @@ class CodeEditor(Editors.TreeEditor):
                 result = self.update('yankBuffer', nodeValue)
 
         # Create a repl like environment to evaluate code in
-        elif key.vk == libtcod.KEY_F8:
+        elif io.isKey(key, io.KEY_F8):
             newBuff = self.buffer.curChild().curLast()
             newBuff = newBuff.viewToCursor().curChild().curLast()
             #newBuff = newBuff.appendAtCursor([reader.Symbol('newNode')]).curNext()
