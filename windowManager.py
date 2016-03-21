@@ -54,20 +54,20 @@ class WindowManager(TNode.FuncObject):
         self.hist = imageRoot
         self.imageFileName = imageFileName
 
-    def parse_memory(self, root):
-        edAddPy = root.getValueAtNVS(['origin', 'editor', 'address']).child.toPySexp()
-        edCurPy = root.getValueAtNVS(['origin', 'editor', 'cursor']).child.toPySexp()
-
-        edZipNode = root.getValueAtNVS(['origin', 'editor', 'zipped']).child
-
-        listEd = Editors.TreeEditor(root, edAddPy, edCurPy)
-
-        if edZipNode != None:
-            edZipped = edZipNode.toPySexp()
-            for i in edZipped:
-                listEd.zippedNodes[i] = True
-
-        return TNode.TNode(listEd)
+    # def parse_memory(self, root):
+    #     edAddPy = root.getValueAtNVS(['origin', 'editor', 'address']).child.toPySexp()
+    #     edCurPy = root.getValueAtNVS(['origin', 'editor', 'cursor']).child.toPySexp()
+    #
+    #     edZipNode = root.getValueAtNVS(['origin', 'editor', 'zipped']).child
+    #
+    #     listEd = Editors.TreeEditor(root, edAddPy, edCurPy)
+    #
+    #     if edZipNode != None:
+    #         edZipped = edZipNode.toPySexp()
+    #         for i in edZipped:
+    #             listEd.zippedNodes[i] = True
+    #
+    #     return TNode.TNode(listEd)
 
 
     def writeImage(self):
@@ -82,12 +82,14 @@ class WindowManager(TNode.FuncObject):
         curEd = curWin.child
         viewAdd = curEd.buffer.viewAdd
         cursorAdd = curEd.buffer.cursorAdd
+        s = reader.Symbol
         zipList = []
         for k, v in curEd.zippedNodes.iteritems():
             if v is True:
                 zipList.append(k)
 
         return [reader.Symbol('editor'),
+                    [s('address'), self.winTree.viewAdd], [s('cursor'), self.winTree.cursorAdd],
                     [reader.Symbol('window'), [reader.Symbol('id'), curEd.id],
                     [reader.Symbol('maxx'), curEd.maxx], [reader.Symbol('maxy'), curEd.maxy],
                     [reader.Symbol('address'), viewAdd], [reader.Symbol('cursor'), cursorAdd],
@@ -104,27 +106,16 @@ class WindowManager(TNode.FuncObject):
     def loadEditorSettings(self, root):
         if os.path.isfile("EditorSettings"):
             pyEditorLoad = reader.loadFile("EditorSettings")
-            window = dict(pyEditorLoad[1][1:])
+            window = dict(pyEditorLoad[3][1:])
             edZipNode = dict(zip(window['zippedNodes'], [True]*len(window['zippedNodes'])))
 
-            listEd = Editors.TreeEditor(root, window['address'], window['cursor'], edZipNode)
+            #listEd = Editors.TreeEditor(root, window['address'], window['cursor'], edZipNode)
+            listEd = CodeEditor.CodeEditor(root, window['address'], window['cursor'], edZipNode)
+            listEd.printingMode = window['printingMode']
+            listEd.id = window['id']
 
         else:
             listEd = Editors.TreeEditor(root)
-
-
-        # editorRoot = TNode.TNode(TNode.createTreeFromSexp(pyEditorLoad))
-        # edAddPy = editorRoot.getValueAtNVS(['editor', 'window', 'address']).child.toPySexp()
-        # edCurPy = editorRoot.getValueAtNVS(['editor', 'window', 'cursor']).child.toPySexp()
-        #
-        # edZipNode = editorRoot.getValueAtNVS(['editor', 'window', 'zippedNodes']).child
-        #
-        # listEd = Editors.TreeEditor(root, edAddPy, edCurPy)
-        #
-        # if edZipNode != None:
-        #     edZipped = edZipNode.toPySexp()
-        #     for i in edZipped:
-        #         listEd.zippedNodes[i] = True
 
         return TNode.TNode(listEd)
 
@@ -220,7 +211,8 @@ class WindowManager(TNode.FuncObject):
             windowClicked, windowAddress = self.matchWindowToClick(mouse.cx, mouse.cy)
             if windowClicked != self.winTree.cursor:
                 new = self.winTree.cursorToAddress(windowAddress)
-                self.winTree = new # imperative at the moment to allow switching and selecting an expression
+                self.winTree = new # imperative at the moment to allow simultaenously switching and selecting
+                # an expression
 
                 #return self.updateList(
                 #    ('winTree', new),
@@ -323,11 +315,11 @@ class WindowManager(TNode.FuncObject):
                             #args.append(i.getValue(curEd.id))
                             args.append(curEd.nodeValues[i])
 
-
-                    #(newTree, env) = curNode.child.getValue(curEd.id)('inspect', *args)
                     (newTree, env) = curEd.nodeValues[curNode.child]('inspect', *args)
-                    newEd = CodeEditor.CodeEditor(newTree.root, newTree.rootToCursorAdd(),
+
+                    newEd = CodeEditor.InspectionEditor(newTree.root, newTree.rootToCursorAdd(),
                                                   zippedNodes=curEd.zippedNodes)
+                    #newEd = CodeEditor.CodeEditor(TNode.TNode(newTree.cursor), zippedNodes=curEd.zippedNodes)
                     newEd.context = curEd.buffer
                     newEd.contextParent = curEd.id    # not really needed?
                     newEd.showValues = True

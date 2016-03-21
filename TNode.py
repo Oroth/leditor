@@ -196,6 +196,9 @@ def copyToAdd(node, add):
 def nestAdd(node, add):
     return opAtAdd(node, add, lambda addNode: cons(TNode(addNode.child), addNode.next))
 
+def denestAdd(node, add):
+    return opAtAdd(node, add, lambda addNode: joinList(addNode.child, addNode.next))
+
 def quoteAdd(node, add, value):
     return opAtAdd(node, add, lambda addNode: addNode.update('evaled', value))
 
@@ -217,6 +220,15 @@ def join(node1, node2):
     #car = TNode(node1.child, node1.nodeID)
     car.next = node2
     return car
+
+def joinList(lst, node):
+    newLst = copy.deepcopy(lst)
+    curLast = newLst
+    while curLast.next:
+        curLast = curLast.next
+
+    curLast.next = node
+    return newLst
 
 
 def copyTNodeAsNewTreeClass(node, newTreeClass):
@@ -347,6 +359,11 @@ class Buffer(FuncObject):
 
     def nestCursor(self):
         newView = nestAdd(self.view, self.cursorAdd)
+        newImage = replaceAdd(self.root, self.viewAdd, newView.child)
+        return Buffer(newImage, self.viewAdd, self.cursorAdd)
+
+    def denestCursor(self):
+        newView = denestAdd(self.view, self.cursorAdd)
         newImage = replaceAdd(self.root, self.viewAdd, newView.child)
         return Buffer(newImage, self.viewAdd, self.cursorAdd)
 

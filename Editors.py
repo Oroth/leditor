@@ -124,6 +124,7 @@ class TreeEditor(TNode.FuncObject):
         self.maxx = 80
         self.maxy = 50
 
+        self.statusDescription = reader.Symbol('TreeEditor')
         self.editing = False
         self.cellEditor = None
         self.yankBuffer = None
@@ -173,7 +174,7 @@ class TreeEditor(TNode.FuncObject):
 
     def handleKeys(self, key, mouse):
         self.updateUndo = False
-        self.statusBar.item1 = reader.Symbol('Editor')
+        self.statusBar.item1 = self.statusDescription
         self.statusBar.item2 = self.buffer.viewAdd
         self.statusBar.item3 = self.buffer.cursorAdd
         if key.c != 0:
@@ -344,7 +345,15 @@ class TreeEditor(TNode.FuncObject):
                 except ValueError: pass
 
             elif chr(key.c) == '(':
-                return self.update('buffer', self.buffer.nestCursor())
+                return self.updateList(
+                    ('buffer', self.buffer.nestCursor()),
+                    ('updateUndo', True))
+
+            elif chr(key.c) == ')':
+                if self.buffer.onSubNode() and self.buffer.cursor != self.buffer.root:
+                    return self.updateList(
+                        ('buffer', self.buffer.denestCursor()),
+                        ('updateUndo', True))
 
             elif chr(key.c) == 'o':
                 if self.buffer.cursor != self.buffer.view:

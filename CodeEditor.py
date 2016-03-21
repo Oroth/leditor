@@ -8,11 +8,10 @@ import Eval
 #from main import wm
 
 
-
-
 class CodeEditor(Editors.TreeEditor):
     def __init__(self, *args, **kwargs):
         super(CodeEditor, self).__init__(*args, **kwargs)
+        self.statusDescription = reader.Symbol('CodeEditor')
         self.showValues = True
         self.env = Eval.global_env
         self.vars = None
@@ -30,7 +29,7 @@ class CodeEditor(Editors.TreeEditor):
             #parent = findWin(self.parentID)
             #vals = parent.nodeValues[args]
             #self.env = Env(self.vars, vals, parent.env)
-        Eval.eval(TNode.Buffer(self.buffer.root, self.buffer.viewAdd), self.env, self.storeNodeValue)
+        Eval.eval(TNode.Buffer(self.buffer.root), self.env, self.storeNodeValue)
 
 
     def syncWithImage(self, newImageRoot):
@@ -73,6 +72,15 @@ class CodeEditor(Editors.TreeEditor):
 
         self.evalBuffer()   # updating imperatively?
         return result
+
+
+class InspectionEditor(CodeEditor):
+    def __init__(self, *args, **kwargs):
+        super(InspectionEditor, self).__init__(*args, **kwargs)
+        self.statusDescription = reader.Symbol('InspectionEditor')
+
+    def evalBuffer(self):
+        Eval.eval(TNode.Buffer(self.buffer.root, self.buffer.viewAdd), self.env, self.storeNodeValue)
 
 
 class evalIOHandler(CodeEditor):
