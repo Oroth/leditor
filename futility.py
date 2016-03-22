@@ -1,19 +1,19 @@
 __author__ = 'chephren'
 
 import TNode
-import libtcodpy as libtcod
-import utility
+import iop
 import reader
 
 class Cell(TNode.FuncObject):
-    def __init__(self, character=' ', characterReference = 0, lineItemNodeRef=None, bgColour=utility.defaultBG(), fgColour=utility.defaultFG()):
+    def __init__(self, character=' ', characterReference = 0, lineItemNodeRef=None,
+                 bgColour=iop.defaultBG(), fgColour=iop.defaultFG()):
         self.character = character
         self.characterReference = characterReference
         self.lineItemNodeReference = lineItemNodeRef
         self.bgColour = bgColour
         self.fgColour = fgColour
 
-def createBlank(maxx, maxy, bgColour=utility.defaultBG(), fgColour=utility.defaultFG()):
+def createBlank(maxx, maxy, bgColour=iop.defaultBG(), fgColour=iop.defaultFG()):
     return [[Cell(bgColour=bgColour, fgColour=fgColour) for x in range(0, maxx)] for x in range(0, maxy)]
 
 # Functional version
@@ -30,7 +30,6 @@ def createBlank(maxx, maxy, bgColour=utility.defaultBG(), fgColour=utility.defau
 #    return newImage
 
 def putNodeOnImage2(image, x, y, text, lineItemNodeRef, bgcol, fgcol):
-
     for cdx, c in enumerate(text):
         (image[y][x]).character = c
         (image[y][x]).characterReference = cdx
@@ -47,9 +46,7 @@ def printToScreen(image, posx, posy):
     for x in xrange(maxx):
         for y in xrange(maxy):
             cell = image[y][x]
-            libtcod.console_set_default_background(0, cell.bgColour)
-            libtcod.console_set_default_foreground(0, cell.fgColour)
-            libtcod.console_print(0, posx+x, posy+y, cell.character)
+            iop.screenPrint(posx + x, posy + y, cell.character, cell.bgColour, cell.fgColour)
 
 
 # ======================== Creating the List =======================================================
@@ -73,11 +70,7 @@ class lineItemNode(TNode.FuncObject):
 
     def nodeToString(self):
         return self.text
-        #if self.parenSymbol is not None:
-            #return self.parenSymbol
-        #else:
-            #return self.nodeReference.child
-            #return reader.to_string(self.nodeReference.child)
+
 
 class lineListNode(TNode.FuncObject):
     def __init__(self, lineNumber, indent, nodeList=[], parenAlignment=0):
@@ -86,11 +79,6 @@ class lineListNode(TNode.FuncObject):
         self.nodeList = list(nodeList)
         self.parenAlignment = parenAlignment
 
-    #def __str__(self):
-       # return "(lineListNode " + str(self.indent) + " " + str(self.startNode) + ")"
-
-    #def addLineItem(self, nodeReference, parenSymbol=None, isCursor=False):
-    #    self.nodeList += lineItemNode(nodeReference, parenSymbol, isCursor)
 
 
 def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
@@ -290,7 +278,6 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
             ret = [lineItemNode(node, address, '(', isCursor),
                    lineItemNode(node, address, ')', isCursor)]
         else:
-            #ret = [lineItemNode(node, node.child, isCursor)]
             ret = [lineItemNode(node, address, None, isCursor)]
 
         # code editor, needs to go with the code editor code
@@ -309,26 +296,6 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
 
         return modeRet
 
-#        reindent = False
-#        if node.next and isComplex(node.next):
-#            reindent = True
-#
-#        # new rule: if only two values (exp1 exp2) and exp2 is very complex, indent anyway
-#        if node.next and node.next.isSubNode() and isComplex(node.next.child):
-#            reindent = True
-#
-#        if node.next:
-#            newAddress[-1] += 1
-#            if indent:
-#                ret.append(lineListNode(0, nesting))
-#                ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent=True))
-#            elif reindent:        # can only apply to the first expression
-#                ret.append(lineListNode(0, nesting+1))
-#                ret.extend(recur(node.next, newAddress, nesting+1, isParentCursor, indent=True))
-#            else:
-#                ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent))
-#
-#        return ret
 
     def splitStringAcrossLines(string, firstBoundary, remainingBoundary):
         stringList = []
@@ -449,46 +416,4 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
     toppedLineList = lineList[topLine:]
     return toppedLineList
 
-
-if __name__ == '__main__':
-    SCREEN_WIDTH = 80
-    SCREEN_HEIGHT = 50
-    LIMIT_FPS = 20
-
-
-    #############################################
-    # Initialization & Main Loop
-    #############################################
-
-    libtcod.console_set_custom_font('fonts/terminal8x14_gs_ro.png',
-                libtcod.FONT_TYPE_GREYSCALE | libtcod.FONT_LAYOUT_ASCII_INROW)
-    libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, 'List-editor', False)
-    libtcod.sys_set_fps(LIMIT_FPS)
-    libtcod.console_set_background_flag(0, libtcod.BKGND_SET)
-    libtcod.console_set_default_foreground(0, libtcod.white)
-
-    #lst = ['some', 'text', ['code', 'words'], 'to', 'write']
-    lst = [[reader.Symbol('function'), ['let', ['x', 15], ['y', 10],
-                                        ['+', ['*', 'x', 'x'], ['*', 'y', 'y'],
-                                        "This is a very long string designed"
-                                        ,"Yetanother fairly long test string to see if it workslikepromised"
-                        ,"Finally a super long string that won't fit on two lines, let alone one, just to make"
-                        "sure it works like the good lord intended it should, if this is long enough"]]]]
-
-#    lst = [["one very long string indeed unencumbered by any other strings in the"
-#           ,"vicinity shall we say, but if this one grows exponentially, terribly, indeed horribly"
-#           ", unstoppably, and revoltingly without rhyme or reason, folly or madness only wonderment"]]
-
-    tree = TNode.createTreeFromSexp(lst)
-    buff = TNode.Buffer(tree)
-    buff.cursor = buff.cursor.child
-    lineList = createStucturalLineIndentList(buff, 50)
-    fakeWin = drawLineList(lineList)
-
-    finalWin = sliceFakeWindow(fakeWin, 0, SCREEN_HEIGHT)
-    libtcod.console_clear(0)
-
-    printToScreen(finalWin)
-    libtcod.console_flush()
-    key = libtcod.console_wait_for_keypress(libtcod.KEY_RELEASED)
 

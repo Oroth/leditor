@@ -1,12 +1,10 @@
 __author__ = 'chephren'
-import libtcodpy as libtcod
+import iop
 import futility
 import reader
 from reader import Symbol
-import Eval
 import TNode
 import operator
-import time
 
 
 class CellEditor(object):
@@ -15,7 +13,7 @@ class CellEditor(object):
         self.content = list(str(content).encode('string_escape'))
         self.index = 0
         # should check to make sure not a symbol
-        if not isinstance(content, Symbol): # and len(content) > 0 and content[0] == '"':
+        if not isinstance(content, Symbol):
             self.isString = True
         else: self.isString = False
 
@@ -36,40 +34,40 @@ class CellEditor(object):
 
     def handleKey(self, key):
 
-        if key.vk == libtcod.KEY_ENTER:
+        if key.code() == iop.KEY_ENTER:
             try:
                 if self.isString and ''.join(self.content).decode('string_escape'):
                     return 'END'
             except ValueError: return
             return 'END'  # exit editor
 
-        if key.vk == libtcod.KEY_ESCAPE:
+        if key.code() == iop.KEY_ESCAPE:
             return 'CANCEL'  # exit editor
 
-        elif key.vk == libtcod.KEY_LEFT:
+        elif key.code() == iop.KEY_LEFT:
             if self.index > 0:
                 self.index -= 1
 
-        elif key.vk == libtcod.KEY_RIGHT:
+        elif key.code() == iop.KEY_RIGHT:
             if self.index < len(self.content):
                 self.index += 1
 
-        elif key.vk == libtcod.KEY_BACKSPACE:
+        elif key.code() == iop.KEY_BACKSPACE:
             if self.content and self.index != 0:
                 del self.content[self.index - 1]
                 self.index -= 1
 
-        elif key.vk == libtcod.KEY_DELETE:
+        elif key.code() == iop.KEY_DELETE:
             if self.content and self.index != len(self.content):
                 del self.content[self.index]
 
-        elif not self.isString and chr(key.c) == '(':
+        elif not self.isString and key.char() == '(':
             return 'NEST'
 
-        elif not self.isString and chr(key.c) == ')':
+        elif not self.isString and key.char() == ')':
             return 'UNNEST'
 
-        elif chr(key.c) == '"':
+        elif key.char() == '"':
             if not self.isString:
                 self.isString = True
             else:
@@ -77,33 +75,16 @@ class CellEditor(object):
                 if temp.find(' ') == -1:
                     self.isString = False
 
-        elif not self.isString and key.vk == libtcod.KEY_SPACE:
+        elif not self.isString and key.code() == iop.KEY_SPACE:
             if len(self.content) > 0:
                 return 'SPACE'
 
-        elif key.c != 0:
-            self.content.insert(self.index, chr(key.c))
+        elif key.char() != 0:
+            self.content.insert(self.index, key.char())
             self.index += 1
 
-    # def draw(self, pen):
-    #     if self.isString:
-    #         pen.writeHL('"' + ''.join(self.content) + '" ', libtcod.azure, self.index+1)
-    #     else:
-    #         pen.writeHL(''.join(self.content) + ' ', libtcod.azure, self.index)
-    #
-    # def getImage(self):
-    #     if self.isString:
-    #         text = '"' + ''.join(self.content) + '" '
-    #     else:
-    #         text = ''.join(self.content) + ' '
-    #     image = futility.createBlank(len(text), 1)
-    #     futility.putNodeOnImage2(image, 0, 0, text, None)
-    #     image[0][self.index].bgColour = libtcod.azure
-    #
-    #     return image
 
 class ColourScheme(TNode.FuncObject):
-
     def __init__(self, bgCol, symbolCol, stringCol, numberCol, activeHiCol, idleHiCol):
         self.bgCol = bgCol
         self.symbolCol = symbolCol
@@ -117,7 +98,6 @@ class TreeEditor(TNode.FuncObject):
     editors = 0
 
     def __init__(self, root, rootCursorAdd=[0], cursorAdd=[0], zippedNodes=None):
-        #self.root = root
         self.buffer = TNode.Buffer(root, rootCursorAdd, cursorAdd)
         self.posx = 0
         self.posy = 0
@@ -146,12 +126,7 @@ class TreeEditor(TNode.FuncObject):
         self.topNode = self.buffer.cursorToFirst().curBottom().cursor
         self.image = None
 
-        self.colourScheme = ColourScheme(libtcod.black, libtcod.white,
-                                         libtcod.light_green, libtcod.light_sky,
-                                         libtcod.azure, libtcod.light_grey)
-
-        # self.fgCol = libtcod.white
-        # self.bgCol = libtcod.black
+        self.colourScheme = ColourScheme(iop.black, iop.white, iop.light_green, iop.light_sky, iop.azure, iop.light_grey)
 
         self.statusBar = StatusBar()
 
@@ -177,16 +152,12 @@ class TreeEditor(TNode.FuncObject):
         self.statusBar.item1 = self.statusDescription
         self.statusBar.item2 = self.buffer.viewAdd
         self.statusBar.item3 = self.buffer.cursorAdd
-        if key.c != 0:
+        if key.code() != 0:
             self.statusBar.message = None
         self.statusBar = self.statusBar.refreshStatus()
 
-#        self.statusBar = self.statusBar.updateStatus(
-#            [reader.Symbol('Editor')
-#            ,self.buffer.viewAdd
-#            ,self.buffer.cursorAdd])
-        if mouse.lbutton_pressed:
-            cell = self.image[mouse.cy - self.posy][mouse.cx - self.posx]
+        if mouse.lbuttonPressed():
+            cell = self.image[mouse.y() - self.posy][mouse.x() - self.posx]
 
             if self.editing:
                 if cell.lineItemNodeReference and cell.lineItemNodeReference.nodeReference == self.buffer.cursor:
@@ -198,21 +169,14 @@ class TreeEditor(TNode.FuncObject):
             elif cell.lineItemNodeReference:
                 newBuff = self.buffer.cursorToAddress(cell.lineItemNodeReference.nodeAddress)
                 return self.update('buffer', newBuff)
-        elif mouse.wheel_down:
+        elif mouse.wheelDown():
             self.topLine += 3
-        elif mouse.wheel_up:
+        elif mouse.wheelUp():
             if self.topLine > 2:
                 self.topLine -= 3
             else:
                 self.topLine = 0
 
-#            try:
-#                if self.buffer.cursor.nodeID in self.zippedNodes and self.zippedNodes[self.buffer.cursor.nodeID]:
-#                    newBuff = self.buffer.curUp().curNextUpAlong()
-#                else:
-#                    newBuff = self.buffer.curNextUpAlong()
-#                return self.update('buffer', newBuff)
-#            except ValueError: pass
 
         if self.editing:
 
@@ -277,33 +241,35 @@ class TreeEditor(TNode.FuncObject):
 
         else:
 
-            if key.vk == libtcod.KEY_ESCAPE:                                        # exit Editor
+            if key.code() == iop.KEY_ESCAPE:                                        # exit Editor
+                print 'Escape'
                 return 'ESC'
 
-            elif chr(key.c) == 'x':
-                image = libtcod.image_load('fonts\\arial10x10.png')
-                libtcod.image_blit(image, 0, 10, 10, libtcod.BKGND_DEFAULT, 2, 2, 0)
-                libtcod.console_flush()
-                time.sleep(2)
+            # Trial: blit an image to screen
+            # elif key.char() == 'x':
+            #     image = io.image_load('fonts\\arial10x10.png')
+            #     io.image_blit(image, 0, 10, 10, io.BKGND_DEFAULT, 2, 2, 0)
+            #     io.console_flush()
+            #     time.sleep(2)
 
 
-            elif chr(key.c) == 'b':     # Go back to the first expression in the list
+            elif key.char() == 'b':     # Go back to the first expression in the list
                 return self.update('buffer', self.buffer.curFirst())
 
-            elif chr(key.c) == 'd':
+            elif key.char() == 'd':
                 if self.buffer.cursor != self.buffer.root:
                     return self.updateList(
                         ('buffer', self.buffer.deleteAtCursor()),
                         ('yankBuffer', self.buffer.cursorToPySexp()),
                         ('updateUndo', True))
 
-            elif chr(key.c) == 'c':
+            elif key.char() == 'c':
                 if not self.buffer.onSubNode():
                     return self.updateList(
                         ('cellEditor', CellEditor(self.buffer.cursor.child)),
                         ('editing', True))
 
-            elif chr(key.c) == 'a':
+            elif key.char() == 'a':
                 if self.buffer.cursor != self.buffer.view:
                     newBuff = self.buffer.appendAtCursor('').curNext()
                     return self.updateList(
@@ -311,11 +277,7 @@ class TreeEditor(TNode.FuncObject):
                         ('cellEditor', CellEditor(Symbol(''))),
                         ('editing', True))
 
-            # elif chr(key.c) == 'f':
-            #     self.firstNode = self.buffer.cursor
-
-
-            elif chr(key.c) == 'i':
+            elif key.char() == 'i':
                 if self.buffer.cursor != self.buffer.view:    # maybe the correct behaviour is to sub and ins
                     newBuff = self.buffer.insertAtCursor('').curPrev()
                     return self.updateList(
@@ -323,46 +285,46 @@ class TreeEditor(TNode.FuncObject):
                         ('cellEditor', CellEditor(Symbol(''))),
                         ('editing', True))
 
-            elif chr(key.c) == 'e':
+            elif key.char() == 'e':
                 return self.update('buffer', self.buffer.curLast())
 
-            elif chr(key.c) == 'G':
+            elif key.char() == 'G':
                 lookupAddress = self.buffer.cursor.activeToPySexp()
                 #newViewAddress = self.buffer.root.getNodeAtNVS(lookupAddress)
                 newBuff = TNode.Buffer(self.buffer.root, lookupAddress)
                 return self.update('buffer', newBuff)
 
-            elif chr(key.c) == 'J':
+            elif key.char() == 'J':
                 if self.buffer.onSubNode():
                     return self.update('buffer', self.buffer.viewToCursor())
 
-            elif chr(key.c) == 'K':
+            elif key.char() == 'K':
                 try:
                     return self.update('buffer', self.buffer.viewUp())
                 except ValueError: pass
 
-            elif chr(key.c) == 'H':
+            elif key.char() == 'H':
                 try:
                     return self.update('buffer', self.buffer.viewPrev())
                 except ValueError: pass
 
-            elif chr(key.c) == 'L':
+            elif key.char() == 'L':
                 try:
                     return self.update('buffer', self.buffer.viewNext())
                 except ValueError: pass
 
-            elif chr(key.c) == '(':
+            elif key.char() == '(':
                 return self.updateList(
                     ('buffer', self.buffer.nestCursor()),
                     ('updateUndo', True))
 
-            elif chr(key.c) == ')':
+            elif key.char() == ')':
                 if self.buffer.onSubNode() and self.buffer.cursor != self.buffer.root:
                     return self.updateList(
                         ('buffer', self.buffer.denestCursor()),
                         ('updateUndo', True))
 
-            elif chr(key.c) == 'o':
+            elif key.char() == 'o':
                 if self.buffer.cursor != self.buffer.view:
                     newBuff = self.buffer.appendAtCursor(['']).curNext().curChild()
                     return self.updateList(
@@ -370,7 +332,7 @@ class TreeEditor(TNode.FuncObject):
                         ('cellEditor', CellEditor(Symbol(''))),
                         ('editing', True))
 
-            elif chr(key.c) == 'O':
+            elif key.char() == 'O':
                 if self.buffer.cursor != self.buffer.view:
                     newBuff = self.buffer.insertAtCursor(['']).curPrev().curChild()
                     return self.updateList(
@@ -378,7 +340,7 @@ class TreeEditor(TNode.FuncObject):
                         ('cellEditor', CellEditor(Symbol(''))),
                         ('editing', True))
 
-            elif chr(key.c) == 'm':
+            elif key.char() == 'm':
                 modes = ['code', 'horizontal', 'vertical']
                 if self.printingMode == 'help':
                     currentModePos = 2
@@ -388,131 +350,91 @@ class TreeEditor(TNode.FuncObject):
                 self.statusBar.displayMessage("DisplayMode: " + self.printingMode)
 
 
-            elif chr(key.c) == 'N':
+            elif key.char() == 'N':
                 newBuff = TNode.Buffer(self.buffer.root, [0], [0, 0]).curLast()
                 newBuff = newBuff.appendAtCursor([reader.Symbol('newNode')]).curNext()
                 newBuff = newBuff.viewToCursor().curChild()
                 self.topLine = 0
                 return self.update('buffer', newBuff)
 
-            elif chr(key.c) == 'p':
+            elif key.char() == 'p':
                 toInsert = TNode.createTreeFromSexp(self.yankBuffer)
                 return self.updateList(
                     ('buffer', self.buffer.appendAtCursor(toInsert)),
                     ('updateUndo', True))
 
-            elif chr(key.c) == 'P':
+            elif key.char() == 'P':
                 toInsert = TNode.createTreeFromSexp(self.yankBuffer)
                 return self.updateList(
                     ('buffer', self.buffer.insertAtCursor(toInsert)),
                     ('updateUndo', True))
 
-            #elif chr(key.c) == 'q':
-            #    var = self.buffer.cursor.child
-            #    value = self.buffer.findLexicalValue(var)
-            #    return self.update('yankBuffer', value)
-
-            elif chr(key.c) == 'R':
+            elif key.char() == 'R':
                 return self.update('buffer', self.buffer.viewToRoot())
 
-            elif chr(key.c) == 's':
+            elif key.char() == 's':
                 return self.updateList(
                     ('cellEditor', CellEditor(Symbol(''))),
                     ('editing', True))
 
-            elif chr(key.c) == 't':
+            elif key.char() == 't':
                 self.topLine += 1
 
-            elif chr(key.c) == 'T':
+            elif key.char() == 'T':
                 if self.topLine > 0:
                     self.topLine -= 1
 
-            elif chr(key.c) == 'u':
+            elif key.char() == 'u':
                 return "UNDO"
 
-            elif chr(key.c) == 'y':
+            elif key.char() == 'y':
                 self.yankBuffer = self.buffer.cursorToPySexp()
                 print self.yankBuffer
 
-            elif chr(key.c) == 'z':
+            elif key.char() == 'z':
                 if self.buffer.cursor.nodeID in self.zippedNodes:
                     self.zippedNodes[self.buffer.cursor.nodeID] = not(self.zippedNodes[self.buffer.cursor.nodeID])
                 else:
                     self.zippedNodes[self.buffer.cursor.nodeID] = True
 
-            elif chr(key.c) == "'":
-                #return self.update('buffer', self.buffer.quoteAtCursor())
+            elif key.char() == "'":
                 newBuff = self.buffer.nestCursor().curChild().insertAtCursor(Symbol('quote'))
                 return self.update('buffer', newBuff)
-#                if self.buffer.cursor.evaled:
-#                    self.buffer.cursor.evaled = False
-#                else: self.buffer.cursor.evaled = True
 
-            elif chr(key.c) == '+':
+            elif key.char() == '+':
                 numList = self.buffer.cursorToPySexp()
                 result = reduce(operator.add, numList)
                 newBuff = self.buffer.replaceAtCursor(result)
-                #result = Eval.eval(self.buffer)
-                #return self.update('yankBuffer', result)
                 return self.updateList(
                     ('buffer', newBuff),
                     ('updateUndo', True))
 
-
-            elif chr(key.c) == '"':
+            elif key.char() == '"':
                 return self.updateList(
                     ('buffer', self.buffer.toggleStringAtCursor()),
                     ('updateUndo', True))
 
-            elif chr(key.c) == '=':
-                #return self.update()
+            elif key.char() == '=':
                 if self.buffer.cursor in self.revealedNodes:
                     self.revealedNodes[self.buffer.cursor] = not(self.revealedNodes[self.buffer.cursor])
                 else:
                     self.revealedNodes[self.buffer.cursor] = True
-#                if self.buffer.cursor.displayValue:
-#                    self.buffer.cursor.displayValue = False
-#                else: self.buffer.cursor.displayValue = True
 
             # Go to help pages, will need to be updated
-            elif chr(key.c) == '?':
+            elif key.char() == '?':
                 helpIter, helpAddress = self.buffer.root.gotoNodeAtNVS(['origin', 'help'])
                 newBuff = TNode.Buffer(self.buffer.root, helpAddress)
                 self.printingMode = 'help'
                 return self.update('buffer', newBuff)
 
 
-            # Save the current state of the image
-            elif key.vk == libtcod.KEY_F2:
-                zipped, zipAdd = self.buffer.root.gotoNodeAtNVS(['origin', 'editor', 'zipped'])
-                zipAdd += [1]
-                #newBuff = TNode.Buffer(self.buffer.root, [0], zipAdd)
-                zipList = []
-                for k, v in self.zippedNodes.iteritems():
-                    if v is True:
-                        zipList.append(k)
-                newImage = TNode.replaceAdd(self.buffer.root, zipAdd, zipList)
-
-                view, viewAdd = self.buffer.root.gotoNodeAtNVS(['origin', 'editor', 'address'])
-                viewAdd += [1]
-                viewList = self.buffer.viewAdd
-                newImage = TNode.replaceAdd(newImage, viewAdd, viewList)
-
-                cursor, cursorSaveAdd = self.buffer.root.gotoNodeAtNVS(['origin', 'editor', 'cursor'])
-                cursorSaveAdd += [1]
-                currentCursorAdd = self.buffer.cursorAdd
-                newImage = TNode.replaceAdd(newImage, cursorSaveAdd, currentCursorAdd)
-
-                newBuff = TNode.Buffer(newImage, self.buffer.viewAdd, self.buffer.cursorAdd)
-                return self.update('buffer', newBuff)
-
-            elif key.vk == libtcod.KEY_LEFT or chr(key.c) == 'h':
+            elif key.code() == iop.KEY_LEFT or key.char() == 'h':
                 try:
                     newBuff = self.buffer.curPrevUpAlong()
                     return self.update('buffer', newBuff)
                 except ValueError: pass
 
-            elif key.vk == libtcod.KEY_RIGHT or chr(key.c) == 'l':
+            elif key.code() == iop.KEY_RIGHT or key.char() == 'l':
                 try:
                     if self.buffer.cursor.nodeID in self.zippedNodes and self.zippedNodes[self.buffer.cursor.nodeID]:
                         newBuff = self.buffer.curUp().curNextUpAlong()
@@ -521,14 +443,12 @@ class TreeEditor(TNode.FuncObject):
                     return self.update('buffer', newBuff)
                 except ValueError: pass
 
-
-            elif key.vk == libtcod.KEY_DOWN or chr(key.c) == 'j':
+            elif key.code() == iop.KEY_DOWN or key.char() == 'j':
                 if self.buffer.onSubNode():
                     newBuff = self.buffer.curChild()
                     return self.update('buffer', newBuff)
 
-
-            elif key.vk == libtcod.KEY_UP or chr(key.c) == 'k':
+            elif key.code() == iop.KEY_UP or key.char() == 'k':
                 try:
                     newBuff = self.buffer.curUp()
                     return self.update('buffer', newBuff)
@@ -536,12 +456,11 @@ class TreeEditor(TNode.FuncObject):
 
         return self
 
-    def draw(self, posx, posy, maxx, maxy, isActive):
 
+    def draw(self, posx, posy, maxx, maxy, isActive):
         lineList = futility.createStucturalLineIndentList(self, maxx, maxy)
         self.topLine = lineList[0].lineNumber
 
-        #fakeWin = futility.drawLineList(lineList, maxx, maxy, self.bgCol, self.fgCol, hlcol)
         fakeWin = futility.drawLineList(lineList, maxx, maxy, self.colourScheme, isActive)
         #self.topNode = lineList[0].nodeList[0].nodeReference
         #self.topNode = self.buffer.cursorToFirst().curBottom().cursor
@@ -559,10 +478,7 @@ class TreeEditor(TNode.FuncObject):
 
 class StatusBar(TreeEditor):
     def __init__(self, *args, **kwargs):
-        #super(statusBar, self).__init__(*args, **kwargs)
-
         self.editing = False
-        #self.cellEditor = None
         self.printingMode = 'horizontal'
         self.zippedNodes = {}
         self.statusBar = None
@@ -571,12 +487,11 @@ class StatusBar(TreeEditor):
         self.item3 = None
         self.message = None
         self.topLine = 0
-        self.bgCol = libtcod.white
-        self.fgCol = libtcod.black
+        self.bgCol = iop.white
+        self.fgCol = iop.black
 
-        self.colourScheme = ColourScheme(libtcod.white, libtcod.black,
-                                         libtcod.darker_green, libtcod.darker_sky,
-                                         libtcod.white, libtcod.white)
+        self.colourScheme = \
+                ColourScheme(iop.white, iop.black, iop.darker_green, iop.darker_sky, iop.white, iop.white)
 
         status = TNode.TNode(TNode.createTreeFromSexp(
             [reader.Symbol('Editor')

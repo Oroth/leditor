@@ -1,12 +1,11 @@
 __author__ = 'chephren'
 import TNode
 from TNode import cons, Buffer
-import utility
 import Editors
-import libtcodpy as libtcod
 import reader
 import CodeEditor
 import os.path
+import iop
 
 
 # interface
@@ -17,7 +16,7 @@ class Window(object):
         self.y = y
         self.width = width
         self.height = height
-        self.image = libtcod.console_new(width, height)
+        self.image = iop.console_new(width, height)
 
 
 class Column(object):
@@ -25,10 +24,6 @@ class Column(object):
         self.width = width
         self.function = function
         self.rows = None
-
-    #def widthIncrease(self, x):
-
-    #def widthDecrease(self, x)
 
     def draw(self, x, y):
         self.function.draw(x, y)
@@ -43,9 +38,6 @@ class Column(object):
 class WindowManager(TNode.FuncObject):
     def __init__(self, imageRoot, imageFileName):
         self.ImageRoot = imageRoot
-
-        # root of windows
-        #winRoot = TNode.TNode(self.parse_memory(imageRoot))
         winRoot = TNode.TNode(self.loadEditorSettings(imageRoot))
         self.winTree = Buffer(winRoot, [0], [0, 0])
         self.winCmd = False
@@ -53,22 +45,6 @@ class WindowManager(TNode.FuncObject):
         self.wins = 1
         self.hist = imageRoot
         self.imageFileName = imageFileName
-
-    # def parse_memory(self, root):
-    #     edAddPy = root.getValueAtNVS(['origin', 'editor', 'address']).child.toPySexp()
-    #     edCurPy = root.getValueAtNVS(['origin', 'editor', 'cursor']).child.toPySexp()
-    #
-    #     edZipNode = root.getValueAtNVS(['origin', 'editor', 'zipped']).child
-    #
-    #     listEd = Editors.TreeEditor(root, edAddPy, edCurPy)
-    #
-    #     if edZipNode != None:
-    #         edZipped = edZipNode.toPySexp()
-    #         for i in edZipped:
-    #             listEd.zippedNodes[i] = True
-    #
-    #     return TNode.TNode(listEd)
-
 
     def writeImage(self):
         pyObj = self.ImageRoot.child.toNodeIDValuePySexp()
@@ -109,7 +85,6 @@ class WindowManager(TNode.FuncObject):
             window = dict(pyEditorLoad[3][1:])
             edZipNode = dict(zip(window['zippedNodes'], [True]*len(window['zippedNodes'])))
 
-            #listEd = Editors.TreeEditor(root, window['address'], window['cursor'], edZipNode)
             listEd = CodeEditor.CodeEditor(root, window['address'], window['cursor'], edZipNode)
             listEd.printingMode = window['printingMode']
             listEd.id = window['id']
@@ -119,18 +94,18 @@ class WindowManager(TNode.FuncObject):
 
         return TNode.TNode(listEd)
 
-#    def addCol(self):
-#        self.cols += 1
-#        newWidth = utility.screenWidth() / self.cols
-#        #need to readjust all columns..
-#        self.active.insertAfter(newWidth)
-#        self.active = self.active.next
-#
-#        iter = self.winRoot
-#        iter.child.width = newWidth
-#        while iter.next:
-#            iter.next.child.width = newWidth
-#            iter = iter.next
+    def addCol(self):
+       self.cols += 1
+       newWidth = iop.screenWidth() / self.cols
+       #need to readjust all columns..
+       self.active.insertAfter(newWidth)
+       self.active = self.active.next
+
+       iter = self.winRoot
+       iter.child.width = newWidth
+       while iter.next:
+           iter.next.child.width = newWidth
+           iter = iter.next
 
     def addWindow(self, newFunc):
         self.wins += 1
@@ -140,11 +115,10 @@ class WindowManager(TNode.FuncObject):
     # calculates and sets posx, posy, maxx, maxy for all windows trying to allocate available screen real estate
     # as equally as possible
     def calculateWindowPositions(self):
-        maxX = utility.screenWidth()
+        maxX = iop.screenWidth()
         curY = 0
 
-        #numberOfBorders = self.wins - 1
-        screenForWins = utility.screenHeight() #- numberOfBorders
+        screenForWins = iop.screenHeight() #- numberOfBorders
         minYStep = screenForWins / self.wins
         leftover = screenForWins % self.wins
 
@@ -156,25 +130,16 @@ class WindowManager(TNode.FuncObject):
                 curYStep = minYStep
 
             i.child.setPosition(0, curY, maxX, curYStep)
-
             curY += curYStep
-
-            # leave gap for border
-            #if i.next:
-               # curY += 1
 
 
     def draw(self):
-
         self.calculateWindowPositions()
 
-        maxX = utility.screenWidth()
+        maxX = iop.screenWidth()
         curY = 0
-
-        #numberOfBorders = self.wins - 1
-        screenForWins = utility.screenHeight() #- numberOfBorders
+        screenForWins = iop.screenHeight()
         minYStep = screenForWins / self.wins
-        curYStep = minYStep
         leftover = screenForWins % self.wins
 
         for i in self.winTree.root.child:
@@ -188,10 +153,6 @@ class WindowManager(TNode.FuncObject):
                 i.child.draw(0, curY, maxX, curYStep, isActive=True)
             else: i.child.draw(0, curY, maxX, curYStep, isActive=False)
             curY += curYStep
-#            if i.next:
-#                libtcod.console_set_default_background(0, libtcod.black)
-#                libtcod.console_set_default_foreground(0, libtcod.white)
-#                libtcod.console_hline(0, 0, curY - 1, utility.screenWidth())
 
 
     def matchWindowToClick(self, x, y):
@@ -203,12 +164,9 @@ class WindowManager(TNode.FuncObject):
             winAdd[-1] += 1
 
 
-
     def handleKeys(self, key, mouse):
-        #return self.active.child.function.handleKeys(key)
-
-        if mouse.lbutton_pressed:
-            windowClicked, windowAddress = self.matchWindowToClick(mouse.cx, mouse.cy)
+        if mouse.lbuttonPressed():
+            windowClicked, windowAddress = self.matchWindowToClick(mouse.x(), mouse.y())
             if windowClicked != self.winTree.cursor:
                 new = self.winTree.cursorToAddress(windowAddress)
                 self.winTree = new # imperative at the moment to allow simultaenously switching and selecting
@@ -220,23 +178,21 @@ class WindowManager(TNode.FuncObject):
 
         if self.winCmd:
 
-            if chr(key.c) == 'j':
+            if key.char() == 'j':
                 try:
                     return self.updateList(
                         ('winTree', self.winTree.curNext()),
                         ('winCmd', False))
                 except ValueError: pass
 
-            elif chr(key.c) == 'k':
+            elif key.char() == 'k':
                 try:
                     return self.updateList(
                         ('winTree', self.winTree.curPrev()),
                         ('winCmd', False))
                 except ValueError: pass
 
-            #elif chr(key.c) == 'n':
-
-            elif chr(key.c) == 'o':
+            elif key.char() == 'o':
                 #cursorToView
                 curEd = self.winTree.cursor.child
                 newEd = Editors.TreeEditor(self.ImageRoot, curEd.buffer.rootToCursorAdd(),
@@ -244,27 +200,22 @@ class WindowManager(TNode.FuncObject):
                 newWinTree = self.addWindow(newEd)
                 return self.updateList(
                     ('winTree', newWinTree),
-                    ('winCmd', False)
-                )
+                    ('winCmd', False))
 
-            elif chr(key.c) == 'd':
+            elif key.char() == 'd':
                 if self.wins > 1:
                     return self.updateList(
                         ('winTree', self.winTree.deleteAtCursor()),
                         ('wins', self.wins - 1),
                         ('winCmd', False))
 
-
-            elif chr(key.c) == 'u':
+            elif key.char() == 'u':
                 if self.hist.next:
                     return self.updateList(
                         ('ImageRoot', self.hist.next),
-                        ('hist', self.hist.next)
-                    )
-                    #self.ImageRoot = self.hist.next
-                    #self.hist = self.hist.next
+                        ('hist', self.hist.next))
 
-            elif chr(key.c) == 'w':
+            elif key.char() == 'w':
                 try:
                     next = self.winTree.curNext()
                 except ValueError:
@@ -275,10 +226,9 @@ class WindowManager(TNode.FuncObject):
                     ('winCmd', False))
 
             # run a function like a program
-            elif key.vk == libtcod.KEY_SPACE:
+            elif key.code() == iop.KEY_SPACE:
                 curEd = self.winTree.cursor.child
                 evalBuffer = TNode.Buffer(self.ImageRoot, curEd.buffer.rootToCursorAdd())
-                #func = CodeEditor.eval(evalBuffer)
                 prog = CodeEditor.evalIOHandler(evalBuffer)
                 newWinTree = self.addWindow(prog)
 
@@ -288,11 +238,10 @@ class WindowManager(TNode.FuncObject):
 
                 return newWM
 
-            elif key.vk == libtcod.KEY_ENTER:
+            elif key.code() == iop.KEY_ENTER:
                 curEd = self.winTree.cursor.child
                 newEd = CodeEditor.CodeEditor(self.ImageRoot, curEd.buffer.rootToCursorAdd(),
                                               zippedNodes=curEd.zippedNodes)
-
                 newEd.evalBuffer()
                 newWinTree = self.addWindow(newEd)
 
@@ -300,10 +249,7 @@ class WindowManager(TNode.FuncObject):
                     ('winTree', newWinTree),
                     ('winCmd', False))
 
-            elif chr(key.c) == 'e':
-                pass
-
-            elif chr(key.c) == '>':
+            elif key.char() == '>':
                 print 'inspecting'
                 curEd = self.winTree.cursor.child
                 curNode = curEd.buffer.cursor
@@ -312,14 +258,13 @@ class WindowManager(TNode.FuncObject):
                     args = []
                     if curNode.child.next:
                         for i in curNode.child.next:
-                            #args.append(i.getValue(curEd.id))
                             args.append(curEd.nodeValues[i])
 
                     (newTree, env) = curEd.nodeValues[curNode.child]('inspect', *args)
 
                     newEd = CodeEditor.InspectionEditor(newTree.root, newTree.rootToCursorAdd(),
                                                   zippedNodes=curEd.zippedNodes)
-                    #newEd = CodeEditor.CodeEditor(TNode.TNode(newTree.cursor), zippedNodes=curEd.zippedNodes)
+
                     newEd.context = curEd.buffer
                     newEd.contextParent = curEd.id    # not really needed?
                     newEd.showValues = True
@@ -331,24 +276,22 @@ class WindowManager(TNode.FuncObject):
                         ('winTree', newWinTree),
                         ('winCmd', False))
 
-            elif key.vk == libtcod.KEY_ESCAPE:
+            elif key.code() == iop.KEY_ESCAPE:
                 return self.update('winCmd', False)
 
-        elif chr(key.c) == 'w' and key.lctrl:
+        elif key.char() == 'w' and key.lctrl():
             self.winCmd = True
             self.winTree.cursor.child.statusBar.displayMessage("Window Mode")
             print "windowing"
 
-        elif chr(key.c) == 's' and key.lctrl:
-            #self.writeImage()
+        elif key.char() == 's' and key.lctrl():
+            self.writeImage()
             self.writeEditor()
             self.winTree.cursor.child.statusBar.displayMessage("Saving Image")
             print "saving"
 
-
         else:
             result = self.winTree.cursor.child.handleKeys(key, mouse)
-            #print "result ", result
             if result == 'ESC':
                 self.writeImage()
                 self.writeEditor()
@@ -379,6 +322,6 @@ class WindowManager(TNode.FuncObject):
             #return self.update('winTree', self.winTree.replaceAtCursor(result))
 
         return self
-        #return self.update('winCmd', False)
+
 
 
