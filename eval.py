@@ -1,6 +1,6 @@
 __author__ = 'chephren'
 import reader
-import utility
+import iop
 import TNode
 
 wm = None
@@ -87,8 +87,8 @@ def add_globals(env):
          'null?':lambda x:x==[], 'symbol?':lambda x: isa(x, reader.Symbol),
          'int':lambda x:charToInt(x), 'cat':lambda a,b:a+b,
          'string-ref':lambda str,ref:str[ref],
-         'screen-width':lambda :utility.screenWidth(),
-         'screen-height': lambda :utility.screenHeight(),
+         'screen-width':lambda :iop.screenWidth(),
+         'screen-height': lambda :iop.screenHeight(),
          'make-vector':lambda size,t:list(t) * size,
          'make-string':lambda size,c:str(c) * size,
          'count-wins':lambda :wm().wins

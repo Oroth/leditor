@@ -36,15 +36,40 @@ class Column(object):
 
 
 class WindowManager(TNode.FuncObject):
-    def __init__(self, imageRoot, imageFileName):
+    def __init__(self, imageFileName):
+        #self.loadImage(imageFileName)
+
+        pyLoad = reader.loadFile(imageFileName)
+        pyImage = [0]
+        pyImage.append(pyLoad)
+        imageRoot = TNode.createTree(pyImage)
+
         self.ImageRoot = imageRoot
+        self.hist = imageRoot
+
         winRoot = TNode.TNode(self.loadEditorSettings(imageRoot))
         self.winTree = Buffer(winRoot, [0], [0, 0])
+        self.imageFileName = imageFileName
+
         self.winCmd = False
         self.cols = 1
         self.wins = 1
+
+
+
+    def loadImage(self, imageFileName):
+        pyLoad = reader.loadFile(imageFileName)
+        pyImage = [0]
+        pyImage.append(pyLoad)
+        imageRoot = TNode.createTree(pyImage)
+
+        self.imageRoot = imageRoot
         self.hist = imageRoot
+
+        winRoot = TNode.TNode(self.loadEditorSettings(imageRoot))
+        self.winTree = Buffer(winRoot, [0], [0, 0])
         self.imageFileName = imageFileName
+
 
     def writeImage(self):
         pyObj = self.ImageRoot.child.toNodeIDValuePySexp()
@@ -79,6 +104,7 @@ class WindowManager(TNode.FuncObject):
         f.write(text)
         f.close()
 
+    # returns an editor with settings as per the EditorSettings file
     def loadEditorSettings(self, root):
         if os.path.isfile("EditorSettings"):
             pyEditorLoad = reader.loadFile("EditorSettings")

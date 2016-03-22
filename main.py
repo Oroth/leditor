@@ -1,45 +1,30 @@
 import iop
-import TNode
-import reader
 import windowManager
 import Eval
 import os.path
 
-
-#actual size of the window
+# Size is in cells
 SCREEN_WIDTH = 150
 SCREEN_HEIGHT = 50
-
-LIMIT_FPS = 20  # 20 frames-per-second maximum
-
-
-#############################################
-# Initialization & Main Loop
-#############################################
+LIMIT_FPS = 20
 
 iop.setUp(SCREEN_WIDTH, SCREEN_HEIGHT, LIMIT_FPS)
-
 
 if os.path.isfile("testIDImage"):
     imageFileName = "testIDImage"
 else:
     imageFileName = "Image"
 
-pyLoad = reader.loadFile(imageFileName)
-pyImage = [0]
-pyImage.append(pyLoad)
-nodeTree = TNode.createTree(pyImage)
+wm = windowManager.WindowManager(imageFileName)
 
-wm = windowManager.WindowManager(nodeTree, imageFileName)
-
-
+# Make definitions in the window manager available to the base environment in eval, so that they can be called
+# as part of our programs
 Eval.wm = lambda: wm
 
 
 while not iop.isWindowClosed():
     wm.draw()
     iop.screenFlush()
-
     newKey, newMouse = iop.getInput()
 
     result = wm.handleKeys(newKey, newMouse)
