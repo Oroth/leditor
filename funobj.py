@@ -15,9 +15,6 @@ class FuncObject(object):
         return newSelf
 
 
-
-
-
 def transform(obj, property, func):
     newObj = obj.copy()
     newProp = func(getattr(newObj, property))

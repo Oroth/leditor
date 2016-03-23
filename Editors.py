@@ -490,13 +490,13 @@ class StatusBar(TreeEditor):
 
         self.colourScheme = ColourScheme(iop.white, iop.black, iop.darker_green, iop.darker_sky, iop.white, iop.white)
 
-        status = TNode.TNode(TNode.createTreeFromSexp(
+        status = TNode.createTreeFromSexp(
             [reader.Symbol('Editor')
             ,reader.Symbol('View')
             ,reader.Symbol('Address')]
-        ))
+        )
 
-        self.buffer = TNode.Buffer(status)
+        self.buffer = TNode.makeRootBuffer(status)
 
     def draw(self, posx, posy, maxx, maxy, isActive):
         return super(StatusBar, self).draw(posx, posy, maxx, maxy, isActive)
@@ -506,7 +506,7 @@ class StatusBar(TreeEditor):
         return self.updateStatus(statusList)
 
     def updateStatus(self, status):
-        newStatus = TNode.Buffer(TNode.TNode(TNode.createTreeFromSexp(status)))
+        newStatus = TNode.makeRootBuffer(TNode.createTreeFromSexp(status))
         return self.update('buffer', newStatus)
 
     def displayMessage(self, message):

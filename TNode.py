@@ -215,6 +215,9 @@ def copyTNodeAsNewTreeClass(node, newTreeClass):
 
     return startNode
 
+def makeRootBuffer(tree, viewAdd=[0], cursorAdd=[0]):
+    return (Buffer(TNode(tree), viewAdd, cursorAdd))
+
 
 class Buffer(fo.FuncObject):
     def __init__(self, root, viewAdd=[0], cursorAdd=[0]):

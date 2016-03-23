@@ -38,8 +38,6 @@ class Column(object):
 
 class WindowManager(fo.FuncObject):
     def __init__(self, imageFileName):
-        #self.loadImage(imageFileName)
-
         pyLoad = reader.loadFile(imageFileName)
         pyImage = [0]
         pyImage.append(pyLoad)
@@ -48,28 +46,13 @@ class WindowManager(fo.FuncObject):
         self.ImageRoot = imageRoot
         self.hist = imageRoot
 
-        winRoot = TNode.TNode(self.loadEditorSettings(imageRoot))
-        self.winTree = Buffer(winRoot, [0], [0, 0])
+        winRoot = self.loadEditorSettings(imageRoot)
+        self.winTree = TNode.makeRootBuffer(winRoot, [0], [0, 0])
         self.imageFileName = imageFileName
 
         self.winCmd = False
         self.cols = 1
         self.wins = 1
-
-
-
-    def loadImage(self, imageFileName):
-        pyLoad = reader.loadFile(imageFileName)
-        pyImage = [0]
-        pyImage.append(pyLoad)
-        imageRoot = TNode.createTree(pyImage)
-
-        self.imageRoot = imageRoot
-        self.hist = imageRoot
-
-        winRoot = TNode.TNode(self.loadEditorSettings(imageRoot))
-        self.winTree = Buffer(winRoot, [0], [0, 0])
-        self.imageFileName = imageFileName
 
 
     def writeImage(self):
@@ -117,7 +100,7 @@ class WindowManager(fo.FuncObject):
             listEd.id = window['id']
 
         else:
-            listEd = Editors.TreeEditor(root)
+            listEd =CodeEditor.CodeEditor(root)
 
         return TNode.TNode(listEd)
 
