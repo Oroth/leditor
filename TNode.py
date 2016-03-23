@@ -1,46 +1,10 @@
 __author__ = 'chephren'
 import reader
+import funobj as fo
 import copy
-
-
-
-
-class FuncObject(object):
-    def update(self, prop, val):
-        newSelf = copy.copy(self)
-        setattr(newSelf, prop, val)
-        return newSelf
-
-    def updateList(self, *propValueList):
-        newSelf = copy.copy(self)
-        #changes = []
-        for (prop, val) in propValueList:
-            if not hasattr(newSelf, prop):
-                raise AttributeError
-            #old = getattr(newSelf, prop)
-            setattr(newSelf, prop, val)
-        return newSelf
-
 
 def isList(lst):
     return isinstance(lst, list)
-
-
-def transform(obj, property, func):
-    newObj = obj.copy()
-    newProp = func(getattr(newObj, property))
-    setattr(newObj, property, newProp)
-    return newObj
-
-
-def transformList(obj, *propFuncList):
-    newObj = obj.copy()
-    #(propList, funcList) = zip(*propFuncList)
-    for (prop, func) in propFuncList:
-        newProp = func(getattr(newObj, prop))
-        setattr(newObj, prop, newProp)
-
-    return newObj
 
 
 def createTreeFromSexp(sexp):
@@ -252,7 +216,7 @@ def copyTNodeAsNewTreeClass(node, newTreeClass):
     return startNode
 
 
-class Buffer(FuncObject):
+class Buffer(fo.FuncObject):
     def __init__(self, root, viewAdd=[0], cursorAdd=[0]):
         self.root = root
 
@@ -502,7 +466,7 @@ class Buffer(FuncObject):
             return self.cursor.child  # the value
 
 
-class TNode(FuncObject):
+class TNode(fo.FuncObject):
     __nodes__ = 0
     def __init__(self, val=None, id=None, next=None):
         self.next = next

@@ -6,6 +6,7 @@ import reader
 import CodeEditor
 import os.path
 import iop
+import funobj as fo
 
 
 # interface
@@ -35,7 +36,7 @@ class Column(object):
 
 
 
-class WindowManager(TNode.FuncObject):
+class WindowManager(fo.FuncObject):
     def __init__(self, imageFileName):
         #self.loadImage(imageFileName)
 

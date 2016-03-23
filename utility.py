@@ -1,5 +1,4 @@
 __author__ = 'chephren'
-#import ioppy as libtcod
 import iop
 
 class windowBorderException(Exception):

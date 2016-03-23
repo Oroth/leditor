@@ -1,10 +1,10 @@
 __author__ = 'chephren'
 
-import TNode
 import iop
 import reader
+import funobj as fo 
 
-class Cell(TNode.FuncObject):
+class Cell(fo.FuncObject):
     def __init__(self, character=' ', characterReference = 0, lineItemNodeRef=None,
                  bgColour=iop.defaultBG(), fgColour=iop.defaultFG()):
         self.character = character
@@ -55,7 +55,7 @@ def sliceFakeWindow(fakeWindow, topline, maxHeight):
     return fakeWindow[topline:topline+maxHeight]
 
 
-class lineItemNode(TNode.FuncObject):
+class lineItemNode(fo.FuncObject):
     def __init__(self, nodeReference, nodeAddress, text=None, isCursor=False, stringSplit=None):
         self.nodeReference = nodeReference
         if text is None:
@@ -72,7 +72,7 @@ class lineItemNode(TNode.FuncObject):
         return self.text
 
 
-class lineListNode(TNode.FuncObject):
+class lineListNode(fo.FuncObject):
     def __init__(self, lineNumber, indent, nodeList=[], parenAlignment=0):
         self.lineNumber = lineNumber
         self.indent = indent

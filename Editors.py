@@ -4,6 +4,7 @@ import futility
 import reader
 from reader import Symbol
 import TNode
+import funobj as fo
 import operator
 
 
@@ -84,7 +85,7 @@ class CellEditor(object):
             self.index += 1
 
 
-class ColourScheme(TNode.FuncObject):
+class ColourScheme(fo.FuncObject):
     def __init__(self, bgCol, symbolCol, stringCol, numberCol, activeHiCol, idleHiCol):
         self.bgCol = bgCol
         self.symbolCol = symbolCol
@@ -94,7 +95,7 @@ class ColourScheme(TNode.FuncObject):
         self.idleHiCol = idleHiCol
 
 
-class TreeEditor(TNode.FuncObject):
+class TreeEditor(fo.FuncObject):
     editors = 0
 
     def __init__(self, root, rootCursorAdd=[0], cursorAdd=[0], zippedNodes=None):
@@ -127,9 +128,7 @@ class TreeEditor(TNode.FuncObject):
         self.image = None
 
         self.colourScheme = ColourScheme(iop.black, iop.white, iop.light_green, iop.light_sky, iop.azure, iop.light_grey)
-
         self.statusBar = StatusBar()
-
         self.id = TreeEditor.editors
         TreeEditor.editors += 1
 
@@ -242,7 +241,6 @@ class TreeEditor(TNode.FuncObject):
         else:
 
             if key.code() == iop.KEY_ESCAPE:                                        # exit Editor
-                print 'Escape'
                 return 'ESC'
 
             # Trial: blit an image to screen
@@ -490,8 +488,7 @@ class StatusBar(TreeEditor):
         self.bgCol = iop.white
         self.fgCol = iop.black
 
-        self.colourScheme = \
-                ColourScheme(iop.white, iop.black, iop.darker_green, iop.darker_sky, iop.white, iop.white)
+        self.colourScheme = ColourScheme(iop.white, iop.black, iop.darker_green, iop.darker_sky, iop.white, iop.white)
 
         status = TNode.TNode(TNode.createTreeFromSexp(
             [reader.Symbol('Editor')
