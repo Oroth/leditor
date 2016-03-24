@@ -99,8 +99,7 @@ def add_globals(env):
 global_env = add_globals(Env())
 
 def eval(exprBuf, env=global_env, memoize=None):
-    #self.calcEnv()
-    #x = expr.child
+
     exprChild = exprBuf.curChild()
     ret = None
 
@@ -143,18 +142,14 @@ def eval(exprBuf, env=global_env, memoize=None):
 
         else:
             ret = makeLambda
-            #ret = makeClosure(makeLambda, )
 
-
+    # no changes?
     elif exprChild.cursor.child == 'let':
-    #            if not isa(mapping, TNode):
-    #                ret = LetSyntaxException("Bad-Var-Syntax")
 
         vars = []
         valResults = []
 
         try:
-            #mapping = exprChild.cursor.next.child
             mapping = exprChild.curNext().curChild()
 
             while True:
@@ -175,7 +170,7 @@ def eval(exprBuf, env=global_env, memoize=None):
                 #                    vars.append(i.child.child)
                 #                    val = i.child.next
                 #                    valResults.append(self.eval(val, env))
-        except AttributeError:
+        except  (AttributeError, ValueError):
             ret = LetSyntaxException("Bad-Var-Syntax")
 
         else:
