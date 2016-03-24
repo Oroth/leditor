@@ -3,108 +3,124 @@ import reader
 import funobj as fo
 import copy
 
-def isList(lst):
+# Terminology
+# Atom - Something that is either a symbol, a string, a number (currently)
+# Obj - Something that can be any python object, but not a TNode or List
+
+# PyList - A normal python list of Objs
+# PyExp - A normal python list of Objs, which may also include other PyLists
+# PySexp - A python list of atoms and other PySexps
+
+# TNode - Any generic TNode
+# TNodeAtom
+# TNodeObj
+# TNodeList
+# TNodeTree
+# TNodeTreeRoot
+# TNodeExp - Any generic TNode
+# TNodeWinList
+# TNodeWinListRoot
+# TNodeSexp
+
+# TNodeNumberedExp
+# TNodeIDExpPair
+
+# Buffer
+# BufferSexp
+
+
+def isPyList(lst):
     return isinstance(lst, list)
 
-
-def createTreeFromSexp(sexp):
+def createTNodeExpFromPyExp(pyexp):
     startNode = None
     lastNode = None
 
-    if sexp is not None:
-        if isList(sexp):
-            for i in sexp:
+    if pyexp is not None:
+        if isPyList(pyexp):
+            for i in pyexp:
                 if startNode:
-                    #lastNode.insertAfter(createTreeFromSexp(i))
-                    newNode = TNode(createTreeFromSexp(i))
+                    newNode = TNode(createTNodeExpFromPyExp(i))
                     lastNode.next = newNode
-
-                    lastNode = lastNode.next   #move the pointer along
+                    lastNode = lastNode.next
                 else:
-                    startNode = TNode(createTreeFromSexp(i))
+                    startNode = TNode(createTNodeExpFromPyExp(i))
                     lastNode = startNode
-        else:  #atom
-            return sexp
+        else:
+            return pyexp
 
     return startNode
 
 # Must be length two and without subexpressions
-def isNodeAtom(atom):
-    if len(atom) == 2 and not isList(atom[0]) and not isList(atom[1]):
+def tnodeNumberedExpContainsAtom(pynumexp):
+    if len(pynumexp) == 2 and not isPyList(pynumexp[0]) and not isPyList(pynumexp[1]):
         return True
     else:
         return False
 
 # like createTreeFromSexp, but picks up the nodeID
-def createTree(sexp):
-    if isNodeAtom(sexp):
-        return TNode(sexp[1], sexp[0])
+def createTNodeExpFromPyNumberedExp(pyexp):
+    if tnodeNumberedExpContainsAtom(pyexp):
+        return TNode(pyexp[1], pyexp[0])
 
     else:  # sexp = (id (sexp|atom ...))
-        nodeID = sexp[0]
-        values = sexp[1]
+        nodeID = pyexp[0]
+        pysubexp = pyexp[1]
 
         startNode = None
         lastNode = None
-        for i in values:
+        for i in pysubexp:
             if startNode:
-                node = createTree(i)
+                node = createTNodeExpFromPyNumberedExp(i)
                 lastNode.next = node
                 lastNode = lastNode.next
             else:
-                startNode = createTree(i)
+                startNode = createTNodeExpFromPyNumberedExp(i)
                 lastNode = startNode
 
         return TNode(startNode, nodeID)
 
-# parse (nodeID value)
-def createTreeFromNodeIDValueSexp(sexp):
+# An alternative way of writing the above to see if it could be made shorter
+# Not used, will probably delete
+def createTNodeExpFromPyNumberedExp2(pyexp):
     startNode = None
     lastNode = None
 
-    if sexp is not None:
-        if not isNodeAtom(sexp):
-            for i in sexp[1]:
+    if pyexp is not None:
+        if not tnodeNumberedExpContainsAtom(pyexp):
+            for i in pyexp[1]:
                 if startNode:
-                    newNode = TNode(createTreeFromNodeIDValueSexp(i[1]), i[0])
+                    newNode = TNode(createTNodeExpFromPyNumberedExp2(i[1]), i[0])
                     lastNode.next = newNode
-
                     lastNode = lastNode.next
                 else:
-                    startNode = TNode(createTreeFromNodeIDValueSexp(i[1]), i[0])
+                    startNode = TNode(createTNodeExpFromPyNumberedExp2(i[1]), i[0])
                     lastNode = startNode
-        else:  #atom
-            return sexp
+        else:
+            return pyexp
 
     return startNode
 
 
-
-def copyTNode(node):
+def copyTNodeExp(exp):
     startNode = None
     lastNode = None
 
-    if node:
-        if isinstance(node, TNode):
-            for i in node:
+    if exp:
+        if isinstance(exp, TNode):
+            for i in exp:
                 if startNode:
-                    lastNode.insertAfter(copyTNode(i.child))
+                    lastNode.insertAfter(copyTNodeExp(i.child))
                     lastNode = lastNode.next
                 else:
-                    startNode = TNode(copyTNode(i.child))
+                    startNode = TNode(copyTNodeExp(i.child))
                     lastNode = startNode
-        else:  #atom
-            return node
+        else:  #pyObj
+            return exp
 
     return startNode
 
-# new. purely functional
-# copies only the minimum number
-def copyTNodeToInd(node, i):
-    if i != 0:
-        return cons(node.child, copyTNodeToInd(node.next, i - 1))
-    else:
-        return TNode(node.child)
+
 
 def opAtNVSAdd(node, nvs, op):
     def opAtAdd2(node, nvs, curDest):
@@ -217,6 +233,16 @@ def copyTNodeAsNewTreeClass(node, newTreeClass):
 
 def makeRootBuffer(tree, viewAdd=[0], cursorAdd=[0]):
     return (Buffer(TNode(tree), viewAdd, cursorAdd))
+
+
+def createBufferFromPyExp(pyexp, viewAdd=[0], cursorAdd=[0]):
+    # A buffer always operates on a list, never atoms, so convert to list if necessary
+    if not isPyList(pyexp):
+        bufexp = [[pyexp]]
+    else:
+        bufexp = [pyexp]
+
+    return Buffer(createTNodeExpFromPyExp(bufexp), viewAdd, cursorAdd)
 
 
 class Buffer(fo.FuncObject):
@@ -502,8 +528,8 @@ class TNode(fo.FuncObject):
         else: return False
 
     def parseValue(self, val):
-        if isList(val):
-            return createTreeFromSexp(val)
+        if isPyList(val):
+            return createTNodeExpFromPyExp(val)
         else:
             return val
 

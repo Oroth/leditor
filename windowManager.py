@@ -41,13 +41,14 @@ class WindowManager(fo.FuncObject):
         pyLoad = reader.loadFile(imageFileName)
         pyImage = [0]
         pyImage.append(pyLoad)
-        imageRoot = TNode.createTree(pyImage)
+        imageRoot = TNode.createTNodeExpFromPyNumberedExp(pyImage)
 
         self.ImageRoot = imageRoot
         self.hist = imageRoot
 
         winRoot = self.loadEditorSettings(imageRoot)
-        self.winTree = TNode.makeRootBuffer(winRoot, [0], [0, 0])
+        #self.winTree = TNode.makeRootBuffer(winRoot, [0], [0, 0])
+        self.winTree = TNode.createBufferFromPyExp(winRoot, [0], [0, 0])
         self.imageFileName = imageFileName
 
         self.winCmd = False
@@ -102,7 +103,7 @@ class WindowManager(fo.FuncObject):
         else:
             listEd =CodeEditor.CodeEditor(root)
 
-        return TNode.TNode(listEd)
+        return listEd
 
     def addCol(self):
        self.cols += 1

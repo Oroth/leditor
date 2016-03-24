@@ -80,7 +80,7 @@ class CellEditor(object):
             if len(self.content) > 0:
                 return 'SPACE'
 
-        elif key.char() != 0:
+        elif key.code() != 0:
             self.content.insert(self.index, key.char())
             self.index += 1
 
@@ -356,13 +356,13 @@ class TreeEditor(fo.FuncObject):
                 return self.update('buffer', newBuff)
 
             elif key.char() == 'p':
-                toInsert = TNode.createTreeFromSexp(self.yankBuffer)
+                toInsert = TNode.createTNodeExpFromPyExp(self.yankBuffer)
                 return self.updateList(
                     ('buffer', self.buffer.appendAtCursor(toInsert)),
                     ('updateUndo', True))
 
             elif key.char() == 'P':
-                toInsert = TNode.createTreeFromSexp(self.yankBuffer)
+                toInsert = TNode.createTNodeExpFromPyExp(self.yankBuffer)
                 return self.updateList(
                     ('buffer', self.buffer.insertAtCursor(toInsert)),
                     ('updateUndo', True))
@@ -490,7 +490,7 @@ class StatusBar(TreeEditor):
 
         self.colourScheme = ColourScheme(iop.white, iop.black, iop.darker_green, iop.darker_sky, iop.white, iop.white)
 
-        status = TNode.createTreeFromSexp(
+        status = TNode.createTNodeExpFromPyExp(
             [reader.Symbol('Editor')
             ,reader.Symbol('View')
             ,reader.Symbol('Address')]
@@ -506,7 +506,7 @@ class StatusBar(TreeEditor):
         return self.updateStatus(statusList)
 
     def updateStatus(self, status):
-        newStatus = TNode.makeRootBuffer(TNode.createTreeFromSexp(status))
+        newStatus = TNode.makeRootBuffer(TNode.createTNodeExpFromPyExp(status))
         return self.update('buffer', newStatus)
 
     def displayMessage(self, message):
