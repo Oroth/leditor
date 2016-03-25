@@ -3,7 +3,7 @@ import buffer
 __author__ = 'chephren'
 import reader
 import iop
-import TNode
+import tnode
 
 wm = None
 isa = isinstance
@@ -119,7 +119,7 @@ def eval(exprBuf, env=global_env, memoize=None):
     elif exprChild.cursor.child == '^':         # (lambda (var*) exp)
 
         try:
-            vars = exprChild.cursor.next.child.toPySexp()
+            vars = exprChild.cursor.next.child.toPyExp()
             #check if list of symbols:
 
             #exp = exprChild.cursor.next.next

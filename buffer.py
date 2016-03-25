@@ -1,6 +1,6 @@
 import funobj as fo
 import reader
-from TNode import replaceAdd, appendAdd, insertAdd, deleteAdd, nestAdd, denestAdd, quoteAdd, isPyList, \
+from tnode import replaceAdd, appendAdd, insertAdd, deleteAdd, nestAdd, denestAdd, quoteAdd, isPyList, \
     createTNodeExpFromPyExp
 
 
@@ -30,7 +30,6 @@ class Buffer(fo.FuncObject):
         return Buffer(self.root, self.viewAdd, add)
 
     def syncToNewRoot(self, newRoot):
-#        return Buffer(newRoot, self.viewAdd, self.cursorAdd)
         newView, newViewAdd = self.root.gotoAddressOnNewRoot(self.viewAdd, newRoot)
         newCursor, newCursorAdd = self.view.gotoAddressOnNewRoot(self.cursorAdd, newView)
         return Buffer(newRoot, newViewAdd, newCursorAdd)
@@ -72,28 +71,27 @@ class Buffer(fo.FuncObject):
         return self.viewAdd + self.cursorAdd[1:]
 
     def opAtCursor(self, op, value=None):
-        if value:
+        if value is not None:
             newView = op(self.view, self.cursorAdd, value)
         else:
             newView = op(self.view, self.cursorAdd)
         newImage = replaceAdd(self.root, self.viewAdd, newView.child)
         return Buffer(newImage, self.viewAdd, self.cursorAdd)
 
-#    def appendAtCursor(self, value):
-#        return self.opAtCursor(appendAdd, value)
-
     def appendAtCursor(self, value):
-        newView = appendAdd(self.view, self.cursorAdd, value)
-        newImage = replaceAdd(self.root, self.viewAdd, newView.child)
-        newBuffer = Buffer(newImage, self.viewAdd, self.cursorAdd)
-        return newBuffer
+        return self.opAtCursor(appendAdd, value)
 
     def insertAtCursor(self, value):
-        newView = insertAdd(self.view, self.cursorAdd, value)
-        newImage = replaceAdd(self.root, self.viewAdd, newView.child)
-        newCursorAdd = list(self.cursorAdd)
-        newCursorAdd[-1] += 1
-        return Buffer(newImage, self.viewAdd, newCursorAdd)
+        return self.opAtCursor(insertAdd, value).curNext()
+
+    def replaceAtCursor(self, value):
+        return self.opAtCursor(replaceAdd, value)
+
+    def nestCursor(self):
+        return self.opAtCursor(nestAdd)
+
+    def quoteAtCursor(self):
+        return self.opAtCursor(quoteAdd)
 
     def deleteAtCursor(self):
         newBuff = self
@@ -103,50 +101,13 @@ class Buffer(fo.FuncObject):
         newImage = replaceAdd(newBuff.root, newBuff.viewAdd, newView.child)
         return Buffer(newImage, newBuff.viewAdd, newBuff.cursorAdd)
 
-    def replaceAtCursor(self, value):
-        newView = replaceAdd(self.view, self.cursorAdd, value)
-        newImage = replaceAdd(self.root, self.viewAdd, newView.child)
-        return Buffer(newImage, self.viewAdd, self.cursorAdd)
-
-    def nestCursor(self):
-        newView = nestAdd(self.view, self.cursorAdd)
-        newImage = replaceAdd(self.root, self.viewAdd, newView.child)
-        return Buffer(newImage, self.viewAdd, self.cursorAdd)
-
-    def denestCursor(self):
-        newView = denestAdd(self.view, self.cursorAdd)
-        newImage = replaceAdd(self.root, self.viewAdd, newView.child)
-        return Buffer(newImage, self.viewAdd, self.cursorAdd)
-
-    def quoteAtCursor(self):
-        newView = quoteAdd(self.view, self.cursorAdd, not(self.cursor.evaled))
-        newImage = replaceAdd(self.root, self.viewAdd, newView.child)
-        return Buffer(newImage, self.viewAdd, self.cursorAdd)
-
     def toggleStringAtCursor(self):
         if isinstance(self.cursor.child, reader.Symbol):
             return self.replaceAtCursor(str(self.cursor.child))
         else: return self
 
-    def findLexicalValue(self, lexeme):
-        #env = self.curUp().curUp()
-        env = self.curUp()
-        while True:
-            try:
-                env = env.curUp()
-            except ValueError: break
-
-            if env.curChild() == lexeme: # check the name
-                return env.next
-            for i in env.cursor.child.next:  # check the name list
-                if i.child.child == lexeme:
-                    return i.child.next.childToPyExp()
-
-        return None
-
 
     def viewUp(self):
-        # from curUp
         if len(self.viewAdd) > 1:
             newViewAddress = self.viewAdd[0:-1]
         else:

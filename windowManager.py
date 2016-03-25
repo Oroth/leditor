@@ -1,8 +1,8 @@
 
 
 __author__ = 'chephren'
-import TNode
-from TNode import cons
+import tnode
+from tnode import cons
 import buffer
 import Editors
 import reader
@@ -44,12 +44,12 @@ class WindowManager(fo.FuncObject):
         pyLoad = reader.loadFile(imageFileName)
         pyImage = [0]
         pyImage.append(pyLoad)
-        imageRoot = TNode.createTNodeExpFromPyNumberedExp(pyImage)
+        imageRoot = tnode.createTNodeExpFromPyNumberedExp(pyImage)
 
         self.ImageRoot = imageRoot
         self.hist = imageRoot
 
-        winRoot = self.loadEditorSettings(imageRoot)
+        winRoot = self.createListEdFromEditorSettings(imageRoot)
         self.winTree = buffer.createBufferFromPyExp(winRoot, [0], [0, 0])
         self.imageFileName = imageFileName
 
@@ -92,7 +92,7 @@ class WindowManager(fo.FuncObject):
         f.close()
 
     # returns an editor with settings as per the EditorSettings file
-    def loadEditorSettings(self, root):
+    def createListEdFromEditorSettings(self, root):
         if os.path.isfile("EditorSettings"):
             pyEditorLoad = reader.loadFile("EditorSettings")
             window = dict(pyEditorLoad[3][1:])
@@ -107,18 +107,6 @@ class WindowManager(fo.FuncObject):
 
         return listEd
 
-    def addCol(self):
-       self.cols += 1
-       newWidth = iop.screenWidth() / self.cols
-       #need to readjust all columns..
-       self.active.insertAfter(newWidth)
-       self.active = self.active.next
-
-       iter = self.winRoot
-       iter.child.width = newWidth
-       while iter.next:
-           iter.next.child.width = newWidth
-           iter = iter.next
 
     def addWindow(self, newFunc):
         self.wins += 1

@@ -3,7 +3,7 @@ import iop
 import futility
 import reader
 from reader import Symbol
-import TNode
+import tnode
 import buffer
 import funobj as fo
 import operator
@@ -356,13 +356,13 @@ class TreeEditor(fo.FuncObject):
                 return self.update('buffer', newBuff)
 
             elif key.char() == 'p':
-                toInsert = TNode.createTNodeExpFromPyExp(self.yankBuffer)
+                toInsert = tnode.createTNodeExpFromPyExp(self.yankBuffer)
                 return self.updateList(
                     ('buffer', self.buffer.appendAtCursor(toInsert)),
                     ('updateUndo', True))
 
             elif key.char() == 'P':
-                toInsert = TNode.createTNodeExpFromPyExp(self.yankBuffer)
+                toInsert = tnode.createTNodeExpFromPyExp(self.yankBuffer)
                 return self.updateList(
                     ('buffer', self.buffer.insertAtCursor(toInsert)),
                     ('updateUndo', True))
@@ -490,7 +490,7 @@ class StatusBar(TreeEditor):
 
         self.colourScheme = ColourScheme(iop.white, iop.black, iop.darker_green, iop.darker_sky, iop.white, iop.white)
 
-        status = TNode.createTNodeExpFromPyExp(
+        status = tnode.createTNodeExpFromPyExp(
             [reader.Symbol('Editor')
             ,reader.Symbol('View')
             ,reader.Symbol('Address')]

@@ -122,24 +122,6 @@ def createTNodeExpFromPyNumberedExp2(pyexp):
     return startNode
 
 
-def copyTNodeExp(exp):
-    startNode = None
-    lastNode = None
-
-    if exp:
-        if isinstance(exp, TNode):
-            for i in exp:
-                if startNode:
-                    lastNode.insertAfter(copyTNodeExp(i.child))
-                    lastNode = lastNode.next
-                else:
-                    startNode = TNode(copyTNodeExp(i.child))
-                    lastNode = startNode
-        else:  #pyObj
-            return exp
-
-    return startNode
-
 
 def opAtNVSAdd(node, nvs, op):
     def opAtAdd2(node, nvs, curDest):
@@ -295,8 +277,6 @@ class TNode(fo.FuncObject):
 
         return iter, curAdd
 
-    #def getAddress(self):
-
 
     def gotoAddress(self, address):
         add = list(address)
@@ -339,6 +319,7 @@ class TNode(fo.FuncObject):
 
         return (iter, newAdd)
 
+
     def gotoAddressOnNewRoot(self, address, newRoot):
         add = list(address)
         oldNodeIter = self
@@ -354,7 +335,7 @@ class TNode(fo.FuncObject):
                         newNodeIter = newNodeIter.next
                         curDest -= 1
                         newAdd[-1] += 1
-                    else: return (newNodeIter, newAdd)  # the old node must have been deleted from the new root
+                    else: return newNodeIter, newAdd  # the old node must have been deleted from the new root
                 elif newNodeIter == oldNodeIter.next:  # the old node was deleted
                     oldNodeIter = oldNodeIter.next
                     curDest -= 1
@@ -362,58 +343,16 @@ class TNode(fo.FuncObject):
                     newNodeIter = newNodeIter.next
                     newAdd[-1] += 1
 
-                else: return (newNodeIter, newAdd)  # something more complicated happened.
+                else: return newNodeIter, newAdd  # something more complicated happened.
 
             # check if still have sublevels to follow and go to them if possible
             if add:
                 if newNodeIter.isSubNode():
                     newNodeIter = newNodeIter.child
                     oldNodeIter = oldNodeIter.child
-                else: return (newNodeIter, newAdd)
+                else: return newNodeIter, newAdd
 
-        return (newNodeIter, newAdd)
-
-
-#    def getNextUpAlong(self, direction, root):
-#        iter = self
-#
-#        if iter == root:
-#            raise ValueError
-#
-#        while not getattr(iter, direction):
-#            if iter.parent != root:
-#                iter = iter.parent
-#            else: raise ValueError
-#
-#        return getattr(iter, direction)
-#
-#    def getNearestAlong(self, direction, root):
-#        iter = self
-#        levels = 0
-#        switchedLevels = False
-#
-#        if iter == root:
-#            raise ValueError
-#
-#        while not getattr(iter, direction):
-#            if iter.parent != root:
-#                iter = iter.parent
-#                levels += 1
-#                switchedLevels = True
-#            else: raise ValueError
-#
-#        iter = getattr(iter, direction)
-#
-#        #now descend
-#        while levels != 0 and isinstance(iter.child, TNode):
-#            iter = iter.child
-#            levels -= 1
-#
-#        if direction == 'previous' and switchedLevels:
-#            while iter.next:
-#                iter = iter.next
-#
-#        return iter
+        return newNodeIter, newAdd
 
     def getAddressOffset(self, offset):
 
@@ -433,45 +372,6 @@ class TNode(fo.FuncObject):
                 else: return None
 
         return iter.child
-
-#    def slice(self, address):
-#
-#        startNode = None
-#        lastNode = None
-#
-#        if self:
-#            if isinstance(node, TNode):
-#                for i in node:
-#                    if startNode:
-#                        lastNode.insertAfter(copyTNode(i.child))
-#                        lastNode = lastNode.next
-#                    else:
-#                        startNode = TNode(copyTNode(i.child))
-#                        lastNode = startNode
-#            else:  #atom
-#                return node
-#
-#        return startNode
-
-#    def insertBefore(self, element):
-#        newNode = self.__class__(element, self.parent, self.previous, self)
-#        if self.previous:
-#            self.previous.next = newNode
-#        elif self.parent:
-#            self.parent.child = newNode
-#        self.previous = newNode
-
-    def insertAfter(self, element):
-        newNode = self.__class__(element, next=self.next)
-        if self.next:
-            self.next.previous = newNode
-        self.next = newNode
-
-    def setChild(self, newChild):
-        self.child = newChild
-
-    def nestChild(self):
-        self.setChild(self.__class__(self.child, self))
 
 
 
