@@ -1,5 +1,6 @@
 import funobj as fo
 import reader
+import tnode
 from tnode import replaceAdd, appendAdd, insertAdd, deleteAdd, nestAdd, denestAdd, quoteAdd, isPyList, \
     createTNodeExpFromPyExp
 
@@ -7,11 +8,7 @@ from tnode import replaceAdd, appendAdd, insertAdd, deleteAdd, nestAdd, denestAd
 class Buffer(fo.FuncObject):
     def __init__(self, root, viewAdd=[0], cursorAdd=[0]):
         self.root = root
-
-        if isinstance(viewAdd[0], reader.Symbol):
-            self.view, self.viewAdd = self.root.gotoNodeAtNVS(viewAdd)
-        else:
-            self.view, self.viewAdd = self.root.gotoNearestAddress(viewAdd)
+        self.view, self.viewAdd = self.root.gotoNearestAddress(viewAdd)
         self.cursor, self.cursorAdd = self.view.gotoNearestAddress(cursorAdd)
         self.topLine = 0
 
@@ -29,43 +26,12 @@ class Buffer(fo.FuncObject):
     def cursorToAddress(self, add):
         return Buffer(self.root, self.viewAdd, add)
 
+
     def syncToNewRoot(self, newRoot):
-        newView, newViewAdd = self.root.gotoAddressOnNewRoot(self.viewAdd, newRoot)
-        newCursor, newCursorAdd = self.view.gotoAddressOnNewRoot(self.cursorAdd, newView)
+        newView, newViewAdd = tnode.getAddressOnNewExp(self.viewAdd, self.root, newRoot)
+        newCursor, newCursorAdd = tnode.getAddressOnNewExp(self.cursorAdd, self.view, newView)
         return Buffer(newRoot, newViewAdd, newCursorAdd)
 
-    def syncViewAddToNewRoot(self, newRoot):
-        add = list(self.viewAdd)
-        oldNodeIter = self.root
-        newNodeIter = newRoot
-        newAdd = []
-        while add:
-            curDest = add.pop(0)
-            newAdd.append(0)
-            while curDest != 0:
-                if newNodeIter == oldNodeIter:
-                    if newNodeIter.next:
-                        oldNodeIter = oldNodeIter.next
-                        newNodeIter = newNodeIter.next
-                        curDest -= 1
-                        newAdd[-1] += 1
-                    else: return (newNodeIter, newAdd)  # the old node must have been deleted from the new root
-                elif newNodeIter == oldNodeIter.next:  # the old node was deleted
-                    oldNodeIter = oldNodeIter.next
-                elif newNodeIter.next == oldNodeIter: # a node was inserted into the old root
-                    newNodeIter = newNodeIter.next
-                    newAdd[-1] += 1
-
-                else: return (newNodeIter, newAdd)  # something more complicated happened.
-
-            # check if still have sublevels to follow and go to them if possible
-            if add:
-                if newNodeIter.isSubNode():
-                    newNodeIter = newNodeIter.child
-                    oldNodeIter = oldNodeIter.child
-                else: return (newNodeIter, newAdd)
-
-        return (newNodeIter, newAdd)
 
     def rootToCursorAdd(self):
         return self.viewAdd + self.cursorAdd[1:]
@@ -89,6 +55,9 @@ class Buffer(fo.FuncObject):
 
     def nestCursor(self):
         return self.opAtCursor(nestAdd)
+
+    def denestCursor(self):
+        return self.opAtCursor(denestAdd)
 
     def quoteAtCursor(self):
         return self.opAtCursor(quoteAdd)
@@ -148,26 +117,13 @@ class Buffer(fo.FuncObject):
         else:
             raise ValueError
 
-    def curFirst(self):
-        newAddress = list(self.cursorAdd)
-        newAddress[-1] = 0
-        return Buffer(self.root, self.viewAdd, newAddress)
-
-    def curLast(self):
-        cur = self
-        while cur.cursor.next:
+    # move along to the next list and go to the first child
+    def curNextChild(self):
+        cur = self.curNext()
+        while not cur.onSubNode():
             cur = cur.curNext()
+        return cur.curChild()
 
-        return cur
-
-    def curBottom(self):
-        cur = self
-        while cur.cursor.isSubNode():
-            cur = cur.curChild()
-
-        return cur
-
-        #return self.updateList(('cursorAdd', newAddress), ('cursor', cur.cursor))
 
     def curNextUpAlong(self):
         cur = self
@@ -197,6 +153,24 @@ class Buffer(fo.FuncObject):
             cur = cur.curUp()
 
         return cur.curPrev()
+
+    def curFirst(self):
+        newAddress = list(self.cursorAdd)
+        newAddress[-1] = 0
+        return Buffer(self.root, self.viewAdd, newAddress)
+
+    def curLast(self):
+        cur = self
+        while cur.cursor.next:
+            cur = cur.curNext()
+        return cur
+
+    def curBottom(self):
+        cur = self
+        while cur.cursor.isSubNode():
+            cur = cur.curChild()
+
+        return cur
 
     def curUp(self):
         if len(self.cursorAdd) > 1:

@@ -296,20 +296,7 @@ class TreeEditor(fo.FuncObject):
                 if self.buffer.onSubNode():
                     return self.update('buffer', self.buffer.viewToCursor())
 
-            elif key.char() == 'K':
-                try:
-                    return self.update('buffer', self.buffer.viewUp())
-                except ValueError: pass
 
-            elif key.char() == 'H':
-                try:
-                    return self.update('buffer', self.buffer.viewPrev())
-                except ValueError: pass
-
-            elif key.char() == 'L':
-                try:
-                    return self.update('buffer', self.buffer.viewNext())
-                except ValueError: pass
 
             elif key.char() == '(':
                 return self.updateList(
@@ -425,32 +412,56 @@ class TreeEditor(fo.FuncObject):
                 self.printingMode = 'help'
                 return self.update('buffer', newBuff)
 
-
-            elif key.code() == iop.KEY_LEFT or key.char() == 'h':
+            else:
                 try:
-                    newBuff = self.buffer.curPrevUpAlong()
-                    return self.update('buffer', newBuff)
-                except ValueError: pass
+                    if key.char() == 'K':
+                        try:
+                            return self.update('buffer', self.buffer.viewUp())
+                        except ValueError: pass
 
-            elif key.code() == iop.KEY_RIGHT or key.char() == 'l':
-                try:
-                    if self.buffer.cursor.nodeID in self.zippedNodes and self.zippedNodes[self.buffer.cursor.nodeID]:
-                        newBuff = self.buffer.curUp().curNextUpAlong()
-                    else:
-                        newBuff = self.buffer.curNextUpAlong()
-                    return self.update('buffer', newBuff)
-                except ValueError: pass
+                    elif key.char() == 'H':
+                        try:
+                            return self.update('buffer', self.buffer.viewPrev())
+                        except ValueError: pass
 
-            elif key.code() == iop.KEY_DOWN or key.char() == 'j':
-                if self.buffer.onSubNode():
-                    newBuff = self.buffer.curChild()
-                    return self.update('buffer', newBuff)
+                    elif key.char() == 'L' and key.lctrl():
+                        try:
+                            return self.update('buffer', self.buffer.viewNext())
+                        except ValueError: pass
 
-            elif key.code() == iop.KEY_UP or key.char() == 'k':
-                try:
-                    newBuff = self.buffer.curUp()
-                    return self.update('buffer', newBuff)
-                except ValueError: pass
+                    elif key.char() == 'L':
+                        try:
+                            return self.update('buffer', self.buffer.curNextChild())
+                        except ValueError: pass
+
+
+                    elif key.code() == iop.KEY_LEFT or key.char() == 'h':
+                        try:
+                            newBuff = self.buffer.curPrevUpAlong()
+                            return self.update('buffer', newBuff)
+                        except ValueError: pass
+
+                    elif key.code() == iop.KEY_RIGHT or key.char() == 'l':
+                        try:
+                            if self.buffer.cursor.nodeID in self.zippedNodes and self.zippedNodes[self.buffer.cursor.nodeID]:
+                                newBuff = self.buffer.curUp().curNextUpAlong()
+                            else:
+                                newBuff = self.buffer.curNextUpAlong()
+                            return self.update('buffer', newBuff)
+                        except ValueError: pass
+
+                    elif key.code() == iop.KEY_DOWN or key.char() == 'j':
+                        if self.buffer.onSubNode():
+                            newBuff = self.buffer.curChild()
+                            return self.update('buffer', newBuff)
+
+                    elif key.code() == iop.KEY_UP or key.char() == 'k':
+                        try:
+                            newBuff = self.buffer.curUp()
+                            return self.update('buffer', newBuff)
+                        except ValueError: pass
+
+                except ValueError:pass
 
         return self
 
