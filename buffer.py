@@ -19,7 +19,7 @@ class Buffer(fo.FuncObject):
         return self.cursor.isSubNode()
 
     def cursorToPySexp(self):
-        return self.cursor.activeToPySexp()
+        return self.cursor.childToPyExp()
 
     def cursorToFirst(self):
         return self.updateList(
@@ -140,7 +140,7 @@ class Buffer(fo.FuncObject):
                 return env.next
             for i in env.cursor.child.next:  # check the name list
                 if i.child.child == lexeme:
-                    return i.child.next.activeToPySexp()
+                    return i.child.next.childToPyExp()
 
         return None
 

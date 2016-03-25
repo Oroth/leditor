@@ -288,7 +288,7 @@ class TreeEditor(fo.FuncObject):
                 return self.update('buffer', self.buffer.curLast())
 
             elif key.char() == 'G':
-                lookupAddress = self.buffer.cursor.activeToPySexp()
+                lookupAddress = self.buffer.cursor.childToPyExp()
                 newBuff = buffer.Buffer(self.buffer.root, lookupAddress)
                 return self.update('buffer', newBuff)
 

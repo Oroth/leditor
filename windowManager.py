@@ -59,7 +59,7 @@ class WindowManager(fo.FuncObject):
 
 
     def writeImage(self):
-        pyObj = self.ImageRoot.child.toNodeIDValuePySexp()
+        pyObj = self.ImageRoot.child.toPyNumberedExp()
         text = reader.to_string(pyObj)
         f = open(self.imageFileName, 'w')
         f.write(text)

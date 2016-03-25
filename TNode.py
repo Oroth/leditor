@@ -237,33 +237,32 @@ class TNode(fo.FuncObject):
         else:
             return val
 
-    def toNodeIDValuePySexp(self):
+    def toPyNumberedExp(self):
         ret = list()
         for i in self:
             newNode = [i.nodeID]
             if i.isSubNode():
-                newNode.append(i.child.toNodeIDValuePySexp())
+                newNode.append(i.child.toPyNumberedExp())
             else: newNode.append(i.child)
             ret.append(newNode)
 
         return ret
 
-    def toPySexp(self):
+    def toPyExp(self):
         ret = list()
         for i in self:
             if i.isSubNode():
-                ret.append(i.child.toPySexp())
+                ret.append(i.child.toPyExp())
             else: ret.append(i.child)
 
         return ret
 
-    def activeToPySexp(self):
+    def childToPyExp(self):
         if self.isSubNode():
-            return self.child.toPySexp()
+            return self.child.toPyExp()
         elif self.child is None:
             return []
         else:
-            #return reader.atom(self.child)
             return self.child
 
     def isSubNode(self):
