@@ -50,7 +50,7 @@ class WindowManager(fo.FuncObject):
         self.hist = imageRoot
 
         winRoot = self.createListEdFromEditorSettings(imageRoot)
-        self.winTree = buffer.createBufferFromPyExp(winRoot, [0], [0, 0])
+        self.winTree = buffer.Buffer.fromPyExp(winRoot, [0], [0, 0])
         self.imageFileName = imageFileName
 
         self.winCmd = False
@@ -229,7 +229,7 @@ class WindowManager(fo.FuncObject):
             # run a function like a program
             elif key.code() == iop.KEY_SPACE:
                 curEd = self.winTree.cursor.child
-                evalBuffer = buffer.Buffer(self.ImageRoot, curEd.buffer.rootToCursorAdd())
+                evalBuffer = buffer.BufferSexp(self.ImageRoot, curEd.buffer.rootToCursorAdd())
                 prog = CodeEditor.evalIOHandler(evalBuffer)
                 newWinTree = self.addWindow(prog)
 

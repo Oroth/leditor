@@ -100,7 +100,7 @@ class TreeEditor(fo.FuncObject):
     editors = 0
 
     def __init__(self, root, rootCursorAdd=[0], cursorAdd=[0], zippedNodes=None):
-        self.buffer = buffer.Buffer(root, rootCursorAdd, cursorAdd)
+        self.buffer = buffer.BufferSexp(root, rootCursorAdd, cursorAdd)
         self.posx = 0
         self.posy = 0
         self.maxx = 80
@@ -266,7 +266,7 @@ class TreeEditor(fo.FuncObject):
                 if self.buffer.cursor != self.buffer.root:
                     return self.updateList(
                         ('buffer', self.buffer.deleteAtCursor()),
-                        ('yankBuffer', self.buffer.cursorToPySexp()),
+                        ('yankBuffer', self.buffer.cursorToPyExp()),
                         ('updateUndo', True))
 
             elif key.char() == 'c':
@@ -296,7 +296,7 @@ class TreeEditor(fo.FuncObject):
 
             elif key.char() == 'G':
                 lookupAddress = self.buffer.cursor.childToPyExp()
-                newBuff = buffer.Buffer(self.buffer.root, lookupAddress)
+                newBuff = buffer.BufferSexp(self.buffer.root, lookupAddress)
                 return self.update('buffer', newBuff)
 
 
@@ -338,7 +338,7 @@ class TreeEditor(fo.FuncObject):
 
 
             elif key.char() == 'N':
-                newBuff = buffer.Buffer(self.buffer.root, [0], [0, 0]).curLast()
+                newBuff = buffer.BufferSexp(self.buffer.root, [0], [0, 0]).curLast()
                 newBuff = newBuff.appendAtCursor([reader.Symbol('newNode')]).curNext()
                 newBuff = newBuff.viewToCursor().curChild()
                 self.topLine = 0
@@ -377,7 +377,7 @@ class TreeEditor(fo.FuncObject):
                 return "UNDO"
 
             elif key.char() == 'y':
-                self.yankBuffer = self.buffer.cursorToPySexp()
+                self.yankBuffer = self.buffer.cursorToPyExp()
                 print self.yankBuffer
 
             elif key.char() == 'z':
@@ -391,7 +391,7 @@ class TreeEditor(fo.FuncObject):
                 return self.update('buffer', newBuff)
 
             elif key.char() == '+':
-                numList = self.buffer.cursorToPySexp()
+                numList = self.buffer.cursorToPyExp()
                 result = reduce(operator.add, numList)
                 newBuff = self.buffer.replaceAtCursor(result)
                 return self.updateList(
@@ -412,7 +412,7 @@ class TreeEditor(fo.FuncObject):
             # Go to help pages, will need to be updated
             elif key.char() == '?':
                 helpIter, helpAddress = self.buffer.root.gotoNodeAtNVS(['origin', 'help'])
-                newBuff = buffer.Buffer(self.buffer.root, helpAddress)
+                newBuff = buffer.BufferSexp(self.buffer.root, helpAddress)
                 self.printingMode = 'help'
                 return self.update('buffer', newBuff)
 
@@ -503,7 +503,7 @@ class StatusBar(TreeEditor):
             ,reader.Symbol('Address')]
         )
 
-        self.buffer = buffer.createBufferFromPyExp(status)
+        self.buffer = buffer.BufferSexp.fromPyExp(status)
 
     def draw(self, posx, posy, maxx, maxy, isActive):
         return super(StatusBar, self).draw(posx, posy, maxx, maxy, isActive)
@@ -513,7 +513,7 @@ class StatusBar(TreeEditor):
         return self.updateStatus(statusList)
 
     def updateStatus(self, status):
-        newStatus = buffer.createBufferFromPyExp(status)
+        newStatus = buffer.BufferSexp.fromPyExp(status)
         return self.update('buffer', newStatus)
 
     def displayMessage(self, message):

@@ -24,7 +24,7 @@ class CodeEditor(Editors.TreeEditor):
         self.nodeValues[node] = val
 
     def evalBuffer(self):
-        Eval.eval(buffer.Buffer(self.buffer.root), self.env, self.storeNodeValue)
+        Eval.eval(buffer.BufferSexp(self.buffer.root), self.env, self.storeNodeValue)
 
 
     def syncWithImage(self, newImageRoot):
@@ -73,7 +73,7 @@ class InspectionEditor(CodeEditor):
         self.statusDescription = reader.Symbol('InspectionEditor')
 
     def evalBuffer(self):
-        Eval.eval(buffer.Buffer(self.buffer.root, self.buffer.viewAdd), self.env, self.storeNodeValue)
+        Eval.eval(buffer.BufferSexp(self.buffer.root, self.buffer.viewAdd), self.env, self.storeNodeValue)
 
 
 class evalIOHandler(CodeEditor):

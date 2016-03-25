@@ -12,10 +12,24 @@ class Buffer(fo.FuncObject):
         self.cursor, self.cursorAdd = self.view.gotoNearestAddress(cursorAdd)
         self.topLine = 0
 
+    @classmethod
+    def new(cls, *args, **kwargs):
+        return cls(*args, **kwargs)
+
+    @classmethod
+    def fromPyExp(cls, pyexp, viewAdd=[0], cursorAdd=[0]):
+        # A buffer always operates on a list, never atoms, so convert to list if necessary
+        if not isPyList(pyexp):
+            bufexp = [[pyexp]]
+        else:
+            bufexp = [pyexp]
+
+        return cls(createTNodeExpFromPyExp(bufexp), viewAdd, cursorAdd)
+
     def onSubNode(self):
         return self.cursor.isSubNode()
 
-    def cursorToPySexp(self):
+    def cursorToPyExp(self):
         return self.cursor.childToPyExp()
 
     def cursorToFirst(self):
@@ -24,12 +38,8 @@ class Buffer(fo.FuncObject):
             ('cursorAdd', [0, 0]))     # actually want first in thing
 
     def cursorToAddress(self, add):
-        return Buffer(self.root, self.viewAdd, add)
+        return self.new(self.root, self.viewAdd, add)
 
-    def syncToNewRoot(self, newRoot):
-        newView, newViewAdd = tnode.getAddressOnNewExp(self.viewAdd, self.root, newRoot)
-        newCursor, newCursorAdd = tnode.getAddressOnNewExp(self.cursorAdd, self.view, newView)
-        return Buffer(newRoot, newViewAdd, newCursorAdd)
 
     def rootToCursorAdd(self):
         return self.viewAdd + self.cursorAdd[1:]
@@ -40,7 +50,8 @@ class Buffer(fo.FuncObject):
         else:
             newView = op(self.view, self.cursorAdd)
         newImage = replaceAdd(self.root, self.viewAdd, newView.child)
-        return Buffer(newImage, self.viewAdd, self.cursorAdd)
+        newBuff = self.new(newImage, self.viewAdd, self.cursorAdd)
+        return newBuff
 
     def appendAtCursor(self, value):
         return self.opAtCursor(appendAdd, value)
@@ -57,21 +68,13 @@ class Buffer(fo.FuncObject):
     def denestCursor(self):
         return self.opAtCursor(denestAdd)
 
-    def quoteAtCursor(self):
-        return self.opAtCursor(quoteAdd)
-
     def deleteAtCursor(self):
         newBuff = self
         if self.cursor == self.view:
             newBuff = self.viewUp()
         newView = deleteAdd(newBuff.view, newBuff.cursorAdd)
         newImage = replaceAdd(newBuff.root, newBuff.viewAdd, newView.child)
-        return Buffer(newImage, newBuff.viewAdd, newBuff.cursorAdd)
-
-    def toggleStringAtCursor(self):
-        if isinstance(self.cursor.child, reader.Symbol):
-            return self.replaceAtCursor(str(self.cursor.child))
-        else: return self
+        return self.new(newImage, newBuff.viewAdd, newBuff.cursorAdd)
 
 
     def viewUp(self):
@@ -82,20 +85,20 @@ class Buffer(fo.FuncObject):
 
         # new cursor address will be prefixed by the last step in the address to the old view
         newCursorAddress = [0] + self.viewAdd[-1:] + self.cursorAdd[1:]
-        return Buffer(self.root, newViewAddress, newCursorAddress)
+        return self.new(self.root, newViewAddress, newCursorAddress)
 
     def viewToCursor(self):
         newViewAddress = self.viewAdd + self.cursorAdd[1:]
-        return Buffer(self.root, newViewAddress)
+        return self.new(self.root, newViewAddress)
 
     def viewToRoot(self):
-        return Buffer(self.root, [0], [0])
+        return self.new(self.root, [0], [0])
 
     def viewNext(self):
         if self.view.next:
             newAddress = list(self.viewAdd)
             newAddress[-1] += 1
-            return Buffer(self.root, newAddress)
+            return self.new(self.root, newAddress)
         else:
             raise ValueError
 
@@ -103,7 +106,7 @@ class Buffer(fo.FuncObject):
         if self.viewAdd[-1] > 0:
             newAddress = list(self.viewAdd)
             newAddress[-1] -= 1
-            return Buffer(self.root, newAddress)
+            return self.new(self.root, newAddress)
         else:
             raise ValueError
 
@@ -114,6 +117,66 @@ class Buffer(fo.FuncObject):
             return self.updateList(('cursorAdd', newAddress), ('cursor', self.cursor.next))
         else:
             raise ValueError
+
+    def curPrev(self):
+        if self.cursorAdd[-1] > 0:
+            newAddress = list(self.cursorAdd)
+            newAddress[-1] -= 1
+            #return self.update('cursorAdd')
+            return self.new(self.root, self.viewAdd, newAddress)
+        else:
+            raise ValueError
+
+    def curPrevUpAlong(self):
+        cur = self
+        while not cur.cursorAdd[-1] > 0:
+            cur = cur.curUp()
+        return cur.curPrev()
+
+    def curFirst(self):
+        newAddress = list(self.cursorAdd)
+        newAddress[-1] = 0
+        return self.new(self.root, self.viewAdd, newAddress)
+
+    def curLast(self):
+        cur = self
+        while cur.cursor.next:
+            cur = cur.curNext()
+        return cur
+
+    def curUp(self):
+        if len(self.cursorAdd) > 1:
+            newAddress = self.cursorAdd[0:-1]
+            return self.new(self.root, self.viewAdd, newAddress)
+        else:
+            raise ValueError
+
+    def curChild(self):
+        if self.cursor.isSubNode():
+            newAddress = list(self.cursorAdd)
+            newAddress.append(0)
+            return self.updateList(('cursorAdd', newAddress), ('cursor', self.cursor.child))
+        else:
+            raise ValueError
+
+
+
+class BufferSexp(Buffer):
+    def __init__(self, root, viewAdd=[0], cursorAdd=[0]):
+        super(BufferSexp, self).__init__(root, viewAdd, cursorAdd)
+
+    def syncToNewRoot(self, newRoot):
+        newView, newViewAdd = tnode.getAddressOnNewExp(self.viewAdd, self.root, newRoot)
+        newCursor, newCursorAdd = tnode.getAddressOnNewExp(self.cursorAdd, self.view, newView)
+        return self.new(newRoot, newViewAdd, newCursorAdd)
+
+    def quoteAtCursor(self):
+        return self.opAtCursor(quoteAdd)
+
+    def toggleStringAtCursor(self):
+        if isinstance(self.cursor.child, reader.Symbol):
+            return self.replaceAtCursor(str(self.cursor.child))
+        else: return self
 
     # move along to the next list and go to the first child
     def curNextChild(self):
@@ -138,36 +201,11 @@ class Buffer(fo.FuncObject):
     def curNextUnzippedSymbol(self, nodeIsZipped):
         return self.curNextUpAlong().curUnzippedBottom(nodeIsZipped)
 
-    def curPrev(self):
-        if self.cursorAdd[-1] > 0:
-            newAddress = list(self.cursorAdd)
-            newAddress[-1] -= 1
-            return Buffer(self.root, self.viewAdd, newAddress)
-        else:
-            raise ValueError
-
-    def curPrevUpAlong(self):
-        cur = self
-        while not cur.cursorAdd[-1] > 0:
-            cur = cur.curUp()
-        return cur.curPrev()
-
     def curPrevSymbol(self):
         return self.curPrevUpAlong().curBottomLast()
 
     def curPrevUnzippedSymbol(self, nodeIsZipped):
         return self.curPrevUpAlong().curUnzippedBottomLast(nodeIsZipped)
-
-    def curFirst(self):
-        newAddress = list(self.cursorAdd)
-        newAddress[-1] = 0
-        return Buffer(self.root, self.viewAdd, newAddress)
-
-    def curLast(self):
-        cur = self
-        while cur.cursor.next:
-            cur = cur.curNext()
-        return cur
 
     def curBottom(self):
         cur = self
@@ -195,37 +233,8 @@ class Buffer(fo.FuncObject):
         else:
             return self
 
-    def curUp(self):
-        if len(self.cursorAdd) > 1:
-            newAddress = self.cursorAdd[0:-1]
-            return Buffer(self.root, self.viewAdd, newAddress)
-        else:
-            raise ValueError
-
-    def curChild(self):
-        if self.cursor.isSubNode():
-            newAddress = list(self.cursorAdd)
-            newAddress.append(0)
-            return self.updateList(('cursorAdd', newAddress), ('cursor', self.cursor.child))
-        else:
-            raise ValueError
-
     def curChildExp(self):
         try:
             return self.curChild()
         except ValueError:
             return self.cursor.child
-
-def BufferSexp(Buffer):
-    def __init__(self, root, viewAdd=[0], cursorAdd=[0]):
-        super(BufferSexp, self).__init__(root, viewAdd, cursorAdd)
-
-
-def createBufferFromPyExp(pyexp, viewAdd=[0], cursorAdd=[0]):
-    # A buffer always operates on a list, never atoms, so convert to list if necessary
-    if not isPyList(pyexp):
-        bufexp = [[pyexp]]
-    else:
-        bufexp = [pyexp]
-
-    return Buffer(createTNodeExpFromPyExp(bufexp), viewAdd, cursorAdd)
