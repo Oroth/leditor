@@ -26,12 +26,10 @@ class Buffer(fo.FuncObject):
     def cursorToAddress(self, add):
         return Buffer(self.root, self.viewAdd, add)
 
-
     def syncToNewRoot(self, newRoot):
         newView, newViewAdd = tnode.getAddressOnNewExp(self.viewAdd, self.root, newRoot)
         newCursor, newCursorAdd = tnode.getAddressOnNewExp(self.cursorAdd, self.view, newView)
         return Buffer(newRoot, newViewAdd, newCursorAdd)
-
 
     def rootToCursorAdd(self):
         return self.viewAdd + self.cursorAdd[1:]
@@ -126,15 +124,12 @@ class Buffer(fo.FuncObject):
 
     def curNextUpAlong(self):
         cur = self
-
         if cur.cursor == cur.view:
             return self
-
         while not cur.cursor.next:
             cur = cur.curUp()
             if cur.cursor == cur.view:
                 return self
-
         return cur.curNext()
 
     def curNextSymbol(self):
@@ -220,6 +215,10 @@ class Buffer(fo.FuncObject):
             return self.curChild()
         except ValueError:
             return self.cursor.child
+
+def BufferSexp(Buffer):
+    def __init__(self, root, viewAdd=[0], cursorAdd=[0]):
+        super(BufferSexp, self).__init__(root, viewAdd, cursorAdd)
 
 
 def createBufferFromPyExp(pyexp, viewAdd=[0], cursorAdd=[0]):

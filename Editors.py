@@ -171,7 +171,7 @@ class TreeEditor(fo.FuncObject):
                     self.cellEditor.handleClick(cell.characterReference)
                 else:
                     print 'Clicked Outside'
-                    # TODO: finish editing and move cursor
+                    # still to do: finish editing and move cursor
 
             elif cell.lineItemNodeReference:
                 newBuff = self.buffer.cursorToAddress(cell.lineItemNodeReference.nodeAddress)
