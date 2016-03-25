@@ -147,6 +147,13 @@ class TreeEditor(fo.FuncObject):
         self.maxy = newMaxy
 
 
+    def nodeIsZipped(self, node):
+        return node.nodeID in self.zippedNodes and self.zippedNodes[node.nodeID]
+
+    def cursorIsZipped(self, buffer):
+        return self.nodeIsZipped(buffer.cursor)
+        #return self.buffer.cursor.nodeID in self.zippedNodes and self.zippedNodes[self.buffer.cursor.nodeID]
+
     def handleKeys(self, key, mouse):
         self.updateUndo = False
         self.statusBar.item1 = self.statusDescription
@@ -197,7 +204,7 @@ class TreeEditor(fo.FuncObject):
                         ('updateUndo', True))
 
             elif finished == 'CANCEL':
-                if self.cellEditor.original == '':
+                if self.buffer.cursor.child == '':
                     return self.updateList(
                         ('buffer', self.buffer.deleteAtCursor()),
                         ('editing', False))
@@ -252,7 +259,7 @@ class TreeEditor(fo.FuncObject):
             #     time.sleep(2)
 
 
-            elif key.char() == 'b':     # Go back to the first expression in the list
+            elif key.char() == 'i' and key.lctrl():     # Go back to the first expression in the list
                 return self.update('buffer', self.buffer.curFirst())
 
             elif key.char() == 'd':
@@ -291,11 +298,6 @@ class TreeEditor(fo.FuncObject):
                 lookupAddress = self.buffer.cursor.childToPyExp()
                 newBuff = buffer.Buffer(self.buffer.root, lookupAddress)
                 return self.update('buffer', newBuff)
-
-            elif key.char() == 'J':
-                if self.buffer.onSubNode():
-                    return self.update('buffer', self.buffer.viewToCursor())
-
 
 
             elif key.char() == '(':
@@ -343,16 +345,18 @@ class TreeEditor(fo.FuncObject):
                 return self.update('buffer', newBuff)
 
             elif key.char() == 'p':
-                toInsert = tnode.createTNodeExpFromPyExp(self.yankBuffer)
-                return self.updateList(
-                    ('buffer', self.buffer.appendAtCursor(toInsert)),
-                    ('updateUndo', True))
+                if self.yankBuffer:
+                    toInsert = tnode.createTNodeExpFromPyExp(self.yankBuffer)
+                    return self.updateList(
+                        ('buffer', self.buffer.appendAtCursor(toInsert)),
+                        ('updateUndo', True))
 
             elif key.char() == 'P':
-                toInsert = tnode.createTNodeExpFromPyExp(self.yankBuffer)
-                return self.updateList(
-                    ('buffer', self.buffer.insertAtCursor(toInsert)),
-                    ('updateUndo', True))
+                if self.yankBuffer:
+                    toInsert = tnode.createTNodeExpFromPyExp(self.yankBuffer)
+                    return self.updateList(
+                        ('buffer', self.buffer.insertAtCursor(toInsert)),
+                        ('updateUndo', True))
 
             elif key.char() == 'R':
                 return self.update('buffer', self.buffer.viewToRoot())
@@ -414,52 +418,44 @@ class TreeEditor(fo.FuncObject):
 
             else:
                 try:
-                    if key.char() == 'K':
-                        try:
-                            return self.update('buffer', self.buffer.viewUp())
-                        except ValueError: pass
+                    if key.char() == 'J':
+                        return self.update('buffer', self.buffer.viewToCursor())
+
+                    elif key.char() == 'K':
+                        return self.update('buffer', self.buffer.viewUp())
 
                     elif key.char() == 'H':
-                        try:
-                            return self.update('buffer', self.buffer.viewPrev())
-                        except ValueError: pass
+                        return self.update('buffer', self.buffer.viewPrev())
 
                     elif key.char() == 'L' and key.lctrl():
-                        try:
-                            return self.update('buffer', self.buffer.viewNext())
-                        except ValueError: pass
+                        return self.update('buffer', self.buffer.viewNext())
 
                     elif key.char() == 'L':
-                        try:
-                            return self.update('buffer', self.buffer.curNextChild())
-                        except ValueError: pass
+                        return self.update('buffer', self.buffer.curNextChild())
 
+                    elif key.char() == 'w':
+                        return self.update('buffer', self.buffer.curNextUnzippedSymbol(self.nodeIsZipped))
+
+                    elif key.char() == 'b':
+                        return self.update('buffer', self.buffer.curPrevUnzippedSymbol(self.nodeIsZipped))
 
                     elif key.code() == iop.KEY_LEFT or key.char() == 'h':
-                        try:
-                            newBuff = self.buffer.curPrevUpAlong()
-                            return self.update('buffer', newBuff)
-                        except ValueError: pass
+                        return self.update('buffer', self.buffer.curPrevUpAlong())
 
                     elif key.code() == iop.KEY_RIGHT or key.char() == 'l':
-                        try:
-                            if self.buffer.cursor.nodeID in self.zippedNodes and self.zippedNodes[self.buffer.cursor.nodeID]:
-                                newBuff = self.buffer.curUp().curNextUpAlong()
-                            else:
-                                newBuff = self.buffer.curNextUpAlong()
-                            return self.update('buffer', newBuff)
-                        except ValueError: pass
+                        if self.cursorIsZipped(self.buffer):
+                            newBuff = self.buffer.curUp().curNextUpAlong()
+                        else:
+                            newBuff = self.buffer.curNextUpAlong()
+                        return self.update('buffer', newBuff)
 
                     elif key.code() == iop.KEY_DOWN or key.char() == 'j':
-                        if self.buffer.onSubNode():
-                            newBuff = self.buffer.curChild()
-                            return self.update('buffer', newBuff)
+                        if self.cursorIsZipped(self.buffer):
+                            raise ValueError
+                        return self.update('buffer', self.buffer.curChild())
 
                     elif key.code() == iop.KEY_UP or key.char() == 'k':
-                        try:
-                            newBuff = self.buffer.curUp()
-                            return self.update('buffer', newBuff)
-                        except ValueError: pass
+                        return self.update('buffer', self.buffer.curUp())
 
                 except ValueError:pass
 

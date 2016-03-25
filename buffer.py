@@ -124,7 +124,6 @@ class Buffer(fo.FuncObject):
             cur = cur.curNext()
         return cur.curChild()
 
-
     def curNextUpAlong(self):
         cur = self
 
@@ -138,6 +137,12 @@ class Buffer(fo.FuncObject):
 
         return cur.curNext()
 
+    def curNextSymbol(self):
+        return self.curNextUpAlong().curBottom()
+
+    def curNextUnzippedSymbol(self, nodeIsZipped):
+        return self.curNextUpAlong().curUnzippedBottom(nodeIsZipped)
+
     def curPrev(self):
         if self.cursorAdd[-1] > 0:
             newAddress = list(self.cursorAdd)
@@ -148,11 +153,15 @@ class Buffer(fo.FuncObject):
 
     def curPrevUpAlong(self):
         cur = self
-
         while not cur.cursorAdd[-1] > 0:
             cur = cur.curUp()
-
         return cur.curPrev()
+
+    def curPrevSymbol(self):
+        return self.curPrevUpAlong().curBottomLast()
+
+    def curPrevUnzippedSymbol(self, nodeIsZipped):
+        return self.curPrevUpAlong().curUnzippedBottomLast(nodeIsZipped)
 
     def curFirst(self):
         newAddress = list(self.cursorAdd)
@@ -169,8 +178,27 @@ class Buffer(fo.FuncObject):
         cur = self
         while cur.cursor.isSubNode():
             cur = cur.curChild()
-
         return cur
+
+    def curBottomLast(self):
+        if self.cursor.isSubNode():
+            last = self.curChild().curLast()
+            return last.curBottomLast()
+        else:
+            return self
+
+    def curUnzippedBottom(self, nodeIsZipped):
+        cur = self
+        while cur.cursor.isSubNode() and not nodeIsZipped(cur.cursor):
+            cur = cur.curChild()
+        return cur
+
+    def curUnzippedBottomLast(self, nodeIsZipped):
+        if self.cursor.isSubNode() and not nodeIsZipped(self.cursor):
+            last = self.curChild().curLast()
+            return last.curUnzippedBottomLast(nodeIsZipped)
+        else:
+            return self
 
     def curUp(self):
         if len(self.cursorAdd) > 1:
@@ -185,7 +213,13 @@ class Buffer(fo.FuncObject):
             newAddress.append(0)
             return self.updateList(('cursorAdd', newAddress), ('cursor', self.cursor.child))
         else:
-            return self.cursor.child  # the value
+            raise ValueError
+
+    def curChildExp(self):
+        try:
+            return self.curChild()
+        except ValueError:
+            return self.cursor.child
 
 
 def createBufferFromPyExp(pyexp, viewAdd=[0], cursorAdd=[0]):

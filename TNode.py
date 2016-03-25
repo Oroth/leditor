@@ -2,7 +2,6 @@ __author__ = 'chephren'
 import copy
 import funobj as fo
 
-
 # Terminology
 # Atom - Something that is either a symbol, a string, a number (currently)
 # Obj - Something that can be any python object, but not a TNode or List
@@ -319,43 +318,7 @@ class TNode(fo.FuncObject):
 
         return (iter, newAdd)
 
-
-    def gotoAddressOnNewRoot(self, address, newRoot):
-        add = list(address)
-        oldNodeIter = self
-        newNodeIter = newRoot
-        newAdd = []
-        while add:
-            curDest = add.pop(0)
-            newAdd.append(0)
-            while curDest != 0:
-                if newNodeIter == oldNodeIter:
-                    if newNodeIter.next:
-                        oldNodeIter = oldNodeIter.next
-                        newNodeIter = newNodeIter.next
-                        curDest -= 1
-                        newAdd[-1] += 1
-                    else: return newNodeIter, newAdd  # the old node must have been deleted from the new root
-                elif newNodeIter == oldNodeIter.next:  # the old node was deleted
-                    oldNodeIter = oldNodeIter.next
-                    curDest -= 1
-                elif newNodeIter.next == oldNodeIter: # a node was inserted into the old root
-                    newNodeIter = newNodeIter.next
-                    newAdd[-1] += 1
-
-                else: return newNodeIter, newAdd  # something more complicated happened.
-
-            # check if still have sublevels to follow and go to them if possible
-            if add:
-                if newNodeIter.isSubNode():
-                    newNodeIter = newNodeIter.child
-                    oldNodeIter = oldNodeIter.child
-                else: return newNodeIter, newAdd
-
-        return newNodeIter, newAdd
-
     def getAddressOffset(self, offset):
-
         iter = self
         while offset:
             curDest = offset.pop(0)
@@ -373,6 +336,49 @@ class TNode(fo.FuncObject):
 
         return iter.child
 
+# Given a newExp try to find the closest thing to our address on the oldExp
+# if stuff has been inserted before the position we need to look ahead to see if we can find our own spot
+# if the node or one of the parents of the node we are on has been deleted then we need to get the oldest
+# surviving parent
+# currently the logic assumes that no more than one node has been inserted/deleted between oldExp and newExp
+def getAddressOnNewExp(oldAddress, oldExp, newExp):
+    add = list(oldAddress)
+    oldNodeIter = oldExp
+    newNodeIter = newExp
+    newAdd = []
+    while add:
+        curDest = add.pop(0)
+        newAdd.append(0)
+        while curDest != 0:
+            if newNodeIter == oldNodeIter:
+                if newNodeIter.next:
+                    oldNodeIter = oldNodeIter.next
+                    newNodeIter = newNodeIter.next
+                    curDest -= 1
+                    newAdd[-1] += 1
+                else: return newNodeIter, newAdd  # the old node must have been deleted from the new root
+            elif newNodeIter == oldNodeIter.next:  # the old node was deleted
+                oldNodeIter = oldNodeIter.next
+                curDest -= 1
+            elif newNodeIter.next == oldNodeIter: # a node was inserted into the old root
+                newNodeIter = newNodeIter.next
+                newAdd[-1] += 1
+
+            else: return newNodeIter, newAdd  # something more complicated happened.
+
+        # check if still have sublevels to follow and go to them if possible
+        if add:
+            if newNodeIter.isSubNode():
+                newNodeIter = newNodeIter.child
+                oldNodeIter = oldNodeIter.child
+            else: return newNodeIter, newAdd
+
+    # check for case when something has been inserted immediately before the original position
+    if newNodeIter.next == oldNodeIter:
+        newNodeIter = newNodeIter.next
+        newAdd[-1] += 1
+
+    return newNodeIter, newAdd
 
 
 def isTNode(obj):
