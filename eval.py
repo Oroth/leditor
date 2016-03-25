@@ -1,3 +1,5 @@
+import buffer
+
 __author__ = 'chephren'
 import reader
 import iop
@@ -111,7 +113,7 @@ def eval(exprBuf, env=global_env, memoize=None):
             ret = env.find(exprChild)[exprChild]
         except EvalException as ex:
             ret = ex
-    elif not isa(exprChild, TNode.Buffer):         # constant literal
+    elif not isa(exprChild, buffer.Buffer):         # constant literal
         ret = exprChild
 
     elif exprChild.cursor.child == '^':         # (lambda (var*) exp)

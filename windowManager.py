@@ -1,6 +1,9 @@
+
+
 __author__ = 'chephren'
 import TNode
-from TNode import cons, Buffer
+from TNode import cons
+import buffer
 import Editors
 import reader
 import CodeEditor
@@ -47,8 +50,7 @@ class WindowManager(fo.FuncObject):
         self.hist = imageRoot
 
         winRoot = self.loadEditorSettings(imageRoot)
-        #self.winTree = TNode.makeRootBuffer(winRoot, [0], [0, 0])
-        self.winTree = TNode.createBufferFromPyExp(winRoot, [0], [0, 0])
+        self.winTree = buffer.createBufferFromPyExp(winRoot, [0], [0, 0])
         self.imageFileName = imageFileName
 
         self.winCmd = False
@@ -239,7 +241,7 @@ class WindowManager(fo.FuncObject):
             # run a function like a program
             elif key.code() == iop.KEY_SPACE:
                 curEd = self.winTree.cursor.child
-                evalBuffer = TNode.Buffer(self.ImageRoot, curEd.buffer.rootToCursorAdd())
+                evalBuffer = buffer.Buffer(self.ImageRoot, curEd.buffer.rootToCursorAdd())
                 prog = CodeEditor.evalIOHandler(evalBuffer)
                 newWinTree = self.addWindow(prog)
 

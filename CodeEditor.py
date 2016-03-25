@@ -1,3 +1,5 @@
+import buffer
+
 __author__ = 'chephren'
 import Editors
 import utility
@@ -22,7 +24,7 @@ class CodeEditor(Editors.TreeEditor):
         self.nodeValues[node] = val
 
     def evalBuffer(self):
-        Eval.eval(TNode.Buffer(self.buffer.root), self.env, self.storeNodeValue)
+        Eval.eval(buffer.Buffer(self.buffer.root), self.env, self.storeNodeValue)
 
 
     def syncWithImage(self, newImageRoot):
@@ -71,7 +73,7 @@ class InspectionEditor(CodeEditor):
         self.statusDescription = reader.Symbol('InspectionEditor')
 
     def evalBuffer(self):
-        Eval.eval(TNode.Buffer(self.buffer.root, self.buffer.viewAdd), self.env, self.storeNodeValue)
+        Eval.eval(buffer.Buffer(self.buffer.root, self.buffer.viewAdd), self.env, self.storeNodeValue)
 
 
 class evalIOHandler(CodeEditor):

@@ -1,6 +1,6 @@
 from unittest import TestCase, main
-from TNode import TNode, createTNodeExpFromPyExp, Buffer, copyTNodeExp, replaceAdd, deleteAdd, insertAdd
-
+from TNode import TNode, createTNodeExpFromPyExp, copyTNodeExp, replaceAdd, deleteAdd, insertAdd
+from buffer import Buffer
 
 __author__ = 'chephren'
 

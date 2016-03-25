@@ -4,6 +4,7 @@ import futility
 import reader
 from reader import Symbol
 import TNode
+import buffer
 import funobj as fo
 import operator
 
@@ -99,7 +100,7 @@ class TreeEditor(fo.FuncObject):
     editors = 0
 
     def __init__(self, root, rootCursorAdd=[0], cursorAdd=[0], zippedNodes=None):
-        self.buffer = TNode.Buffer(root, rootCursorAdd, cursorAdd)
+        self.buffer = buffer.Buffer(root, rootCursorAdd, cursorAdd)
         self.posx = 0
         self.posy = 0
         self.maxx = 80
@@ -288,8 +289,7 @@ class TreeEditor(fo.FuncObject):
 
             elif key.char() == 'G':
                 lookupAddress = self.buffer.cursor.activeToPySexp()
-                #newViewAddress = self.buffer.root.getNodeAtNVS(lookupAddress)
-                newBuff = TNode.Buffer(self.buffer.root, lookupAddress)
+                newBuff = buffer.Buffer(self.buffer.root, lookupAddress)
                 return self.update('buffer', newBuff)
 
             elif key.char() == 'J':
@@ -349,7 +349,7 @@ class TreeEditor(fo.FuncObject):
 
 
             elif key.char() == 'N':
-                newBuff = TNode.Buffer(self.buffer.root, [0], [0, 0]).curLast()
+                newBuff = buffer.Buffer(self.buffer.root, [0], [0, 0]).curLast()
                 newBuff = newBuff.appendAtCursor([reader.Symbol('newNode')]).curNext()
                 newBuff = newBuff.viewToCursor().curChild()
                 self.topLine = 0
@@ -421,7 +421,7 @@ class TreeEditor(fo.FuncObject):
             # Go to help pages, will need to be updated
             elif key.char() == '?':
                 helpIter, helpAddress = self.buffer.root.gotoNodeAtNVS(['origin', 'help'])
-                newBuff = TNode.Buffer(self.buffer.root, helpAddress)
+                newBuff = buffer.Buffer(self.buffer.root, helpAddress)
                 self.printingMode = 'help'
                 return self.update('buffer', newBuff)
 
@@ -496,7 +496,7 @@ class StatusBar(TreeEditor):
             ,reader.Symbol('Address')]
         )
 
-        self.buffer = TNode.makeRootBuffer(status)
+        self.buffer = buffer.createBufferFromPyExp(status)
 
     def draw(self, posx, posy, maxx, maxy, isActive):
         return super(StatusBar, self).draw(posx, posy, maxx, maxy, isActive)
@@ -506,7 +506,7 @@ class StatusBar(TreeEditor):
         return self.updateStatus(statusList)
 
     def updateStatus(self, status):
-        newStatus = TNode.makeRootBuffer(TNode.createTNodeExpFromPyExp(status))
+        newStatus = buffer.createBufferFromPyExp(status)
         return self.update('buffer', newStatus)
 
     def displayMessage(self, message):
