@@ -102,7 +102,7 @@ global_env = add_globals(Env())
 
 def eval(exprBuf, env=global_env, memoize=None):
 
-    exprChild = exprBuf.curChild()
+    exprChild = exprBuf.curChildExp()
     ret = None
 
     if not exprBuf.cursor.evaled:
@@ -152,13 +152,13 @@ def eval(exprBuf, env=global_env, memoize=None):
         valResults = []
 
         try:
-            mapping = exprChild.curNext().curChild()
+            mapping = exprChild.curNext().curChildExp()
 
             while True:
-                curVar = mapping.curChild().curChild()
+                curVar = mapping.curChildExp().curChildExp()
                 vars.append(curVar)
 
-                curVal = mapping.curChild().curNext()
+                curVal = mapping.curChildExp().curNext()
                 closure = Env([curVar], [None], env)
                 curValResult = eval(curVal, closure, memoize)
                 closure.find(curVar)[curVar] = curValResult
