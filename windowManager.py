@@ -1,8 +1,8 @@
 
 
 __author__ = 'chephren'
-import tnode
-from tnode import cons
+import tn
+from tn import cons
 import buffer
 import Editors
 import reader
@@ -44,7 +44,7 @@ class WindowManager(fo.FuncObject):
         pyLoad = reader.loadFile(imageFileName)
         pyImage = [0]
         pyImage.append(pyLoad)
-        imageRoot = tnode.createTNodeExpFromPyNumberedExp(pyImage)
+        imageRoot = tn.createTNodeExpFromPyNumberedExp(pyImage)
 
         self.ImageRoot = imageRoot
         self.hist = imageRoot

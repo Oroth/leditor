@@ -5,7 +5,7 @@ import Editors
 import utility
 import iop
 import reader
-import tnode
+import tn
 import eval
 
 

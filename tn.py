@@ -51,6 +51,14 @@ def joinList(lst, node):
     curLast.next = node
     return newLst
 
+
+def tnodeIndex(lst, ind):
+    curNode = lst
+    while curNode.next and ind > 0:
+        curNode = curNode.next
+        ind = ind - 1
+    return curNode
+
 def createTNodeExpFromPyExp(pyexp):
     startNode = None
     lastNode = None

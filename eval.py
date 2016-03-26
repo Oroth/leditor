@@ -3,7 +3,7 @@ import buffer
 __author__ = 'chephren'
 import reader
 import iop
-import tnode
+import tn
 
 wm = None
 isa = isinstance

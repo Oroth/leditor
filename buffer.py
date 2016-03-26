@@ -1,7 +1,7 @@
 import funobj as fo
 import reader
-import tnode
-from tnode import replaceAdd, appendAdd, insertAdd, deleteAdd, nestAdd, denestAdd, quoteAdd, isPyList, \
+import tn
+from tn import replaceAdd, appendAdd, insertAdd, deleteAdd, nestAdd, denestAdd, quoteAdd, isPyList, \
     createTNodeExpFromPyExp
 
 
@@ -163,8 +163,8 @@ class BufferSexp(Buffer):
         super(BufferSexp, self).__init__(root, viewAdd, cursorAdd)
 
     def syncToNewRoot(self, newRoot):
-        newView, newViewAdd = tnode.getAddressOnNewExp(self.viewAdd, self.root, newRoot)
-        newCursor, newCursorAdd = tnode.getAddressOnNewExp(self.cursorAdd, self.view, newView)
+        newView, newViewAdd = tn.getAddressOnNewExp(self.viewAdd, self.root, newRoot)
+        newCursor, newCursorAdd = tn.getAddressOnNewExp(self.cursorAdd, self.view, newView)
         return self.new(newRoot, newViewAdd, newCursorAdd)
 
     def quoteAtCursor(self):
