@@ -7,6 +7,7 @@ import tnode
 import buffer
 import funobj as fo
 import operator
+import re
 
 
 class CellEditor(object):
@@ -81,7 +82,7 @@ class CellEditor(object):
             if len(self.content) > 0:
                 return 'SPACE'
 
-        elif key.code() != 0:
+        elif re.match('\\w', key.char()):
             self.content.insert(self.index, key.char())
             self.index += 1
 

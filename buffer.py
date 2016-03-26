@@ -23,7 +23,6 @@ class Buffer(fo.FuncObject):
             bufexp = [[pyexp]]
         else:
             bufexp = [pyexp]
-
         return cls(createTNodeExpFromPyExp(bufexp), viewAdd, cursorAdd)
 
     def onSubNode(self):
@@ -35,11 +34,10 @@ class Buffer(fo.FuncObject):
     def cursorToFirst(self):
         return self.updateList(
             ('cursor', self.view.child),
-            ('cursorAdd', [0, 0]))     # actually want first in thing
+            ('cursorAdd', [0, 0]))
 
     def cursorToAddress(self, add):
         return self.new(self.root, self.viewAdd, add)
-
 
     def rootToCursorAdd(self):
         return self.viewAdd + self.cursorAdd[1:]
@@ -122,7 +120,6 @@ class Buffer(fo.FuncObject):
         if self.cursorAdd[-1] > 0:
             newAddress = list(self.cursorAdd)
             newAddress[-1] -= 1
-            #return self.update('cursorAdd')
             return self.new(self.root, self.viewAdd, newAddress)
         else:
             raise ValueError

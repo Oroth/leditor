@@ -6,7 +6,7 @@ import utility
 import iop
 import reader
 import tnode
-import Eval
+import eval
 
 
 class CodeEditor(Editors.TreeEditor):
@@ -14,7 +14,7 @@ class CodeEditor(Editors.TreeEditor):
         super(CodeEditor, self).__init__(*args, **kwargs)
         self.statusDescription = reader.Symbol('CodeEditor')
         self.showValues = True
-        self.env = Eval.global_env
+        self.env = eval.global_env
         self.vars = None
         self.context = None
         self.parent = None
@@ -24,7 +24,7 @@ class CodeEditor(Editors.TreeEditor):
         self.nodeValues[node] = val
 
     def evalBuffer(self):
-        Eval.eval(buffer.BufferSexp(self.buffer.root), self.env, self.storeNodeValue)
+        eval.eval(buffer.BufferSexp(self.buffer.root), self.env, self.storeNodeValue)
 
 
     def syncWithImage(self, newImageRoot):
@@ -73,7 +73,7 @@ class InspectionEditor(CodeEditor):
         self.statusDescription = reader.Symbol('InspectionEditor')
 
     def evalBuffer(self):
-        Eval.eval(buffer.BufferSexp(self.buffer.root, self.buffer.viewAdd), self.env, self.storeNodeValue)
+        eval.eval(buffer.BufferSexp(self.buffer.root, self.buffer.viewAdd), self.env, self.storeNodeValue)
 
 
 class evalIOHandler(CodeEditor):

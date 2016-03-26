@@ -106,14 +106,14 @@ def eval(exprBuf, env=global_env, memoize=None):
     ret = None
 
     if not exprBuf.cursor.evaled:
-        ret = exprBuf.cursorToPySexp()
+        ret = exprBuf.cursorToPyExp()
 
     elif isa(exprChild, reader.Symbol):             # variable reference
         try:
             ret = env.find(exprChild)[exprChild]
         except EvalException as ex:
             ret = ex
-    elif not isa(exprChild, buffer.Buffer):         # constant literal
+    elif not isa(exprChild, buffer.BufferSexp):         # constant literal
         ret = exprChild
 
     elif exprChild.cursor.child == '^':         # (lambda (var*) exp)
@@ -211,7 +211,7 @@ def eval(exprBuf, env=global_env, memoize=None):
                     return False
 
     elif exprChild.cursor.child == 'quote':
-        ret = exprChild.curNext().cursorToPySexp()
+        ret = exprChild.curNext().cursorToPyExp()
 
     else:  # i.e. a procedure call
         childExpr = []

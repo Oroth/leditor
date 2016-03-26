@@ -1,6 +1,6 @@
 import iop
 import windowManager
-import Eval
+import eval
 import os.path
 
 # Size is in cells
@@ -19,7 +19,7 @@ wm = windowManager.WindowManager(imageFileName)
 
 # Make definitions in the window manager available to the base environment in eval, so that they can be called
 # as part of our programs
-Eval.wm = lambda: wm
+eval.wm = lambda: wm
 
 
 while not iop.isWindowClosed():
