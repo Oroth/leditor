@@ -8,8 +8,10 @@ from tn import replaceAdd, appendAdd, insertAdd, deleteAdd, nestAdd, denestAdd, 
 class Buffer(fo.FuncObject):
     def __init__(self, root, viewAdd=[0], cursorAdd=[0]):
         self.root = root
-        self.view, self.viewAdd = self.root.gotoNearestAddress(viewAdd)
-        self.cursor, self.cursorAdd = self.view.gotoNearestAddress(cursorAdd)
+        #self.view, self.viewAdd = self.root.gotoNearestAddress(viewAdd)
+        #self.cursor, self.cursorAdd = self.view.gotoNearestAddress(cursorAdd)
+        self.view, self.viewAdd = tn.tnodeAddress(self.root, viewAdd)
+        self.cursor, self.cursorAdd = tn.tnodeAddress(self.view, cursorAdd)
         self.topLine = 0
 
     @classmethod
@@ -163,8 +165,10 @@ class BufferSexp(Buffer):
         super(BufferSexp, self).__init__(root, viewAdd, cursorAdd)
 
     def syncToNewRoot(self, newRoot):
-        newView, newViewAdd = tn.getAddressOnNewExp(self.viewAdd, self.root, newRoot)
-        newCursor, newCursorAdd = tn.getAddressOnNewExp(self.cursorAdd, self.view, newView)
+        #newView, newViewAdd = tn.getAddressOnNewExp(self.viewAdd, self.root, newRoot)
+        #newCursor, newCursorAdd = tn.getAddressOnNewExp(self.cursorAdd, self.view, newView)
+        newView, newViewAdd = tn.tnodeSyncAddress(newRoot, self.root, self.viewAdd)
+        newCursor, newCursorAdd = tn.tnodeSyncAddress(newView, self.view, self.cursorAdd)
         return self.new(newRoot, newViewAdd, newCursorAdd)
 
     def quoteAtCursor(self):

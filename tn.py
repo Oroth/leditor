@@ -36,9 +36,13 @@ def cons(value, cdr):
     car.next = cdr
     return car
 
+def numberedCons(value, cdr):
+    car = TNode(value[1], value[0])
+    car.next = cdr
+    return car
+
 def join(node1, node2):
     car = copy.copy(node1)
-    #car = TNode(node1.child, node1.nodeID)
     car.next = node2
     return car
 
@@ -51,13 +55,74 @@ def joinList(lst, node):
     curLast.next = node
     return newLst
 
+def append(first, sec):
+    ret = TNode(sec)
+    first.next = ret
+    return ret
+
+# ========================================== Testing =======================================================
+# differences to paramterise:
+
+def transformPyLst(func, acc, lst):
+    start, cur = acc
+    for i in lst:
+        cur = func(cur, i)
+    return start
+
+def transformPyExp(func, acc, exp):
+    start, cur = acc
+    for i in exp:
+        if isPyList(i):
+            transformPyExp(func,i[0] , i[1:])
+        cur = func(cur, i)
+    return start
+
 
 def tnodeIndex(lst, ind):
     curNode = lst
+    retInd = 0
     while curNode.next and ind > 0:
         curNode = curNode.next
         ind = ind - 1
-    return curNode
+        retInd = retInd + 1
+    return curNode, retInd
+
+def tnodeMatch(lst, toMatch, defaultInd):
+    ind = 0
+    defaultRet = lst
+    for i in lst:
+        if ind == defaultInd:
+            defaultRet = i
+        if i == toMatch:
+            return i, ind
+        ind = ind + 1
+
+    return defaultRet, defaultInd
+
+def tnodeAddress(exp, add, acc=[]):
+    cur, curPos = tnodeIndex(exp, add[0])
+    accInd = list(acc)
+    accInd.append(curPos)
+    if add[1:] and cur.isSubNode():
+        return tnodeAddress(cur.child, add[1:], accInd)
+    else:
+        return cur, accInd
+
+def tnodeSyncAddress(newexp, oldexp, oldadd, acc=[]):
+    oldNode, oldPos = tnodeIndex(oldexp, oldadd[0])
+    curNode, curPos = tnodeMatch(newexp, oldNode, oldadd[0])
+    accInd = list(acc)
+    accInd.append(curPos)
+    if oldadd[1:] and curNode.isSubNode():
+        return tnodeSyncAddress(curNode.child, oldNode.child, oldadd[1:], accInd)
+    else:
+        return curNode, accInd
+
+def createTNodeExpFromPyExp3(pyexp):
+    return transformPyExp(append, pyexp) if isPyList(pyexp) else pyexp
+
+
+# ======================================================================================================
 
 def createTNodeExpFromPyExp(pyexp):
     startNode = None
@@ -91,8 +156,7 @@ def createTNodeExpFromPyNumberedExp(pyexp):
         return TNode(pyexp[1], pyexp[0])
 
     else:  # sexp = (id (sexp|atom ...))
-        nodeID = pyexp[0]
-        pysubexp = pyexp[1]
+        nodeID, pysubexp = pyexp[0], pyexp[1]
 
         startNode = None
         lastNode = None
@@ -106,27 +170,6 @@ def createTNodeExpFromPyNumberedExp(pyexp):
                 lastNode = startNode
 
         return TNode(startNode, nodeID)
-
-# An alternative way of writing the above to see if it could be made shorter
-# Not used, will probably delete
-def createTNodeExpFromPyNumberedExp2(pyexp):
-    startNode = None
-    lastNode = None
-
-    if pyexp is not None:
-        if not tnodeNumberedExpContainsAtom(pyexp):
-            for i in pyexp[1]:
-                if startNode:
-                    newNode = TNode(createTNodeExpFromPyNumberedExp2(i[1]), i[0])
-                    lastNode.next = newNode
-                    lastNode = lastNode.next
-                else:
-                    startNode = TNode(createTNodeExpFromPyNumberedExp2(i[1]), i[0])
-                    lastNode = startNode
-        else:
-            return pyexp
-
-    return startNode
 
 
 
@@ -285,25 +328,6 @@ class TNode(fo.FuncObject):
         return iter, curAdd
 
 
-    def gotoAddress(self, address):
-        add = list(address)
-        iter = self
-        while add:
-            curDest = add.pop(0)
-            while curDest != 0:
-                if iter.next:
-                    iter = iter.next
-                    curDest -= 1
-                else: return None
-
-            # check if still have sublevels to follow and go to them if possible
-            if add:
-                if iter.isSubNode():
-                    iter = iter.child
-                else: return None
-
-        return iter
-
     def gotoNearestAddress(self, address):
         add = list(address)
         iter = self
@@ -326,23 +350,6 @@ class TNode(fo.FuncObject):
 
         return (iter, newAdd)
 
-    def getAddressOffset(self, offset):
-        iter = self
-        while offset:
-            curDest = offset.pop(0)
-            while curDest != 0:
-                if iter.next:
-                    iter = iter.next
-                    curDest -= 1
-                else: return None
-
-            # check if still have sublevels to follow and go to them if possible
-            if offset:
-                if iter.isSubNode():
-                    iter = iter.child
-                else: return None
-
-        return iter.child
 
 # Given a newExp try to find the closest thing to our address on the oldExp
 # if stuff has been inserted before the position we need to look ahead to see if we can find our own spot

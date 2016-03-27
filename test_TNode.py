@@ -1,5 +1,6 @@
 from unittest import TestCase, main
-from tn import TNode, createTNodeExpFromPyExp, copyTNodeExp, replaceAdd, deleteAdd, insertAdd
+import tn
+from tn import TNode, createTNodeExpFromPyExp, replaceAdd, deleteAdd, insertAdd
 from buffer import Buffer
 
 __author__ = 'chephren'
@@ -91,6 +92,18 @@ class TestCreateTreeFromSexp(TestCase):
         tree = createTNodeExpFromPyExp([22, [33, 44]])
         self.assertEqual(tree.toPyExp(), [22, [33, 44]])
 
+class TestTNodeFunctions(TestCase):
+    def test_tnodeList(self):
+        tree = tn.tnodeListFromPyList([11, 15, 17, 19])
+        self.assertEqual(tree.toPyExp(), [11, 15, 17, 19])
+
+    def test_tnodeExpFromPyExp(self):
+        tree = tn.tnodeExpFromPyExp([22, [33, 44]])
+        self.assertEqual(tree.toPyExp(), [22, [33, 44]])
+
+    def test_tnodeExpFromPyExp2(self):
+        tree = tn.tnodeExpFromPyExp([22, [11, 10, [9]], [33, 44], 17])
+        self.assertEqual(tree.toPyExp(), [22, [11, 10, [9]], [33, 44], 17])
 
 # class TestCopyTNode(TestCase):
 #     def test_copyTNode(self):
