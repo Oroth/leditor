@@ -94,15 +94,15 @@ class TestCreateTreeFromSexp(TestCase):
 
 class TestTNodeFunctions(TestCase):
     def test_tnodeList(self):
-        tree = tn.tnodeListFromPyList([11, 15, 17, 19])
+        tree = tn.createTNodeExpFromPyExp2([11, 15, 17, 19])
         self.assertEqual(tree.toPyExp(), [11, 15, 17, 19])
 
     def test_tnodeExpFromPyExp(self):
-        tree = tn.tnodeExpFromPyExp([22, [33, 44]])
+        tree = tn.createTNodeExpFromPyExp2([22, [33, 44]])
         self.assertEqual(tree.toPyExp(), [22, [33, 44]])
 
     def test_tnodeExpFromPyExp2(self):
-        tree = tn.tnodeExpFromPyExp([22, [11, 10, [9]], [33, 44], 17])
+        tree = tn.createTNodeExpFromPyExp2([22, [11, 10, [9]], [33, 44], 17])
         self.assertEqual(tree.toPyExp(), [22, [11, 10, [9]], [33, 44], 17])
 
 # class TestCopyTNode(TestCase):

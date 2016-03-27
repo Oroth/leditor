@@ -56,7 +56,10 @@ def joinList(lst, node):
     return newLst
 
 def append(first, sec):
-    ret = TNode(sec)
+    if sec:
+        ret = TNode(sec)
+    else:
+        ret = None
     first.next = ret
     return ret
 
@@ -64,17 +67,19 @@ def append(first, sec):
 # differences to paramterise:
 
 def transformPyLst(func, acc, lst):
-    start, cur = acc
+    start = cur = acc
     for i in lst:
         cur = func(cur, i)
     return start
 
-def transformPyExp(func, acc, exp):
-    start, cur = acc
+def transformPyExp(func, initfunc, acc, exp):
+    start = cur = acc
+
     for i in exp:
         if isPyList(i):
-            transformPyExp(func,i[0] , i[1:])
-        cur = func(cur, i)
+            cur = func(cur, transformPyExp(func, initfunc, initfunc(i[0]) , i[1:]))
+        else:
+            cur = func(cur, i)
     return start
 
 
@@ -118,8 +123,8 @@ def tnodeSyncAddress(newexp, oldexp, oldadd, acc=[]):
     else:
         return curNode, accInd
 
-def createTNodeExpFromPyExp3(pyexp):
-    return transformPyExp(append, pyexp) if isPyList(pyexp) else pyexp
+def createTNodeExpFromPyExp2(pyexp):
+    return transformPyExp(append, TNode, TNode(pyexp[0]), pyexp[1:]) if isPyList(pyexp) else pyexp
 
 
 # ======================================================================================================
