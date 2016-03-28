@@ -92,6 +92,14 @@ def tnodeIndex(lst, ind):
         retInd = retInd + 1
     return curNode, retInd
 
+def tnodeFindChild(lst, val):
+    curNode = lst
+    retInd = 0
+    while curNode.next and curNode.child != val:
+        curNode = curNode.next
+        retInd = retInd + 1
+    return curNode, retInd
+
 def tnodeMatch(lst, toMatch, defaultInd):
     ind = 0
     defaultRet = lst
@@ -110,6 +118,15 @@ def tnodeAddress(exp, add, acc=[]):
     accInd.append(curPos)
     if add[1:] and cur.isSubNode():
         return tnodeAddress(cur.child, add[1:], accInd)
+    else:
+        return cur, accInd
+
+def tnodeNVS(exp, nvs, acc=[]):
+    cur, curPos = tnodeFindChild(exp, nvs[0])
+    accInd = list(acc)
+    accInd.append(curPos)
+    if nvs[1:] and cur.isSubNode():
+        return tnodeAddress(cur.child, nvs[1:], accInd)
     else:
         return cur, accInd
 
