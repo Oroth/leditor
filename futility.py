@@ -16,18 +16,6 @@ class Cell(fo.FuncObject):
 def createBlank(maxx, maxy, bgColour=iop.defaultBG(), fgColour=iop.defaultFG()):
     return [[Cell(bgColour=bgColour, fgColour=fgColour) for x in range(0, maxx)] for x in range(0, maxy)]
 
-# Functional version
-#def putNodeOnImage(image, x, y, text, node, bgcol):
-#    newImage = [list(row) for row in image]
-#
-#    for i in text:
-#        (newImage[y][x]).character = i
-#        (newImage[y][x]).nodeReference = node
-#        (newImage[y][x]).bgColour = bgcol
-#        (newImage[y][x]).bgColour = bgcol
-#        x += 1
-#
-#    return newImage
 
 def putNodeOnImage2(image, x, y, text, lineItemNodeRef, bgcol, fgcol):
     for cdx, c in enumerate(text):
@@ -54,6 +42,16 @@ def printToScreen(image, posx, posy):
 def sliceFakeWindow(fakeWindow, topline, maxHeight):
     return fakeWindow[topline:topline+maxHeight]
 
+class parseState(fo.FuncObject):
+    def __init__(self, ret, node, address, nesting,
+                        isCursor=False, indent=False, topNode=False, pa=0):
+        self.curNode = node
+        self.curAddress = address
+        self.nesting = nesting
+        self.isCursor = isCursor
+        self.indent = indent
+        self.topNode = topNode
+        self.parenAlignment = pa
 
 class lineItemNode(fo.FuncObject):
     def __init__(self, nodeReference, nodeAddress, text=None, isCursor=False, stringSplit=None):
@@ -72,7 +70,7 @@ class lineItemNode(fo.FuncObject):
         return self.text
 
 
-class lineListNode(fo.FuncObject):
+class lineNode(fo.FuncObject):
     def __init__(self, lineNumber, indent, nodeList=[], parenAlignment=0):
         self.lineNumber = lineNumber
         self.indent = indent
@@ -166,13 +164,13 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
 
 def createStucturalLineIndentList(editor, winWidth, winHeight):
 
+    # filter lst?, flatten, filter lst?-
     def isComplex(node):
         if node.next:
             for i in node:
-                if i.isSubNode() and not (i.nodeID in editor.zippedNodes and editor.zippedNodes[i.nodeID]):
+                if i.isSubNode() and not editor.nodeIsZipped(i):
                     for subi in i.child:
-                        if subi.isSubNode() and \
-                           not (subi.nodeID in editor.zippedNodes and editor.zippedNodes[subi.nodeID]):
+                        if subi.isSubNode() and not editor.nodeIsZipped(subi):
                             return True
 
         return False
@@ -191,10 +189,10 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
         if node.next:
             newAddress[-1] += 1
             if indent:
-                ret.append(lineListNode(0, nesting, parenAlignment=pa))
+                ret.append(lineNode(0, nesting, parenAlignment=pa))
                 ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent=True, pa=pa))
             elif reindent:        # can only apply to the first expression
-                ret.append(lineListNode(0, nesting+1, parenAlignment=pa))
+                ret.append(lineNode(0, nesting + 1, parenAlignment=pa))
                 ret.extend(recur(node.next, newAddress, nesting+1, isParentCursor, indent=True, pa=pa))
             else:
                 ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent, pa=pa))
@@ -207,7 +205,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
         #parenAlignment = 0
 
         if node.next:
-            if node.next.nodeID in editor.zippedNodes and editor.zippedNodes[node.next.nodeID]:
+            if editor.nodeIsZipped(node.next):
                 reindent = False
             elif isComplex(node.next):
                 if node.isSubNode():
@@ -254,7 +252,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
             isCursor = isParentCursor
 
 
-        if node.nodeID in editor.zippedNodes and editor.zippedNodes[node.nodeID] and editor.printingMode != 'help':
+        if editor.nodeIsZipped(node) and editor.printingMode != 'help':
             ret = [lineItemNode(node, address, '...', isCursor)]
             return ret
 
@@ -268,15 +266,18 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
             else:
                 ret[0].printRule = 'cellEditorNonString'
                 ret[0].highlightIndex = editor.cellEditor.index
+
         elif node.isSubNode():
             ret = [lineItemNode(node, address, '(', isCursor)]
             subAddress = list(newAddress)
             subAddress.append(0)
             ret.extend(recur(node.child, subAddress, nesting, isCursor, pa=pa))
             ret.append(lineItemNode(node, address, ')', isCursor))
+
         elif node.child is None:
             ret = [lineItemNode(node, address, '(', isCursor),
                    lineItemNode(node, address, ')', isCursor)]
+
         else:
             ret = [lineItemNode(node, address, None, isCursor)]
 
@@ -323,7 +324,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
 
 
     def unflatten(stream):
-        lines = [lineListNode(0, 0)]
+        lines = [lineNode(0, 0)]
         currentLineNumber = 1
         currentLineLength = 0
         currentLineIndent = 0
@@ -335,7 +336,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
 
         for i in stream:
 
-            if isinstance(i, lineListNode):
+            if isinstance(i, lineNode):
                 if editor.drawMode == 'cursor':
                     if cursorTopLine is not None and cursorBottomLine is not None:
                         if cursorTopLine <= editor.topLine:
@@ -347,7 +348,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
                             break
 
 
-                lines.append(lineListNode(currentLineNumber, i.indent, parenAlignment=i.parenAlignment))
+                lines.append(lineNode(currentLineNumber, i.indent, parenAlignment=i.parenAlignment))
                 currentLineNumber += 1
                 currentLineLength = i.indent + i.parenAlignment
                 currentLineIndent = i.indent
@@ -379,7 +380,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
                         for string in stringList[1:]:
                             currentLineNode = lineItemNode(i.nodeReference, i.nodeAddress,
                                 string, i.isCursor, 'start')
-                            lines.append(lineListNode(currentLineNumber, 0))
+                            lines.append(lineNode(currentLineNumber, 0))
                             currentLineNumber += 1
 
                             lines[-1].nodeList.append(currentLineNode)
@@ -387,7 +388,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
                         currentLineLength = len(currentLineNode.text)
 
                     else:
-                        lines.append(lineListNode(currentLineNumber, 0))
+                        lines.append(lineNode(currentLineNumber, 0))
                         currentLineNumber += 1
                         currentLineLength = 0
 
