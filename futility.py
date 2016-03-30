@@ -1,7 +1,7 @@
 __author__ = 'chephren'
-
 import iop
 import reader
+import buffer
 import funobj as fo 
 
 class Cell(fo.FuncObject):
@@ -42,35 +42,55 @@ def printToScreen(image, posx, posy):
 def sliceFakeWindow(fakeWindow, topline, maxHeight):
     return fakeWindow[topline:topline+maxHeight]
 
-class parseState(fo.FuncObject):
-    def __init__(self, ret, node, address, nesting,
-                        isCursor=False, indent=False, topNode=False, pa=0):
-        self.curNode = node
-        self.curAddress = address
+class ParseState(buffer.Buffer):
+    def __init__(self, node, address, nesting=0, isCursor=False,
+                         indent=False, reindent=False, topNode=False, pa=0):
         self.nesting = nesting
         self.isCursor = isCursor
         self.indent = indent
+        self.reindent = reindent
         self.topNode = topNode
         self.parenAlignment = pa
+        super(ParseState, self).__init__(node, [0], address)
 
-class lineItemNode(fo.FuncObject):
-    def __init__(self, nodeReference, nodeAddress, text=None, isCursor=False, stringSplit=None):
-        self.nodeReference = nodeReference
+    def incNesting(self):
+        return self.update('nesting', self.nesting+1)
+
+    def reset(self, *lst):
+        args = zip(lst, [False]*len(lst))
+        return wrapper(self.updateList, args)
+
+    def set(self, *lst):
+        args = zip(lst, [True]*len(lst))
+        return wrapper(self.updateList, args)
+
+def wrapper(func, args):
+    return func(*args)
+
+class LineItemNode(fo.FuncObject):
+    def __init__(self, ps, text=None, stringSplit=None):
+        self.nodeReference = ps.cursor
         if text is None:
-            self.text = reader.to_string(nodeReference.child)
+            self.text = reader.to_string(ps.cursor.child)
         else:
             self.text = str(text)
-        self.isCursor = isCursor
+        self.isCursor = ps.isCursor
         self.stringSplit = stringSplit
         self.printRule = None
         self.highlightIndex = None
-        self.nodeAddress = nodeAddress
+        self.nodeAddress = ps.cursorAdd
+
+    @classmethod
+    def fromParts(cls, nodeReference, nodeAddress, text=None, isCursor=False, stringSplit=None):
+        ps = ParseState(nodeReference, nodeAddress, 0, isCursor)
+        return cls(ps, text, stringSplit)
+
 
     def nodeToString(self):
         return self.text
 
 
-class lineNode(fo.FuncObject):
+class LineNode(fo.FuncObject):
     def __init__(self, lineNumber, indent, nodeList=[], parenAlignment=0):
         self.lineNumber = lineNumber
         self.indent = indent
@@ -176,33 +196,32 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
         return False
 
     # Everything is printed without linebreaks
-    def recurHorizontal(ret, node, newAddress, nesting,
-                        isParentCursor=False, indent=False, topNode=False, pa=0):
-        newAddress[-1] += 1
-        if node.next:
-            ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent))
-
+    def recurHorizontal(ret, ps):
+        if ps.cursor.next:
+            ret.extend(recur(ps.curNext()))
         return ret
 
-    def recurVerticalTemplate(ret, node, newAddress, nesting, isParentCursor=False, indent=False, topNode=False,
-                              reindent=False, pa=0):
-        if node.next:
-            newAddress[-1] += 1
-            if indent:
-                ret.append(lineNode(0, nesting, parenAlignment=pa))
-                ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent=True, pa=pa))
+    def recurVerticalTemplate(ret, parseState):
+
+        if parseState.cursor.next:
+            reindent = parseState.reindent
+            ps = parseState.curNext().reset('reindent')
+            if ps.indent:
+                ret.append(LineNode(0, ps.nesting, parenAlignment=ps.parenAlignment))
+                ret.extend(recur(ps))
             elif reindent:        # can only apply to the first expression
-                ret.append(lineNode(0, nesting + 1, parenAlignment=pa))
-                ret.extend(recur(node.next, newAddress, nesting+1, isParentCursor, indent=True, pa=pa))
+                ret.append(LineNode(0, ps.nesting + 1, parenAlignment=ps.parenAlignment))
+                ret.extend(recur(ps.incNesting().set('indent')))
             else:
-                ret.extend(recur(node.next, newAddress, nesting, isParentCursor, indent, pa=pa))
+                ret.extend(recur(ps))
 
         return ret
 
-    def recurCode(ret, node, newAddress, nesting,
-                  isParentCursor=False, indent=False, topNode=False, pa=0):
+    def recurCode(ret, parseState):
+        node = parseState.cursor
+        indent = parseState.indent
         reindent = False
-        #parenAlignment = 0
+        pa = parseState.parenAlignment
 
         if node.next:
             if editor.nodeIsZipped(node.next):
@@ -225,13 +244,19 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
                 else:
                     reindent = True
 
-        return recurVerticalTemplate(ret, node, newAddress, nesting, isParentCursor,
-                                     indent, topNode, reindent, pa=pa)
+        ps = parseState.updateList(
+            ('indent', indent),
+            ('reindent', reindent),
+            ('parenAlignment', pa))
+
+        return recurVerticalTemplate(ret, ps)
 
     # Add linebreaks for everything apart from the last sexp
-    def recurVertical(ret, node, newAddress, nesting,
-                      isParentCursor=False, indent=False, topNode=False, pa=0):
-        reindent = False
+    def recurVertical(ret, parseState):
+        node = parseState.cursor
+        indent = parseState.indent
+        reindent = parseState.reindent
+        pa = parseState.parenAlignment
         if node.next and node.next.isSubNode():
             if node.isSubNode():
                 if node.child.isSubNode():
@@ -240,60 +265,64 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
             else:
                 reindent = True
 
-        return recurVerticalTemplate(ret, node, newAddress, nesting, isParentCursor,
-                                     indent, topNode, reindent, pa)
+        ps = parseState.updateList(
+            ('indent', indent),
+            ('reindent', reindent),
+            ('parenAlignment', pa))
 
-    def recur(node, address, nesting, isParentCursor=False, indent=False, topNode=False, pa=0):
-        newAddress = list(address)
+        return recurVerticalTemplate(ret, ps)
 
-        if node == editor.buffer.cursor:
-            isCursor = True
+    def recur(parseState):
+
+        if parseState.cursor == editor.buffer.cursor:
+            ps = parseState.update('isCursor', True)
         else:
-            isCursor = isParentCursor
+            ps = parseState
 
-
-        if editor.nodeIsZipped(node) and editor.printingMode != 'help':
-            ret = [lineItemNode(node, address, '...', isCursor)]
+        if editor.nodeIsZipped(ps.cursor) and editor.printingMode != 'help':
+            ret = [LineItemNode(ps, '...')]
             return ret
 
-        if node == editor.buffer.cursor and editor.editing:
+        if ps.cursor == editor.buffer.cursor and editor.editing:
             # slightly hacky, isCursor is technically True, but we call it false to stop it
             # from highlighting the entire node. need to re-engineer the rules really
-            ret = [lineItemNode(node, address, editor.cellEditor.getContentAsString(), False)]
+            editingNode = LineItemNode(ps.reset('isCursor'), editor.cellEditor.getContentAsString())
             if editor.cellEditor.isString:
-                ret[0].printRule = 'cellEditorString'
-                ret[0].highlightIndex = editor.cellEditor.index + 1
+                editingNode.printRule = 'cellEditorString'
+                editingNode.highlightIndex = editor.cellEditor.index + 1
             else:
-                ret[0].printRule = 'cellEditorNonString'
-                ret[0].highlightIndex = editor.cellEditor.index
+                editingNode.printRule = 'cellEditorNonString'
+                editingNode.highlightIndex = editor.cellEditor.index
+            ret = [editingNode]
 
-        elif node.isSubNode():
-            ret = [lineItemNode(node, address, '(', isCursor)]
-            subAddress = list(newAddress)
-            subAddress.append(0)
-            ret.extend(recur(node.child, subAddress, nesting, isCursor, pa=pa))
-            ret.append(lineItemNode(node, address, ')', isCursor))
+        elif ps.onSubNode():
+            ret = [LineItemNode(ps, '(')]
+            ret.extend(recur(ps.curChild().reset('indent', 'reindent')))
+            ret.append(LineItemNode(ps, ')'))
 
-        elif node.child is None:
-            ret = [lineItemNode(node, address, '(', isCursor),
-                   lineItemNode(node, address, ')', isCursor)]
+        elif ps.cursor.child is None:
+            ret = [LineItemNode(ps, '('),
+                   LineItemNode(ps, ')')]
 
         else:
-            ret = [lineItemNode(node, address, None, isCursor)]
+            ret = [LineItemNode(ps)]
 
         # code editor, needs to go with the code editor code
         try:
-            if editor.revealedNodes[node]:
-                ret.append(lineItemNode(node, address, '=>', isCursor))
-                ret.append(lineItemNode(node, address, reader.to_string(editor.nodeValues[node]), isCursor))
+            if editor.revealedNodes[ps.cursor]:
+                ret.append(LineItemNode(ps, '=>'))
+                ret.append(LineItemNode(ps, reader.to_string(editor.nodeValues[ps.cursor])))
         except KeyError: pass
         except AttributeError: pass
 
 
-        if topNode:
-            return ret
 
-        modeRet = recurMode(ret, node, newAddress, nesting, isParentCursor, indent, pa=pa)
+        # if ps.cursor.next:
+        #     # pass the original state to maintain the same cursor highlighting
+        #     ret.extend(recur(parseState.curNext()))
+        #
+        # return ret
+        modeRet = recurMode(ret, parseState)
 
         return modeRet
 
@@ -324,7 +353,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
 
 
     def unflatten(stream):
-        lines = [lineNode(0, 0)]
+        lines = [LineNode(0, 0)]
         currentLineNumber = 1
         currentLineLength = 0
         currentLineIndent = 0
@@ -336,7 +365,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
 
         for i in stream:
 
-            if isinstance(i, lineNode):
+            if isinstance(i, LineNode):
                 if editor.drawMode == 'cursor':
                     if cursorTopLine is not None and cursorBottomLine is not None:
                         if cursorTopLine <= editor.topLine:
@@ -348,7 +377,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
                             break
 
 
-                lines.append(lineNode(currentLineNumber, i.indent, parenAlignment=i.parenAlignment))
+                lines.append(LineNode(currentLineNumber, i.indent, parenAlignment=i.parenAlignment))
                 currentLineNumber += 1
                 currentLineLength = i.indent + i.parenAlignment
                 currentLineIndent = i.indent
@@ -373,14 +402,14 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
                     if isinstance(i.nodeReference.child, str):
                         stringList = splitStringAcrossLines(i.text, lineLengthLeft, winWidth)
                         if stringList[0] != '':
-                            currentLineNode = lineItemNode(i.nodeReference, i.nodeAddress,
-                                stringList[0], i.isCursor, 'start')
+                            currentLineNode = LineItemNode.fromParts(i.nodeReference, i.nodeAddress,
+                                                           stringList[0], i.isCursor, 'start')
                             lines[-1].nodeList.append(currentLineNode)
 
                         for string in stringList[1:]:
-                            currentLineNode = lineItemNode(i.nodeReference, i.nodeAddress,
-                                string, i.isCursor, 'start')
-                            lines.append(lineNode(currentLineNumber, 0))
+                            currentLineNode = LineItemNode.fromParts(i.nodeReference, i.nodeAddress,
+                                                           string, i.isCursor, 'start')
+                            lines.append(LineNode(currentLineNumber, 0))
                             currentLineNumber += 1
 
                             lines[-1].nodeList.append(currentLineNode)
@@ -388,7 +417,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
                         currentLineLength = len(currentLineNode.text)
 
                     else:
-                        lines.append(lineNode(currentLineNumber, 0))
+                        lines.append(LineNode(currentLineNumber, 0))
                         currentLineNumber += 1
                         currentLineLength = 0
 
@@ -412,7 +441,10 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
     elif editor.printingMode in ['vertical', 'help']:
         recurMode = recurVertical
 
-    lineStream = recur(editor.buffer.view, [0], nesting=0, isParentCursor=False, topNode=True)
+    #recurMode = recurHorizontal
+
+    parseState = ParseState(editor.buffer.view, [0])
+    lineStream = recur(parseState)
     lineList, topLine = unflatten(lineStream)
     toppedLineList = lineList[topLine:]
     return toppedLineList

@@ -111,7 +111,7 @@ class TreeEditor(fo.FuncObject):
         self.editing = False
         self.cellEditor = None
         self.yankBuffer = None
-        self.printingMode = 'code'
+        self.printingMode = 'horizontal'
         self.syncWithRoot = True
         self.updateUndo = False
         self.showValues = False
