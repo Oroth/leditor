@@ -43,14 +43,13 @@ def sliceFakeWindow(fakeWindow, topline, maxHeight):
     return fakeWindow[topline:topline+maxHeight]
 
 class ParseState(buffer.Buffer):
-    def __init__(self, node, address, nesting=0, isCursor=False,
-                         indent=False, reindent=False, topNode=False, pa=0):
+    def __init__(self, node, address, nesting=0, isCursor=False):
         self.nesting = nesting
         self.isCursor = isCursor
-        self.indent = indent
-        self.reindent = reindent
-        self.topNode = topNode
-        self.parenAlignment = pa
+        self.newline = False        # While True will start a newline at each node
+        self.reindent = False       # While true will increase the amount of nesting...
+        self.parenAlignment = 0
+        self.letSyntax = False
         super(ParseState, self).__init__(node, [0], address)
 
     def incNesting(self):
@@ -66,6 +65,7 @@ class ParseState(buffer.Buffer):
 
 def wrapper(func, args):
     return func(*args)
+
 
 class LineItemNode(fo.FuncObject):
     def __init__(self, ps, text=None, stringSplit=None):
@@ -84,7 +84,6 @@ class LineItemNode(fo.FuncObject):
     def fromParts(cls, nodeReference, nodeAddress, text=None, isCursor=False, stringSplit=None):
         ps = ParseState(nodeReference, nodeAddress, 0, isCursor)
         return cls(ps, text, stringSplit)
-
 
     def nodeToString(self):
         return self.text
@@ -202,75 +201,81 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
         return ret
 
     def recurVerticalTemplate(ret, parseState):
-
         if parseState.cursor.next:
-            reindent = parseState.reindent
-            ps = parseState.curNext().reset('reindent')
-            if ps.indent:
+            ps = parseState.curNext()
+
+            if ps.newline:
                 ret.append(LineNode(0, ps.nesting, parenAlignment=ps.parenAlignment))
                 ret.extend(recur(ps))
-            elif reindent:        # can only apply to the first expression
-                ret.append(LineNode(0, ps.nesting + 1, parenAlignment=ps.parenAlignment))
-                ret.extend(recur(ps.incNesting().set('indent')))
             else:
                 ret.extend(recur(ps))
 
         return ret
 
+
+    def recurCode2(parseState):
+        node = parseState.cursor
+
+        if editor.nodeIsZipped(node.next):
+            return parseState
+        elif isComplex(node.next) or (node.next.isSubNode() and isComplex(node.next.child)):
+            ps = parseState.set('newline')
+            # if the first node is a list, assume it is part of a let-syntax, so we know not to reindent
+            if node.isSubNode():
+                return ps.update('parenAlignment', 1)
+            else:
+                return ps.incNesting()
+
+        return parseState
+
+
     def recurCode(ret, parseState):
         node = parseState.cursor
-        indent = parseState.indent
+        newline = parseState.newline
         reindent = False
         pa = parseState.parenAlignment
 
         if node.next:
             if editor.nodeIsZipped(node.next):
-                reindent = False
-            elif isComplex(node.next):
+                pass
+            elif isComplex(node.next) or (node.next.isSubNode() and isComplex(node.next.child)):
+                newline = True
+                # if the first node is a list, assume it is part of a let-syntax, so we know not to reindent
                 if node.isSubNode():
-                    if node.child.isSubNode():
-                        pa = 1
                     pa = 1
-                    indent = True
-                else:
-                    reindent = True
-            # new rule: if only two values (exp1 exp2) and exp2 is very complex, indent anyway
-            elif node.next.isSubNode() and isComplex(node.next.child):
-                if node.isSubNode():
-                    if node.child.isSubNode():
-                        pa = 1
-                    #pa = 1
-                    indent = True
                 else:
                     reindent = True
 
         ps = parseState.updateList(
-            ('indent', indent),
-            ('reindent', reindent),
+            ('newline', newline),
             ('parenAlignment', pa))
 
-        return recurVerticalTemplate(ret, ps)
+        ps2 = ps.incNesting() if reindent else ps
+
+        return recurVerticalTemplate(ret, ps2)
 
     # Add linebreaks for everything apart from the last sexp
     def recurVertical(ret, parseState):
         node = parseState.cursor
-        indent = parseState.indent
+        newline = parseState.newline
         reindent = parseState.reindent
         pa = parseState.parenAlignment
+
+
         if node.next and node.next.isSubNode():
+            newline = True
             if node.isSubNode():
-                if node.child.isSubNode():
-                    pa += 1
-                indent = True
+                pa = 1
             else:
                 reindent = True
 
         ps = parseState.updateList(
-            ('indent', indent),
-            ('reindent', reindent),
+            ('newline', newline),
             ('parenAlignment', pa))
 
-        return recurVerticalTemplate(ret, ps)
+        ps2 = ps.incNesting() if reindent else ps
+
+        return recurVerticalTemplate(ret, ps2)
 
     def recur(parseState):
 
@@ -297,7 +302,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
 
         elif ps.onSubNode():
             ret = [LineItemNode(ps, '(')]
-            ret.extend(recur(ps.curChild().reset('indent', 'reindent')))
+            ret.extend(recur(ps.curChild().reset('newline', 'reindent')))
             ret.append(LineItemNode(ps, ')'))
 
         elif ps.cursor.child is None:
@@ -317,14 +322,18 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
 
 
 
-        # if ps.cursor.next:
-        #     # pass the original state to maintain the same cursor highlighting
-        #     ret.extend(recur(parseState.curNext()))
-        #
-        # return ret
-        modeRet = recurMode(ret, parseState)
+        if parseState.cursor.next:
+            modeps = recurCode2(parseState)
+            # pass the original state to maintain the same cursor highlighting
+            if modeps.newline:
+                ret.append(LineNode(0,  modeps.nesting, parenAlignment= modeps.parenAlignment))
 
-        return modeRet
+            ret.extend(recur(modeps.curNext()))
+
+        return ret
+        # modeRet = recurMode(ret, parseState)
+        #
+        # return modeRet
 
 
     def splitStringAcrossLines(string, firstBoundary, remainingBoundary):
