@@ -194,26 +194,22 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
 
         return False
 
-    # Everything is printed without linebreaks
-    def recurHorizontal(ret, ps):
-        if ps.cursor.next:
-            ret.extend(recur(ps.curNext()))
-        return ret
 
-    def recurVerticalTemplate(ret, parseState):
-        if parseState.cursor.next:
-            ps = parseState.curNext()
+    def recurHorizontal(parseState):
+        return parseState
 
-            if ps.newline:
-                ret.append(LineNode(0, ps.nesting, parenAlignment=ps.parenAlignment))
-                ret.extend(recur(ps))
+    def recurVertical(parseState):
+        node = parseState.cursor
+        if node.next and node.next.isSubNode():
+            ps = parseState.set('newline')
+            if node.isSubNode():
+                return ps.update('parenAlignment', 1)
             else:
-                ret.extend(recur(ps))
+                return ps.incNesting()
 
-        return ret
+        return parseState
 
-
-    def recurCode2(parseState):
+    def recurCode(parseState):
         node = parseState.cursor
 
         if editor.nodeIsZipped(node.next):
@@ -229,55 +225,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
         return parseState
 
 
-    def recurCode(ret, parseState):
-        node = parseState.cursor
-        newline = parseState.newline
-        reindent = False
-        pa = parseState.parenAlignment
-
-        if node.next:
-            if editor.nodeIsZipped(node.next):
-                pass
-            elif isComplex(node.next) or (node.next.isSubNode() and isComplex(node.next.child)):
-                newline = True
-                # if the first node is a list, assume it is part of a let-syntax, so we know not to reindent
-                if node.isSubNode():
-                    pa = 1
-                else:
-                    reindent = True
-
-        ps = parseState.updateList(
-            ('newline', newline),
-            ('parenAlignment', pa))
-
-        ps2 = ps.incNesting() if reindent else ps
-
-        return recurVerticalTemplate(ret, ps2)
-
-    # Add linebreaks for everything apart from the last sexp
-    def recurVertical(ret, parseState):
-        node = parseState.cursor
-        newline = parseState.newline
-        reindent = parseState.reindent
-        pa = parseState.parenAlignment
-
-
-        if node.next and node.next.isSubNode():
-            newline = True
-            if node.isSubNode():
-                pa = 1
-            else:
-                reindent = True
-
-        ps = parseState.updateList(
-            ('newline', newline),
-            ('parenAlignment', pa))
-
-        ps2 = ps.incNesting() if reindent else ps
-
-        return recurVerticalTemplate(ret, ps2)
-
-    def recur(parseState):
+    def makeLineStream(parseState):
 
         if parseState.cursor == editor.buffer.cursor:
             ps = parseState.update('isCursor', True)
@@ -302,7 +250,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
 
         elif ps.onSubNode():
             ret = [LineItemNode(ps, '(')]
-            ret.extend(recur(ps.curChild().reset('newline', 'reindent')))
+            ret.extend(makeLineStream(ps.curChild().reset('newline', 'reindent')))
             ret.append(LineItemNode(ps, ')'))
 
         elif ps.cursor.child is None:
@@ -320,56 +268,55 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
         except KeyError: pass
         except AttributeError: pass
 
-
-
+        # pass the original state to maintain the same cursor highlighting
         if parseState.cursor.next:
-            modeps = recurCode2(parseState)
-            # pass the original state to maintain the same cursor highlighting
+            modeps = recurMode(parseState)
             if modeps.newline:
                 ret.append(LineNode(0,  modeps.nesting, parenAlignment= modeps.parenAlignment))
 
-            ret.extend(recur(modeps.curNext()))
+            ret.extend(makeLineStream(modeps.curNext()))
 
         return ret
-        # modeRet = recurMode(ret, parseState)
-        #
-        # return modeRet
 
 
-    def splitStringAcrossLines(string, firstBoundary, remainingBoundary):
+    # Takes a string and tries to split it across two or more lines depending on where the spaces are in
+    # the string and how much space is left to the end of the line and on subsequent lines
+    def splitStringAcrossLines(string, curLineSpaceLeft, maxLineLength):
         stringList = []
-        lastSpaceFirstLine = string.rfind(' ', 0, firstBoundary)
-        if lastSpaceFirstLine != -1:
-            stringList.append(string[:lastSpaceFirstLine])
-            curLineStart = lastSpaceFirstLine + 1
+        stringStartIndex = 0                # The position in string from which to start taking words
+        stringEndIndex = maxLineLength      # The position in string from which we take words up to
+        lastSpaceCurLine = string.rfind(' ', 0, curLineSpaceLeft)
+
+        # if there is space on the current line, append the maximum number of words
+        if lastSpaceCurLine != -1:
+            stringList.append(string[:lastSpaceCurLine])
+            stringStartIndex = lastSpaceCurLine + 1
+        # Otherwise start from the next line
         else:
             stringList.append('')
-            curLineStart = 0
 
-        curLineFind = string.rfind(' ', curLineStart, remainingBoundary)
+        # insert stringStartIndex...
+        curLineFind = string.rfind(' ', stringStartIndex, stringStartIndex+maxLineLength)
 
-        while curLineFind != -1 and curLineStart+remainingBoundary < len(string):
-            #curLineEnd = curLineStart + curLineFind
-            curLineEnd = curLineFind
-            stringList.append(string[curLineStart:curLineEnd])
-            curLineStart = curLineEnd+1
-            curLineFind = string.rfind(' ', curLineStart, curLineStart+remainingBoundary)
+        # While we can find words that will fit and not everything will fit on the line
+        while curLineFind != -1 and stringStartIndex+maxLineLength < len(string):
+            stringEndIndex = curLineFind
+            stringList.append(string[stringStartIndex:stringEndIndex])
+            stringStartIndex = stringEndIndex+1
+            curLineFind = string.rfind(' ', stringStartIndex, stringStartIndex + maxLineLength)
 
-        stringList.append(string[curLineStart:])
+        stringList.append(string[stringStartIndex:])
 
         return stringList
 
 
-
-    def unflatten(stream):
+    # Walk through the stream of line and node items to put each node on a line
+    def makeLineList(stream):
         lines = [LineNode(0, 0)]
         currentLineNumber = 1
         currentLineLength = 0
-        currentLineIndent = 0
-        bottomNodeFound = False
         cursorTopLine = None
         cursorBottomLine = None
-
         newTopLine = editor.topLine
 
         for i in stream:
@@ -389,16 +336,9 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
                 lines.append(LineNode(currentLineNumber, i.indent, parenAlignment=i.parenAlignment))
                 currentLineNumber += 1
                 currentLineLength = i.indent + i.parenAlignment
-                currentLineIndent = i.indent
+
+            # LineItemNode
             else:
-
-
-#                if i.nodeReference.nodeID == positionNode.nodeID:
-#                    if nodeDescriptor == 'topNode':
-#                        newTopLine = currentLineNumber
-#                    elif nodeDescriptor == 'bottomNode':
-#                        bottomNodeFound = True
-
                 if i.isCursor:
                     if cursorTopLine is None:
                         cursorTopLine = currentLineNumber
@@ -443,6 +383,8 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
 
         return lines, newTopLine
 
+
+
     if editor.printingMode == 'code':
         recurMode = recurCode
     elif editor.printingMode == 'horizontal':
@@ -453,8 +395,8 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
     #recurMode = recurHorizontal
 
     parseState = ParseState(editor.buffer.view, [0])
-    lineStream = recur(parseState)
-    lineList, topLine = unflatten(lineStream)
+    lineStream = makeLineStream(parseState)
+    lineList, topLine = makeLineList(lineStream)
     toppedLineList = lineList[topLine:]
     return toppedLineList
 
