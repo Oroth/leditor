@@ -67,7 +67,7 @@ def wrapper(func, args):
     return func(*args)
 
 
-class LineItemNode(fo.FuncObject):
+class TokenNode(fo.FuncObject):
     def __init__(self, ps, text=None, stringSplit=None):
         self.nodeReference = ps.cursor
         if text is None:
@@ -80,22 +80,21 @@ class LineItemNode(fo.FuncObject):
         self.highlightIndex = None
         self.nodeAddress = ps.cursorAdd
 
-    @classmethod
-    def fromParts(cls, nodeReference, nodeAddress, text=None, isCursor=False, stringSplit=None):
-        ps = ParseState(nodeReference, nodeAddress, 0, isCursor)
-        return cls(ps, text, stringSplit)
-
     def nodeToString(self):
         return self.text
 
 
 class LineNode(fo.FuncObject):
-    def __init__(self, lineNumber, indent, nodeList=[], parenAlignment=0):
+    def __init__(self, lineNumber, indent, tokenList=[], parenAlignment=0):
         self.lineNumber = lineNumber
         self.indent = indent
-        self.nodeList = list(nodeList)
+        self.tokenList = list(tokenList)
         self.parenAlignment = parenAlignment
 
+    def length(self):
+        text = [token.text for token in self.tokenList]
+        spaces = len(self.tokenList)
+        return self.indent + self.parenAlignment + len(''.join(text)) + spaces
 
 
 def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
@@ -118,8 +117,8 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
 
         # highlight the indented space if it is part of the cursor
         if line.indent > 0:
-            firstItem = line.nodeList[0]
-            if firstItem.isCursor and prevLine and prevLine.nodeList[-1].isCursor:
+            firstItem = line.tokenList[0]
+            if firstItem.isCursor and prevLine and prevLine.tokenList[-1].isCursor:
                 bgcol = hlcol
             else:
                 bgcol = colScheme.bgCol
@@ -130,7 +129,7 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
         prevLine = line
 
         prevItem = None
-        for item in line.nodeList:
+        for item in line.tokenList:
 
             #Add space between symbols
             if prevItem and prevItem.nodeToString() != '(' and item.nodeToString() != ')':
@@ -163,13 +162,13 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
                 text = text[0:winWidth - 5] + '...'
 
             putNodeOnImage2(image, x, y, text, item, bgcol, fgcol)
-            if item.printRule in [ 'cellEditorString', 'cellEditorNonString']:
+            if item.printRule in [ 'cellEditorString', 'cellEditorNonString'] and item.highlightIndex:
                 (image[y][x+item.highlightIndex]).bgColour = hlcol
                 x += 1
             x += len(text)
 
 #            #Add space between symbols
-#            if text != '(' and item != line.nodeList[-1]:
+#            if text != '(' and item != line.tokenList[-1]:
 #                #image = putNodeOnImage(image, x, y, ' ', item.nodeReference, bgcol)
 #                putNodeOnImage2(image, x, y, ' ', item, bgcol, fgcol)
 #                x += 1
@@ -193,7 +192,6 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
                             return True
 
         return False
-
 
     def recurHorizontal(parseState):
         return parseState
@@ -225,7 +223,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
         return parseState
 
 
-    def makeLineStream(parseState):
+    def makeLineTokenStream(parseState):
 
         if parseState.cursor == editor.buffer.cursor:
             ps = parseState.update('isCursor', True)
@@ -233,13 +231,13 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
             ps = parseState
 
         if editor.nodeIsZipped(ps.cursor) and editor.printingMode != 'help':
-            ret = [LineItemNode(ps, '...')]
+            ret = [TokenNode(ps, '...')]
             return ret
 
         if ps.cursor == editor.buffer.cursor and editor.editing:
             # slightly hacky, isCursor is technically True, but we call it false to stop it
             # from highlighting the entire node. need to re-engineer the rules really
-            editingNode = LineItemNode(ps.reset('isCursor'), editor.cellEditor.getContentAsString())
+            editingNode = TokenNode(ps.reset('isCursor'), editor.cellEditor.getContentAsString())
             if editor.cellEditor.isString:
                 editingNode.printRule = 'cellEditorString'
                 editingNode.highlightIndex = editor.cellEditor.index + 1
@@ -249,22 +247,22 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
             ret = [editingNode]
 
         elif ps.onSubNode():
-            ret = [LineItemNode(ps, '(')]
-            ret.extend(makeLineStream(ps.curChild().reset('newline', 'reindent')))
-            ret.append(LineItemNode(ps, ')'))
+            ret = [TokenNode(ps, '(')]
+            ret.extend(makeLineTokenStream(ps.curChild().reset('newline', 'reindent')))
+            ret.append(TokenNode(ps, ')'))
 
         elif ps.cursor.child is None:
-            ret = [LineItemNode(ps, '('),
-                   LineItemNode(ps, ')')]
+            ret = [TokenNode(ps, '('),
+                   TokenNode(ps, ')')]
 
         else:
-            ret = [LineItemNode(ps)]
+            ret = [TokenNode(ps)]
 
         # code editor, needs to go with the code editor code
         try:
             if editor.revealedNodes[ps.cursor]:
-                ret.append(LineItemNode(ps, '=>'))
-                ret.append(LineItemNode(ps, reader.to_string(editor.nodeValues[ps.cursor])))
+                ret.append(TokenNode(ps, '=>'))
+                ret.append(TokenNode(ps, reader.to_string(editor.nodeValues[ps.cursor])))
         except KeyError: pass
         except AttributeError: pass
 
@@ -274,7 +272,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
             if modeps.newline:
                 ret.append(LineNode(0,  modeps.nesting, parenAlignment= modeps.parenAlignment))
 
-            ret.extend(makeLineStream(modeps.curNext()))
+            ret.extend(makeLineTokenStream(modeps.curNext()))
 
         return ret
 
@@ -283,45 +281,51 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
     # the string and how much space is left to the end of the line and on subsequent lines
     def splitStringAcrossLines(string, curLineSpaceLeft, maxLineLength):
         stringList = []
-        stringStartIndex = 0                # The position in string from which to start taking words
-        stringEndIndex = maxLineLength      # The position in string from which we take words up to
-        lastSpaceCurLine = string.rfind(' ', 0, curLineSpaceLeft)
+        curLineStartIndex = 0                # The position in string from which to start taking words
+        curLineLastSpaceIndex = string.rfind(' ', curLineStartIndex, curLineSpaceLeft)
 
         # if there is space on the current line, append the maximum number of words
-        if lastSpaceCurLine != -1:
-            stringList.append(string[:lastSpaceCurLine])
-            stringStartIndex = lastSpaceCurLine + 1
+        if curLineLastSpaceIndex != -1:
+            stringList.append(string[:curLineLastSpaceIndex])
+            curLineStartIndex = curLineLastSpaceIndex + 1
         # Otherwise start from the next line
         else:
             stringList.append('')
 
-        # insert stringStartIndex...
-        curLineFind = string.rfind(' ', stringStartIndex, stringStartIndex+maxLineLength)
+        # Find the index of the rightmost space within the search index
+        curLineMaxSpaceIndex = string.rfind(' ', curLineStartIndex, curLineStartIndex+maxLineLength)
 
         # While we can find words that will fit and not everything will fit on the line
-        while curLineFind != -1 and stringStartIndex+maxLineLength < len(string):
-            stringEndIndex = curLineFind
-            stringList.append(string[stringStartIndex:stringEndIndex])
-            stringStartIndex = stringEndIndex+1
-            curLineFind = string.rfind(' ', stringStartIndex, stringStartIndex + maxLineLength)
+        while curLineMaxSpaceIndex != -1 and curLineStartIndex+maxLineLength < len(string):
+            stringList.append(string[curLineStartIndex:curLineMaxSpaceIndex])
+            curLineStartIndex = curLineMaxSpaceIndex+1
+            curLineMaxSpaceIndex = string.rfind(' ', curLineStartIndex, curLineStartIndex + maxLineLength)
 
-        stringList.append(string[stringStartIndex:])
+        stringList.append(string[curLineStartIndex:])
 
         return stringList
+
+    def findHighlightPosition(stringList, highlightIndex):
+        currentLen = 0
+        for stringIndex, string in enumerate(stringList):
+            if currentLen + len(string) <  highlightIndex:
+                currentLen += len(string) +1
+            else:
+                return stringIndex, highlightIndex - currentLen
+
 
 
     # Walk through the stream of line and node items to put each node on a line
     def makeLineList(stream):
         lines = [LineNode(0, 0)]
         currentLineNumber = 1
-        currentLineLength = 0
         cursorTopLine = None
         cursorBottomLine = None
         newTopLine = editor.topLine
 
-        for i in stream:
+        for node in stream:
 
-            if isinstance(i, LineNode):
+            if isinstance(node, LineNode):
                 if editor.drawMode == 'cursor':
                     if cursorTopLine is not None and cursorBottomLine is not None:
                         if cursorTopLine <= editor.topLine:
@@ -333,49 +337,45 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
                             break
 
 
-                lines.append(LineNode(currentLineNumber, i.indent, parenAlignment=i.parenAlignment))
+                lines.append(LineNode(currentLineNumber, node.indent, parenAlignment=node.parenAlignment))
                 currentLineNumber += 1
-                currentLineLength = i.indent + i.parenAlignment
 
-            # LineItemNode
+            # TokenNode
             else:
-                if i.isCursor:
+                if node.isCursor:
                     if cursorTopLine is None:
                         cursorTopLine = currentLineNumber
                     cursorBottomLine = currentLineNumber
 
-                itemNodeLength = len(i.nodeToString()) + 1  ## technically parens will only be 1 char
-                if (currentLineLength + itemNodeLength) > winWidth:
-                    lineLengthLeft = winWidth - currentLineLength
+                tokenLength = len(node.nodeToString()) + 1  ## technically parens will only be 1 char
+                currentLineLength = lines[-1].length()
+                if (currentLineLength + tokenLength) > winWidth:
 
-                    if isinstance(i.nodeReference.child, str):
-                        stringList = splitStringAcrossLines(i.text, lineLengthLeft, winWidth)
+                    if isinstance(node.nodeReference.child, str):
+                        #appendStringTokenToLineList(lines, node)
+                        lineLengthLeft = winWidth - currentLineLength
+                        stringList = splitStringAcrossLines(node.text, lineLengthLeft, winWidth)
+                        nodeList = [node.updateList(('text', string), ('highlightIndex', None)) for string in stringList]
+                        if node.highlightIndex:
+                            hlStringListIndex, hlIndex = findHighlightPosition(stringList, node.highlightIndex)
+                            nodeList[hlStringListIndex].highlightIndex = hlIndex
+
                         if stringList[0] != '':
-                            currentLineNode = LineItemNode.fromParts(i.nodeReference, i.nodeAddress,
-                                                           stringList[0], i.isCursor, 'start')
-                            lines[-1].nodeList.append(currentLineNode)
+                            lines[-1].tokenList.append(nodeList[0])
 
-                        for string in stringList[1:]:
-                            currentLineNode = LineItemNode.fromParts(i.nodeReference, i.nodeAddress,
-                                                           string, i.isCursor, 'start')
-                            lines.append(LineNode(currentLineNumber, 0))
+                        for node in nodeList[1:]:
+                            lines.append(LineNode(currentLineNumber, indent=lines[-1].indent))
                             currentLineNumber += 1
-
-                            lines[-1].nodeList.append(currentLineNode)
-
-                        currentLineLength = len(currentLineNode.text)
+                            lines[-1].tokenList.append(node)
 
                     else:
                         lines.append(LineNode(currentLineNumber, 0))
                         currentLineNumber += 1
-                        currentLineLength = 0
 
-                        lines[-1].nodeList.append(i)
-                        currentLineLength += len(i.nodeToString())
+                        lines[-1].tokenList.append(node)
 
                 else:
-                    lines[-1].nodeList.append(i)
-                    currentLineLength += itemNodeLength
+                    lines[-1].tokenList.append(node)
 
         #check if we found the last line
         if cursorTopLine >= editor.topLine + winHeight:
@@ -395,7 +395,7 @@ def createStucturalLineIndentList(editor, winWidth, winHeight):
     #recurMode = recurHorizontal
 
     parseState = ParseState(editor.buffer.view, [0])
-    lineStream = makeLineStream(parseState)
+    lineStream = makeLineTokenStream(parseState)
     lineList, topLine = makeLineList(lineStream)
     toppedLineList = lineList[topLine:]
     return toppedLineList
