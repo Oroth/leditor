@@ -1,14 +1,13 @@
-import screen
-
 __author__ = 'chephren'
 import iop
 import printsexp
 import reader
-from reader import Symbol
 import tn
 import buffer
 import funobj as fo
 import operator
+import screen
+from reader import Symbol
 from string import printable
 
 

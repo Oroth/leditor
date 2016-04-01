@@ -27,13 +27,7 @@ class Pen(object):
         if self.y1 < self.top:
             self.x1 += len(fmt)
         else:
-            #defaultbg = defaultBG()
             iop.screenPrint(x, y - self.top, fmt, bgcolour, fgcolour)
-            # libtcod.console_set_default_background(0, bgcolour)
-            # libtcod.console_set_default_foreground(0, fgcolour)
-            # libtcod.console_print(0, x, y - self.top, fmt)
-            #
-            # libtcod.console_set_default_background(0, defaultbg)
 
     def write(self, input, bgcolour=iop.defaultBG()):
         if len(input) > 0 and input[0] == '"':

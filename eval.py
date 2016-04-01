@@ -1,9 +1,7 @@
-import buffer
-
 __author__ = 'chephren'
 import reader
 import iop
-import tn
+import buffer
 
 wm = None
 isa = isinstance

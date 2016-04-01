@@ -1,11 +1,9 @@
-import buffer
-
 __author__ = 'chephren'
 import Editors
 import utility
+import buffer
 import iop
 import reader
-import tn
 import eval
 
 

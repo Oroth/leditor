@@ -1,8 +1,5 @@
-
-
 __author__ = 'chephren'
 import tn
-from tn import cons
 import buffer
 import Editors
 import reader
@@ -10,6 +7,7 @@ import CodeEditor
 import os.path
 import iop
 import funobj as fo
+from tn import cons
 
 
 # interface

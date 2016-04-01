@@ -5,9 +5,6 @@ import reader
 from screen import createBlank, putNodeOnImage
 
 
-def sliceFakeWindow(fakeWindow, topline, maxHeight):
-    return fakeWindow[topline:topline+maxHeight]
-
 class ParseState(buffer.Buffer):
     def __init__(self, node, address, nesting=0, isCursor=False):
         self.nesting = nesting
@@ -112,9 +109,10 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
             putNodeOnImage(image, x, y, text, item, bgcol, fgcol)
 
             # highlight the current character if we are using the cell editor
-            if item.printRule in [ 'cellEditorString', 'cellEditorNonString'] and item.highlightIndex:
-                (image[y][x+item.highlightIndex]).bgColour = hlcol
-                x += 1
+            if item.printRule in [ 'cellEditorString', 'cellEditorNonString']:
+                if item.highlightIndex is not None:
+                    (image[y][x+item.highlightIndex]).bgColour = hlcol
+                    x += 1
 
             x += len(text)
             prevItem = item
