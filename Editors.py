@@ -464,13 +464,10 @@ class TreeEditor(fo.FuncObject):
 
 
     def draw(self, posx, posy, maxx, maxy, isActive):
-        lineList = futility.createStucturalLineIndentList(self, maxx, maxy)
-        self.topLine = lineList[0].lineNumber
+        lineList, topLine = futility.makeLineIndentList(self, maxx, maxy)
+        self.topLine = topLine
 
         fakeWin = futility.drawLineList(lineList, maxx, maxy, self.colourScheme, isActive)
-        #self.topNode = lineList[0].nodeList[0].nodeReference
-        #self.topNode = self.buffer.cursorToFirst().curBottom().cursor
-        #self.bottomNode = lineList[-1].nodeList[-1].nodeReference
 
         finalWin = futility.sliceFakeWindow(fakeWin, 0, maxy)
         self.image = finalWin
