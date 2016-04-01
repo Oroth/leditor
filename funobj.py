@@ -14,6 +14,17 @@ class FuncObject(object):
             setattr(newSelf, prop, val)
         return newSelf
 
+    def reset(self, *lst):
+        args = zip(lst, [False]*len(lst))
+        return wrapper(self.updateList, args)
+
+    def set(self, *lst):
+        args = zip(lst, [True]*len(lst))
+        return wrapper(self.updateList, args)
+
+def wrapper(func, args):
+    return func(*args)
+
 
 def transform(obj, property, func):
     newObj = obj.copy()

@@ -1,6 +1,8 @@
+import screen
+
 __author__ = 'chephren'
 import iop
-import futility
+import printsexp
 import reader
 from reader import Symbol
 import tn
@@ -464,15 +466,10 @@ class TreeEditor(fo.FuncObject):
 
 
     def draw(self, posx, posy, maxx, maxy, isActive):
-        lineList, topLine = futility.makeLineIndentList(self, maxx, maxy)
-        self.topLine = topLine
-
-        fakeWin = futility.drawLineList(lineList, maxx, maxy, self.colourScheme, isActive)
-
-        finalWin = futility.sliceFakeWindow(fakeWin, 0, maxy)
-        self.image = finalWin
-
-        futility.printToScreen(finalWin, posx, posy)
+        lineList, self.topLine = printsexp.makeLineIndentList(self, maxx, maxy)
+        toppedLineList = lineList[self.topLine:]
+        self.image = printsexp.drawLineList(toppedLineList, maxx, maxy, self.colourScheme, isActive)
+        screen.printToScreen(self.image, posx, posy)
 
         if self.statusBar:
             self.statusBar.draw(0, posy + maxy - 1, maxx, 2, isActive=False)

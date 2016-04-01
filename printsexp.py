@@ -1,43 +1,9 @@
 __author__ = 'chephren'
-import iop
-import reader
 import buffer
-import funobj as fo 
+import funobj as fo
+import reader
+from screen import createBlank, putNodeOnImage
 
-class Cell(fo.FuncObject):
-    def __init__(self, character=' ', characterReference = 0, lineItemNodeRef=None,
-                 bgColour=iop.defaultBG(), fgColour=iop.defaultFG()):
-        self.character = character
-        self.characterReference = characterReference
-        self.lineItemNodeReference = lineItemNodeRef
-        self.bgColour = bgColour
-        self.fgColour = fgColour
-
-def createBlank(maxx, maxy, bgColour=iop.defaultBG(), fgColour=iop.defaultFG()):
-    return [[Cell(bgColour=bgColour, fgColour=fgColour) for x in range(0, maxx)] for x in range(0, maxy)]
-
-
-def putNodeOnImage2(image, x, y, text, lineItemNodeRef, bgcol, fgcol):
-    for cdx, c in enumerate(text):
-        (image[y][x]).character = c
-        (image[y][x]).characterReference = cdx
-        (image[y][x]).lineItemNodeReference = lineItemNodeRef
-        (image[y][x]).bgColour = bgcol
-        (image[y][x]).fgColour = fgcol
-        x += 1
-
-
-def printToScreen(image, posx, posy):
-    maxy = len(image) - 1
-    maxx = len(image[0]) - 1
-
-    for x in xrange(maxx):
-        for y in xrange(maxy):
-            cell = image[y][x]
-            iop.screenPrint(posx + x, posy + y, cell.character, cell.bgColour, cell.fgColour)
-
-
-# ======================== Creating the List =======================================================
 
 def sliceFakeWindow(fakeWindow, topline, maxHeight):
     return fakeWindow[topline:topline+maxHeight]
@@ -54,17 +20,6 @@ class ParseState(buffer.Buffer):
 
     def incNesting(self):
         return self.update('nesting', self.nesting+1)
-
-    def reset(self, *lst):
-        args = zip(lst, [False]*len(lst))
-        return wrapper(self.updateList, args)
-
-    def set(self, *lst):
-        args = zip(lst, [True]*len(lst))
-        return wrapper(self.updateList, args)
-
-def wrapper(func, args):
-    return func(*args)
 
 
 class TokenNode(fo.FuncObject):
@@ -102,46 +57,37 @@ class LineNode(fo.FuncObject):
 def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
     image = createBlank(winWidth, winHeight, colScheme.bgCol, colScheme.symbolCol)
     hlcol = colScheme.activeHiCol if isActive else colScheme.idleHiCol
-
     indentWidth = 2
-
-
     prevLine = None
     y = 0
+
     for line in lineList[:winHeight]:
-        pa = line.parenAlignment
-        #if pa > 0:
-        #    print 'paddingAlign'
         totalLineIndent = line.indent * indentWidth + line.parenAlignment
         x = totalLineIndent
 
-        #y = line.lineNumber
-
-        # highlight the indented space if it is part of the cursor
+        # print the indentation space
         if line.indent > 0:
             firstItem = line.tokenList[0]
+            # highlight the indented space if it carries over from the previous line
             if firstItem.isCursor and prevLine and prevLine.tokenList[-1].isCursor:
                 bgcol = hlcol
             else:
                 bgcol = colScheme.bgCol
-            indentString = ''.join([' ' for i in xrange(totalLineIndent)])
-            #image = putNodeOnImage(image, 0, y, indentString, firstItem, bgcol)
-            putNodeOnImage2(image, 0, y, indentString, firstItem, bgcol, colScheme.symbolCol)
+            indentString = totalLineIndent * ' '
+            putNodeOnImage(image, 0, y, indentString, firstItem, bgcol, colScheme.symbolCol)
 
         prevLine = line
-
         prevItem = None
-        for item in line.tokenList:
 
+        for item in line.tokenList:
             #Add space between symbols
             if prevItem and prevItem.nodeToString() != '(' and item.nodeToString() != ')':
                 if item.isCursor and prevItem.isCursor:
                     bgcol = hlcol
                 else:
                     bgcol = colScheme.bgCol
-                putNodeOnImage2(image, x, y, ' ', item, bgcol, colScheme.symbolCol)
+                putNodeOnImage(image, x, y, ' ', item, bgcol, colScheme.symbolCol)
                 x += 1
-
 
             if item.isCursor:
                 bgcol = hlcol
@@ -163,18 +109,14 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
             if len(text) >= winWidth:
                 text = text[0:winWidth - 5] + '...'
 
-            putNodeOnImage2(image, x, y, text, item, bgcol, fgcol)
+            putNodeOnImage(image, x, y, text, item, bgcol, fgcol)
+
+            # highlight the current character if we are using the cell editor
             if item.printRule in [ 'cellEditorString', 'cellEditorNonString'] and item.highlightIndex:
                 (image[y][x+item.highlightIndex]).bgColour = hlcol
                 x += 1
+
             x += len(text)
-
-#            #Add space between symbols
-#            if text != '(' and item != line.tokenList[-1]:
-#                #image = putNodeOnImage(image, x, y, ' ', item.nodeReference, bgcol)
-#                putNodeOnImage2(image, x, y, ' ', item, bgcol, fgcol)
-#                x += 1
-
             prevItem = item
 
         y += 1
@@ -390,5 +332,5 @@ def makeLineIndentList(editor, winWidth, winHeight):
     parseState = ParseState(editor.buffer.view, [0])
     lineTokenStream = makeLineTokenStream(parseState)
     lineList, topLine = makeLineList(lineTokenStream)
-    toppedLineList = lineList[topLine:]
-    return toppedLineList, topLine
+
+    return lineList, topLine
