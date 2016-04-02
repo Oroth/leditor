@@ -280,13 +280,13 @@ class WindowManager(fo.FuncObject):
 
         elif key.char() == 'w' and key.lctrl():
             self.winCmd = True
-            self.winTree.cursor.child.statusBar.displayMessage("Window Mode")
+            self.winTree.cursor.child.statusBar.updateMessage("Window Mode")
             print "windowing"
 
         elif key.char() == 's' and key.lctrl():
             self.writeImage()
             self.writeEditor()
-            self.winTree.cursor.child.statusBar.displayMessage("Saving Image")
+            self.winTree.cursor.child.statusBar.updateMessage("Saving Image")
             print "saving"
 
         else:

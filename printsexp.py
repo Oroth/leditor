@@ -206,6 +206,9 @@ def makeLineIndentList(editor, winWidth, winHeight):
         except KeyError: pass
         except AttributeError: pass
 
+        if parseState.cursor == viewNode:
+            return ret
+
         # pass the original state to maintain the same cursor highlighting
         if parseState.cursor.next:
             modeps = recurMode(parseState)
@@ -327,6 +330,7 @@ def makeLineIndentList(editor, winWidth, winHeight):
     recurModes = {'code': recurCode, 'horizontal': recurHorizontal, 'vertical': recurVertical}
     recurMode = recurModes[editor.printingMode]
 
+    viewNode = editor.buffer.view
     parseState = ParseState(editor.buffer.view, [0])
     lineTokenStream = makeLineTokenStream(parseState)
     lineList, topLine = makeLineList(lineTokenStream)

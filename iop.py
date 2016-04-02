@@ -1,4 +1,4 @@
-import libtcodpy as libtcod
+from lib import libtcodpy as libtcod
 
 KEY_ENTER = libtcod.KEY_ENTER
 KEY_ESCAPE = libtcod.KEY_ESCAPE

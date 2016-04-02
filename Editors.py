@@ -97,43 +97,60 @@ class ColourScheme(fo.FuncObject):
         self.activeHiCol = activeHiCol
         self.idleHiCol = idleHiCol
 
-
-class TreeEditor(fo.FuncObject):
+class DisplayEditor(fo.FuncObject):
     editors = 0
 
-    def __init__(self, root, rootCursorAdd=[0], cursorAdd=[0], zippedNodes=None):
+    def __init__(self, root, rootCursorAdd=[0], cursorAdd=[0]):
         self.buffer = buffer.BufferSexp(root, rootCursorAdd, cursorAdd)
         self.posx = 0
         self.posy = 0
         self.maxx = 80
         self.maxy = 50
+        self.printingMode = 'horizontal'
 
-        self.statusDescription = reader.Symbol('TreeEditor')
+        self.topLine = 0
+        self.image = None
+
+        self.colourScheme = ColourScheme(iop.black, iop.white, iop.light_green, iop.light_sky, iop.azure, iop.light_grey)
+        self.statusDescription = reader.Symbol(self.__class__.__name__)
+        self.id = DisplayEditor.editors
+        DisplayEditor.editors += 1
+
+        #need to be refactored out, back into TreeEditor (e.g. by creating a much simpler
+        # display routined)
+        self.zippedNodes = {}
+        self.editing = False
+
+
+    def nodeIsZipped(self, node):
+        return node.nodeID in self.zippedNodes and self.zippedNodes[node.nodeID]
+
+    def cursorIsZipped(self, buffer):
+        return self.nodeIsZipped(buffer.cursor)
+
+    def draw(self, posx, posy, maxx, maxy, isActive):
+        lineList, self.topLine = printsexp.makeLineIndentList(self, maxx, maxy)
+        toppedLineList = lineList[self.topLine:]
+        self.image = printsexp.drawLineList(toppedLineList, maxx, maxy, self.colourScheme, isActive)
+        screen.printToScreen(self.image, posx, posy)
+
+
+class TreeEditor(DisplayEditor):
+    def __init__(self, root, rootCursorAdd=[0], cursorAdd=[0], zippedNodes={}):
+        super(TreeEditor, self).__init__(root, rootCursorAdd, cursorAdd)
+
         self.editing = False
         self.cellEditor = None
         self.yankBuffer = None
-        self.printingMode = 'horizontal'
         self.syncWithRoot = True
         self.updateUndo = False
         self.showValues = False
         self.revealedNodes = {}
-
-        #self.zippedNodes = {}
-        if zippedNodes == None:
-            self.zippedNodes = {}
-        else:
-            self.zippedNodes = zippedNodes.copy()
+        self.zippedNodes = dict(zippedNodes)
+        self.cmdBar = None
 
         self.drawMode = 'cursor'
-        self.topLine = 0
-        self.firstNode = self.buffer.view
-        self.topNode = self.buffer.cursorToFirst().curBottom().cursor
-        self.image = None
-
-        self.colourScheme = ColourScheme(iop.black, iop.white, iop.light_green, iop.light_sky, iop.azure, iop.light_grey)
         self.statusBar = StatusBar()
-        self.id = TreeEditor.editors
-        TreeEditor.editors += 1
 
 
     def syncWithImage(self, newImageRoot):
@@ -149,21 +166,15 @@ class TreeEditor(fo.FuncObject):
         self.maxy = newMaxy
 
 
-    def nodeIsZipped(self, node):
-        return node.nodeID in self.zippedNodes and self.zippedNodes[node.nodeID]
 
-    def cursorIsZipped(self, buffer):
-        return self.nodeIsZipped(buffer.cursor)
-        #return self.buffer.cursor.nodeID in self.zippedNodes and self.zippedNodes[self.buffer.cursor.nodeID]
 
     def handleKeys(self, key, mouse):
         self.updateUndo = False
-        self.statusBar.item1 = self.statusDescription
-        self.statusBar.item2 = self.buffer.viewAdd
-        self.statusBar.item3 = self.buffer.cursorAdd
+        self.statusBar.updateStatus([self.statusDescription, self.buffer.viewAdd, self.buffer.cursorAdd])
+
         if key.code() != 0:
-            self.statusBar.message = None
-        self.statusBar = self.statusBar.refreshStatus()
+            self.statusBar.clearMessage()
+        self.statusBar = self.statusBar.refreshBuffer()
 
         if mouse.lbuttonPressed():
             cell = self.image[mouse.y() - self.posy][mouse.x() - self.posx]
@@ -246,7 +257,7 @@ class TreeEditor(fo.FuncObject):
                     ('cellEditor', CellEditor(Symbol(''))))
 
             else:
-                self.statusBar.message = "Editing"
+                self.statusBar.updateMessage("Editing")
 
         else:
 
@@ -405,6 +416,12 @@ class TreeEditor(fo.FuncObject):
                     ('buffer', self.buffer.toggleStringAtCursor()),
                     ('updateUndo', True))
 
+            elif key.char() == ':':
+                if self.cmdBar:
+                    self.cmdBar = None
+                else:
+                    self.cmdBar = CmdBar(tn.createTNodeExpFromPyExp([[reader.Symbol('CmdBar')]]))
+
             elif key.char() == '=':
                 if self.buffer.cursor in self.revealedNodes:
                     self.revealedNodes[self.buffer.cursor] = not(self.revealedNodes[self.buffer.cursor])
@@ -465,51 +482,41 @@ class TreeEditor(fo.FuncObject):
 
 
     def draw(self, posx, posy, maxx, maxy, isActive):
-        lineList, self.topLine = printsexp.makeLineIndentList(self, maxx, maxy)
-        toppedLineList = lineList[self.topLine:]
-        self.image = printsexp.drawLineList(toppedLineList, maxx, maxy, self.colourScheme, isActive)
-        screen.printToScreen(self.image, posx, posy)
+        super(TreeEditor, self).draw(posx, posy, maxx, maxy, isActive)
+
+        if self.cmdBar:
+            self.cmdBar.draw(0, posy + maxy - 2, maxx, 2, isActive=False)
 
         if self.statusBar:
             self.statusBar.draw(0, posy + maxy - 1, maxx, 2, isActive=False)
 
 
-
-class StatusBar(TreeEditor):
+class CmdBar(DisplayEditor):
     def __init__(self, *args, **kwargs):
-        self.editing = False
-        self.printingMode = 'horizontal'
-        self.zippedNodes = {}
-        self.statusBar = None
-        self.item1 = None
-        self.item2 = None
-        self.item3 = None
-        self.message = None
-        self.topLine = 0
-        self.bgCol = iop.white
-        self.fgCol = iop.black
+        super(CmdBar, self).__init__(*args, **kwargs)
+        self.colourScheme.idleHiCol = iop.black
 
+
+class StatusBar(DisplayEditor):
+    def __init__(self, *args, **kwargs):
+        self.status = [reader.Symbol('Editor')]
+        super(StatusBar, self).__init__(tn.createTNodeExpFromPyExp(self.status))
+        self.message = None
         self.colourScheme = ColourScheme(iop.white, iop.black, iop.darker_green, iop.darker_sky, iop.white, iop.white)
 
-        status = tn.createTNodeExpFromPyExp(
-            [reader.Symbol('Editor')
-            ,reader.Symbol('View')
-            ,reader.Symbol('Address')]
-        )
 
-        self.buffer = buffer.BufferSexp.fromPyExp(status)
-
-    def draw(self, posx, posy, maxx, maxy, isActive):
-        return super(StatusBar, self).draw(posx, posy, maxx, maxy, isActive)
-
-    def refreshStatus(self):
-        statusList = [x for x in [self.item1, self.item2, self.item3, self.message] if x is not None]
-        return self.updateStatus(statusList)
+    def refreshBuffer(self):
+        statusList = list(self.status)
+        if self.message:
+            statusList.append(self.message)
+        newBuff = buffer.BufferSexp.fromPyExp(statusList)
+        return self.update('buffer', newBuff)
 
     def updateStatus(self, status):
-        newStatus = buffer.BufferSexp.fromPyExp(status)
-        return self.update('buffer', newStatus)
+        self.status = status
 
-    def displayMessage(self, message):
+    def updateMessage(self, message):
         self.message = message
-        self.buffer = self.buffer.curChild().curLast().appendAtCursor(message)
+
+    def clearMessage(self):
+        self.message = None
