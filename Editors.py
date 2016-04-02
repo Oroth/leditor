@@ -12,10 +12,13 @@ from string import printable
 
 
 class CellEditor(object):
-    def __init__(self, content):
+    def __init__(self, content, index=0):
         self.original = str(content)
         self.content = list(str(content).encode('string_escape'))
-        self.index = 0
+        if index < 0:
+            self.index = len(content) + index + 1
+        else:
+            self.index = index
         # should check to make sure not a symbol
         if not isinstance(content, Symbol):
             self.isString = True
@@ -60,6 +63,8 @@ class CellEditor(object):
             if self.content and self.index != 0:
                 del self.content[self.index - 1]
                 self.index -= 1
+            elif not self.content:
+                return 'PREV'
 
         elif key.code() == iop.KEY_DELETE:
             if self.content and self.index != len(self.content):
@@ -166,9 +171,21 @@ class TreeEditor(DisplayEditor):
         self.maxy = newMaxy
 
 
-
-
     def handleKeys(self, key, mouse):
+        return self.handleKeysInitial(key, mouse)
+
+    def handleKeysInitial(self, key, mouse):
+        if self.cmdBar:
+            cmdResult = self.cmdBar.handleKeys(key, mouse)
+            if cmdResult == 'ESCAPE':
+                return self.update('cmdBar', None)
+            else:
+                return self.update('cmdBar', cmdResult)
+
+        else:
+            return self.handleKeysMain(key, mouse)
+
+    def handleKeysMain(self, key, mouse):
         self.updateUndo = False
         self.statusBar.updateStatus([self.statusDescription, self.buffer.viewAdd, self.buffer.cursorAdd])
 
@@ -198,6 +215,7 @@ class TreeEditor(DisplayEditor):
                 self.topLine = 0
 
 
+
         if self.editing:
 
             finished = self.cellEditor.handleKey(key)
@@ -223,6 +241,23 @@ class TreeEditor(DisplayEditor):
                         ('editing', False))
                 else:
                     return self.update('editing', False)
+
+            elif finished == 'PREV':
+                if self.buffer.cursorAdd[-1] != 0 and self.buffer.cursor.next:
+                    newBuff = self.buffer.deleteAtCursor().curPrev()
+                else:
+                    newBuff = self.buffer.deleteAtCursor()
+
+                # check we didn't delete the last node:
+                if newBuff.onSubNode() or newBuff.cursor.child is None:
+                    return self.updateList(
+                        ('buffer', newBuff),
+                        ('editing', False))
+
+                return self.updateList(
+                    ('buffer', newBuff),
+                    ('cellEditor', CellEditor(newBuff.cursor.child, -1)))
+
 
             elif finished == 'SPACE':
                 ## ideal: self.buffer.spliceAtCursor([self.cellEditor.getContent(), ''], [1])
@@ -417,10 +452,9 @@ class TreeEditor(DisplayEditor):
                     ('updateUndo', True))
 
             elif key.char() == ':':
-                if self.cmdBar:
-                    self.cmdBar = None
-                else:
-                    self.cmdBar = CmdBar(tn.createTNodeExpFromPyExp([[reader.Symbol('CmdBar')]]))
+                self.cmdBar = CmdBar(tn.createTNodeExpFromPyExp([[Symbol(':'), Symbol('')]]), [0], [0, 1])
+                self.cmdBar.editing = True
+                self.cmdBar.cellEditor = CellEditor(Symbol(''))
 
             elif key.char() == '=':
                 if self.buffer.cursor in self.revealedNodes:
@@ -485,16 +519,26 @@ class TreeEditor(DisplayEditor):
         super(TreeEditor, self).draw(posx, posy, maxx, maxy, isActive)
 
         if self.cmdBar:
-            self.cmdBar.draw(0, posy + maxy - 2, maxx, 2, isActive=False)
+            self.cmdBar.draw(0, posy + maxy - 2, maxx, 2, isActive=True)
 
         if self.statusBar:
             self.statusBar.draw(0, posy + maxy - 1, maxx, 2, isActive=False)
 
 
-class CmdBar(DisplayEditor):
+class CmdBar(TreeEditor):
     def __init__(self, *args, **kwargs):
         super(CmdBar, self).__init__(*args, **kwargs)
-        self.colourScheme.idleHiCol = iop.black
+        #self.colourScheme.idleHiCol = iop.black
+
+    def draw(self, posx, posy, maxx, maxy, isActive):
+        super(TreeEditor, self).draw(posx, posy, maxx, maxy, isActive)
+
+    def handleKeys(self, key, mouse):
+
+        if key.code() == iop.KEY_ESCAPE:
+            return 'ESCAPE'
+
+        return super(CmdBar, self).handleKeys(key, mouse)
 
 
 class StatusBar(DisplayEditor):

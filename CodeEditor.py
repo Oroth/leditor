@@ -35,7 +35,7 @@ class CodeEditor(Editors.TreeEditor):
 
     # a bit of a hack, necessary because everything is handled in handleKeys. We need to make sure that
     # the codeEditor returns with a newly evaluated buffer if there were any significant changes.
-    def handleKeys(self, key, mouse):
+    def handleKeysMain(self, key, mouse):
 
         # evaluate the current context
         if key.code() == iop.KEY_ENTER and not self.editing:
@@ -59,7 +59,7 @@ class CodeEditor(Editors.TreeEditor):
             return self.update('buffer', newBuff)
 
         else:
-            result = super(CodeEditor, self).handleKeys(key, mouse)
+            result = super(CodeEditor, self).handleKeysMain(key, mouse)
 
         self.evalBuffer()   # updating imperatively?
         return result
