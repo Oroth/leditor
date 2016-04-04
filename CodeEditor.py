@@ -47,7 +47,7 @@ class CodeEditor(Editors.TreeEditor):
                     ('yankBuffer', nodeValue),
                     ('updateUndo', True))
             else:
-                self.statusBar.displayMessage('Result to buffer')
+                self.statusBar.updateMessage('Result to buffer')
                 result = self.update('yankBuffer', nodeValue)
 
         # Create a repl like environment to evaluate code in

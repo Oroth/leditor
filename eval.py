@@ -38,6 +38,11 @@ class SyntaxException(EvalException):
         return "(SyntaxException " + str(self.value) + ")"
     pass
 
+class ListException(EvalException):
+    def __str__(self):
+        return "(ListException " + str(self.value) + ")"
+    pass
+
 class LambdaSyntaxException(EvalException):
     def __str__(self):
         return "(LambdaSyntaxException)"
@@ -74,6 +79,18 @@ def charToInt(char):
     except ValueError:
         raise TypeError
 
+def carPrimitive(lst):
+    try:
+        return lst[0]
+    except IndexError:
+        return ListException('CAR')
+
+def cdrPrimitive(lst):
+    try:
+        return lst[1:]
+    except IndexError:
+        return ListException('CDR')
+
 def add_globals(env):
     "Add some Scheme standard procedures to an environment."
     import math, operator as op
@@ -82,7 +99,7 @@ def add_globals(env):
         {'+':op.add, '-':op.sub, '*':op.mul, '/':op.div, 'not':op.not_,
          '>':op.gt, '<':op.lt, '>=':op.ge, '<=':op.le, '=':op.eq,
          'equal?':op.eq, 'eq?':op.is_, 'length':len, 'cons':lambda x,y:[x]+y,
-         'car':lambda x:x[0],'cdr':lambda x:x[1:], 'append':op.add,
+         'car':carPrimitive,'cdr':cdrPrimitive, 'append':op.add,
          'list':lambda *x:list(x), 'list?': lambda x:isa(x,list),
          'null?':lambda x:x==[], 'symbol?':lambda x: isa(x, reader.Symbol),
          'int':lambda x:charToInt(x), 'cat':lambda a,b:a+b,
@@ -96,7 +113,15 @@ def add_globals(env):
         })
     return env
 
+
+
 global_env = add_globals(Env())
+
+def isidentifier(exp):
+    return isinstance(exp, reader.Symbol)
+
+def islambda(exp):
+    return exp.curChildExp() == '^'
 
 def eval(exprBuf, env=global_env, memoize=None):
 
@@ -106,28 +131,21 @@ def eval(exprBuf, env=global_env, memoize=None):
     if not exprBuf.cursor.evaled:
         ret = exprBuf.cursorToPyExp()
 
-    elif isa(exprChild, reader.Symbol):             # variable reference
+    elif isidentifier(exprChild):             # variable reference
         try:
             ret = env.find(exprChild)[exprChild]
         except EvalException as ex:
             ret = ex
+
     elif not isa(exprChild, buffer.BufferSexp):         # constant literal
         ret = exprChild
 
-    elif exprChild.cursor.child == '^':         # (lambda (var*) exp)
-
+    elif islambda(exprChild):         # (lambda (var*) exp)
         try:
             vars = exprChild.cursor.next.child.toPyExp()
-            #check if list of symbols:
-
-            #exp = exprChild.cursor.next.next
+            #if not isList(vars):
+            #    raise LambdaSyntaxException("Bad Vars Arg")
             expBuf = exprChild.curNext().curNext()
-            #if not exp:
-            #raise LambdaSyntaxException("NoBody")
-
-            #            def makeClosure(fun, env):
-            #                exp, curEnv = fun('inspect')  # makeLambda
-            #                return eval(exp, curEnv)
 
             def makeLambda(*args):
                 if args and args[0] == 'inspect':
@@ -139,7 +157,6 @@ def eval(exprBuf, env=global_env, memoize=None):
             ret = LambdaSyntaxException("Err")
         except LambdaSyntaxException as err:
             ret = err
-
         else:
             ret = makeLambda
 
@@ -152,24 +169,41 @@ def eval(exprBuf, env=global_env, memoize=None):
         try:
             mapping = exprChild.curNext().curChildExp()
 
-            while True:
-                curVar = mapping.curChildExp().curChildExp()
+            #build closure
+            for i in mapping.cursor:
+                curVar = i.child.child
                 vars.append(curVar)
 
-                curVal = mapping.curChildExp().curNext()
-                closure = Env([curVar], [None], env)
+            closure = Env(vars, [None]*len(vars), env)
+
+            pair = mapping
+            while True:
+                curVal = pair.curChild().curNext()
+                curVar = pair.curChild().curChildExp()
                 curValResult = eval(curVal, closure, memoize)
                 closure.find(curVar)[curVar] = curValResult
-                #closure = Env([curVar], [eval(val, env, memoize)], env)
                 valResults.append(curValResult)
-
-                try: mapping = mapping.curNext()
+                try:
+                    pair = pair.curNext()
                 except ValueError: break
 
-                #                for i in mapping:
-                #                    vars.append(i.child.child)
-                #                    val = i.child.next
-                #                    valResults.append(self.eval(val, env))
+
+            # for varind, i2 in enumerate(mapping.cursor):
+            #     curVal = i2.child.next
+            #     curValResult = eval(curVal, closure, memoize)
+            #     var = vars[varind]
+            #     closure.find(var)[var] = curValResult
+            #     valResults.append(curValResult)
+
+            # for var in vars:
+            #     closure.find(var)[var] =
+            #
+            # while True:
+            #     curValResult = eval(curVal, closure, memoize)
+            #     closure.find(curVar)[curVar] = curValResult
+            #     try: mapping = mapping.curNext()
+            #     except ValueError: break
+
         except  (AttributeError, ValueError):
             ret = LetSyntaxException("Bad-Var-Syntax")
 
@@ -243,6 +277,5 @@ def eval(exprBuf, env=global_env, memoize=None):
 
     if memoize:
         memoize(exprBuf.cursor, ret)
-        #self.nodeValues[exprBuf.cursor] = ret
 
     return ret
