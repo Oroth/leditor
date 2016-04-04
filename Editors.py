@@ -185,9 +185,13 @@ class TreeEditor(DisplayEditor):
         else:
             return self.handleKeysMain(key, mouse)
 
+    def updateStatusBar(self):
+        self.statusBar.updateStatus([self.statusDescription, self.buffer.viewAdd, self.buffer.cursorAdd,
+                             Symbol('nodeID'), self.buffer.cursor.nodeID])
+
     def handleKeysMain(self, key, mouse):
         self.updateUndo = False
-        self.statusBar.updateStatus([self.statusDescription, self.buffer.viewAdd, self.buffer.cursorAdd])
+        self.updateStatusBar()
 
         if key.code() != 0:
             self.statusBar.clearMessage()

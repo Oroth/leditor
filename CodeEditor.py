@@ -5,6 +5,7 @@ import buffer
 import iop
 import reader
 import eval
+from reader import Symbol
 
 
 class CodeEditor(Editors.TreeEditor):
@@ -21,6 +22,10 @@ class CodeEditor(Editors.TreeEditor):
     def storeNodeValue(self, node, val):
         self.nodeValues[node] = val
 
+    def getNodeValue(self, node):
+        if node in self.nodeValues:
+            return self.nodeValues[node]
+
     def evalBuffer(self):
         eval.eval(buffer.BufferSexp(self.buffer.root), self.env, self.storeNodeValue)
 
@@ -32,6 +37,11 @@ class CodeEditor(Editors.TreeEditor):
             return newSelf
         else:
             return self
+
+    def updateStatusBar(self):
+        self.statusBar.updateStatus([self.statusDescription, self.buffer.viewAdd, self.buffer.cursorAdd,
+                     Symbol('nodeID'), self.buffer.cursor.nodeID, self.getNodeValue(self.buffer.cursor)])
+
 
     # a bit of a hack, necessary because everything is handled in handleKeys. We need to make sure that
     # the codeEditor returns with a newly evaluated buffer if there were any significant changes.
