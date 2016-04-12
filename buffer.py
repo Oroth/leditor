@@ -13,6 +13,17 @@ class SimpleBuffer(fo.FuncObject):
     def new(cls, *args, **kwargs):
         return cls(*args, **kwargs)
 
+    @classmethod
+    def fromPyExp(cls, *fargs):
+        pyexp = fargs[0]
+        restargs = fargs[1:]
+        # A buffer always operates on a list, never atoms, so convert to list if necessary
+        if not isPyList(pyexp):
+            bufexp = [[pyexp]]
+        else:
+            bufexp = [pyexp]
+        return cls(createTNodeExpFromPyExp(bufexp), *restargs)
+
     def newCursorAdd(self, newCursorAdd):
         cursor, cursorAdd = tn.tnodeAddress(self.root, newCursorAdd)
         return self.updateList(('cursor', cursor), ('cursorAdd', cursorAdd))
@@ -26,12 +37,15 @@ class SimpleBuffer(fo.FuncObject):
     def cursorToFirst(self):
         return self.newCursorAdd([0, 0])
 
+    def rootToCursor(self):
+        return self.new(self.cursor)
+
     def opAtCursor(self, op, value=None):
         if value is not None:
             newImage = op(self.root, self.cursorAdd, value)
         else:
             newImage = op(self.root, self.cursorAdd)
-        return self.new(newImage, self.root, self.cursorAdd)
+        return self.new(newImage, self.cursorAdd)
 
     def appendAtCursor(self, value):
         return self.opAtCursor(appendAdd, value)
@@ -50,6 +64,7 @@ class SimpleBuffer(fo.FuncObject):
 
     def deleteAtCursor(self):
         return self.opAtCursor(deleteAdd)
+
 
     def curNext(self):
         if self.cursor.next:
@@ -106,15 +121,6 @@ class ViewBuffer(SimpleBuffer):
         self.view, self.viewAdd = tn.tnodeAddress(self.root, viewAdd)
         self.cursor, self.cursorAdd = tn.tnodeAddress(self.view, cursorAdd)
 
-    @classmethod
-    def fromPyExp(cls, pyexp, viewAdd=[0], cursorAdd=[0]):
-        # A buffer always operates on a list, never atoms, so convert to list if necessary
-        if not isPyList(pyexp):
-            bufexp = [[pyexp]]
-        else:
-            bufexp = [pyexp]
-        return cls(createTNodeExpFromPyExp(bufexp), viewAdd, cursorAdd)
-
     def newCursorAdd(self, newCursorAdd):
         cursor, cursorAdd = tn.tnodeAddress(self.view, newCursorAdd)
         return self.updateList(('cursor', cursor), ('cursorAdd', cursorAdd))
@@ -155,6 +161,9 @@ class ViewBuffer(SimpleBuffer):
 
     def viewToRoot(self):
         return self.new(self.root, [0], [0])
+
+    def newViewAdd(self, add):
+        return self.new(self.root, add, self.viewAdd)
 
     def viewNext(self):
         if self.view.next:

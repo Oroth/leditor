@@ -9,7 +9,9 @@ import operator
 import screen
 from reader import Symbol
 
-
+class View(object):
+    def __init__(self, address):
+        self.address = address
 
 class CellEditor(object):
     def __init__(self, content, index=0):
@@ -152,7 +154,8 @@ class TreeEditor(DisplayEditor):
         self.showValues = False
         self.revealedNodes = {}
         self.zippedNodes = dict(zippedNodes)
-        self.viewHistory = list(rootCursorAdd)
+        initialViewHistoryNode = tn.TNode(tn.TNode(View(rootCursorAdd)))
+        self.viewHistory = buffer.SimpleBuffer(initialViewHistoryNode, [0, 0])
         self.cmdBar = None
 
         self.drawMode = 'cursor'
@@ -171,6 +174,9 @@ class TreeEditor(DisplayEditor):
         self.maxx = newMaxx
         self.maxy = newMaxy
 
+    def updateStatusBar(self):
+        self.statusBar.updateStatus([self.statusDescription, self.buffer.viewAdd, self.buffer.cursorAdd,
+                             Symbol('nodeID'), self.buffer.cursor.nodeID])
 
     def handleKeys(self, key, mouse):
         return self.handleKeysInitial(key, mouse)
@@ -186,18 +192,7 @@ class TreeEditor(DisplayEditor):
         else:
             return self.handleKeysMain(key, mouse)
 
-    def updateStatusBar(self):
-        self.statusBar.updateStatus([self.statusDescription, self.buffer.viewAdd, self.buffer.cursorAdd,
-                             Symbol('nodeID'), self.buffer.cursor.nodeID])
-
-    def handleKeysMain(self, key, mouse):
-        self.updateUndo = False
-        self.updateStatusBar()
-
-        if key.code() != 0:
-            self.statusBar.clearMessage()
-        self.statusBar = self.statusBar.refreshBuffer()
-
+    def handleMouse(self, mouse):
         if mouse.lbuttonPressed():
             cell = self.image[mouse.y() - self.posy][mouse.x() - self.posx]
 
@@ -219,7 +214,20 @@ class TreeEditor(DisplayEditor):
             else:
                 self.topLine = 0
 
+        else:
+            return None
 
+    def handleKeysMain(self, key, mouse):
+        self.updateUndo = False
+        self.updateStatusBar()
+
+        if key.code() != 0:
+            self.statusBar.clearMessage()
+        self.statusBar = self.statusBar.refreshBuffer()
+
+        mouseResult = self.handleMouse(mouse)
+        if mouseResult:
+            return mouseResult
 
         if self.editing:
 
@@ -364,7 +372,7 @@ class TreeEditor(DisplayEditor):
                         ('buffer', self.buffer.denestCursor()),
                         ('updateUndo', True))
 
-            elif key.char() == 'o':
+            elif key.char() == 'o' and not key.lctrl():
                 if self.buffer.cursor != self.buffer.view:
                     newBuff = self.buffer.appendAtCursor(['']).curNext().curChild()
                     return self.updateList(
@@ -387,7 +395,7 @@ class TreeEditor(DisplayEditor):
                 else:
                     currentModePos = modes.index(self.printingMode)
                 self.printingMode = modes[(currentModePos + 1) % len(modes)]
-                self.statusBar.displayMessage("DisplayMode: " + self.printingMode)
+                self.statusBar.updateMessage("DisplayMode: " + self.printingMode)
 
 
             elif key.char() == 'N':
@@ -474,15 +482,31 @@ class TreeEditor(DisplayEditor):
                 self.printingMode = 'help'
                 return self.update('buffer', newBuff)
 
+
+
             else:
                 try:
                     if key.char() == 'J':
                         newBuff = self.buffer.viewToCursor()
-                        newHist = list(self.viewHistory)
-                        newHist.append(newBuff.view)
+                        newHist = self.viewHistory.insertAtCursor(View(newBuff.viewAdd)).curPrev()
+                        newHist2 = newHist.rootToCursor()
                         return self.updateList(
                             ('buffer', newBuff),
-                            ('viewHistory', newHist))
+                            ('viewHistory', newHist2))
+
+                    elif key.char() == 'o' and key.lctrl():
+                        newHist = self.viewHistory.curNext()
+                        newBuff = self.buffer.newViewAdd(newHist.cursor.child.address)
+                        return self.updateList(
+                            ('viewHistory', newHist),
+                            ('buffer', newBuff))
+
+                    elif key.char() == 'h' and key.lctrl():
+                        newHist = self.viewHistory.curPrev()
+                        newBuff = self.buffer.newViewAdd(newHist.cursor.child.address)
+                        return self.updateList(
+                            ('viewHistory', newHist),
+                            ('buffer', newBuff))
 
                     elif key.char() == 'K':
                         return self.update('buffer', self.buffer.viewUp())

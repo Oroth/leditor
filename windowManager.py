@@ -49,7 +49,7 @@ class WindowManager(fo.FuncObject):
         winRoot = self.createListEdFromEditorSettings(imageRoot)
 
 
-        self.winTree = buffer.ViewBuffer.fromPyExp(winRoot, [0], [0, 0])
+        self.winTree = buffer.SimpleBuffer.fromPyExp(winRoot, [0, 0])
         self.winList = self.winTree
         self.imageFileName = imageFileName
 
