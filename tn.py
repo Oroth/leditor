@@ -143,6 +143,19 @@ def tnodeSyncAddress(newexp, oldexp, oldadd, acc=[]):
 def createTNodeExpFromPyExp2(pyexp):
     return transformPyExp(append, TNode, TNode(pyexp[0]), pyexp[1:]) if isPyList(pyexp) else pyexp
 
+def foldrtnumpy(func, lst):
+    if lst:
+        if tnodeNumberedExpContainsAtom(lst):
+            return lst
+        elif isPyList(lst):
+            return func(foldrtnumpy(func, lst[0]), foldrtnumpy(func, lst[1:]))
+        else:
+            return func(lst[0], foldrtnumpy(func, lst[1:]))
+    return None
+
+def createTNodeExpFromPyNumberedExp2(pyexp):
+    return foldrtnumpy(numberedCons, pyexp) if isPyList(pyexp) else pyexp
+
 
 # ======================================================================================================
 

@@ -100,12 +100,17 @@ def add_globals(env):
          '>':op.gt, '<':op.lt, '>=':op.ge, '<=':op.le, '=':op.eq,
          'equal?':op.eq, 'eq?':op.is_, 'length':len, 'cons':lambda x,y:[x]+y,
          'car':carPrimitive,'cdr':cdrPrimitive, 'append':op.add,
-         'list':lambda *x:list(x), 'list?': lambda x:isa(x,list),
-         'null?':lambda x:x==[], 'symbol?':lambda x: isa(x, reader.Symbol),
-         'int':lambda x:charToInt(x), 'cat':lambda a,b:a+b,
+         'list':lambda *x:list(x),
+         'list?': lambda x:isa(x,list),
+         'null?':lambda x:x==[],
+         'symbol?':lambda x: isa(x, reader.Symbol),
+         'int':lambda x:charToInt(x),
+         'cat':lambda a,b:a+b,
          'string-ref':lambda str,ref:str[ref],
+         'string-from':lambda str,ref:str[ref:],
+         'string-left':lambda str, ref:str[:ref],
          'screen-width':lambda :iop.screenWidth(),
-         'screen-height': lambda :iop.screenHeight(),
+         'screen-height':lambda :iop.screenHeight(),
          'make-vector':lambda size,t:list(t) * size,
          'make-string':lambda size,c:str(c) * size,
          'count-wins':lambda :wm().wins
@@ -126,7 +131,6 @@ def islambda(exp):
 def eval(exprBuf, env=global_env, memoize=None):
 
     exprChild = exprBuf.curChildExp()
-    ret = None
 
     if not exprBuf.cursor.evaled:
         ret = exprBuf.cursorToPyExp()
@@ -141,141 +145,207 @@ def eval(exprBuf, env=global_env, memoize=None):
         ret = exprChild
 
     elif islambda(exprChild):         # (lambda (var*) exp)
-        try:
-            vars = exprChild.cursor.next.child.toPyExp()
-            #if not isList(vars):
-            #    raise LambdaSyntaxException("Bad Vars Arg")
-            expBuf = exprChild.curNext().curNext()
+        ret = specialFormLambda(exprChild, env, memoize)
 
-            def makeLambda(*args):
-                if args and args[0] == 'inspect':
-                    return [expBuf, Env(vars, args[1:], env)]
-                else:
-                    return eval(expBuf, Env(vars, args, env), False)
-
-        except AttributeError:
-            ret = LambdaSyntaxException("Err")
-        except LambdaSyntaxException as err:
-            ret = err
-        else:
-            ret = makeLambda
-
-    # no changes?
     elif exprChild.cursor.child == 'let':
-
-        vars = []
-        valResults = []
-
-        try:
-            mapping = exprChild.curNext().curChildExp()
-
-            #build closure
-            for i in mapping.cursor:
-                curVar = i.child.child
-                vars.append(curVar)
-
-            closure = Env(vars, [None]*len(vars), env)
-
-            pair = mapping
-            while True:
-                curVal = pair.curChild().curNext()
-                curVar = pair.curChild().curChildExp()
-                curValResult = eval(curVal, closure, memoize)
-                closure.find(curVar)[curVar] = curValResult
-                valResults.append(curValResult)
-                try:
-                    pair = pair.curNext()
-                except ValueError: break
-
-
-            # for varind, i2 in enumerate(mapping.cursor):
-            #     curVal = i2.child.next
-            #     curValResult = eval(curVal, closure, memoize)
-            #     var = vars[varind]
-            #     closure.find(var)[var] = curValResult
-            #     valResults.append(curValResult)
-
-            # for var in vars:
-            #     closure.find(var)[var] =
-            #
-            # while True:
-            #     curValResult = eval(curVal, closure, memoize)
-            #     closure.find(curVar)[curVar] = curValResult
-            #     try: mapping = mapping.curNext()
-            #     except ValueError: break
-
-        except  (AttributeError, ValueError):
-            ret = LetSyntaxException("Bad-Var-Syntax")
-
-        else:
-            try:
-                body = exprChild.curNext().curNext()
-
-            except ValueError:
-                ret = LetSyntaxException("NoBody")
-            else:
-                newEnv = Env(vars, valResults, env)
-                ret = eval(body, newEnv, memoize)
+        ret = specialFormLet(exprChild, env, memoize)
 
     elif exprChild.cursor.child == 'if':
+        ret = specialFormIf(exprChild, env, memoize)
 
-        negative = None
-        try:
-            cond = exprChild.curNext()
-            positive = exprChild.curNext().curNext()
-            try:
-                negative = exprChild.curNext().curNext().curNext()
-            except ValueError: pass
-        except ValueError:
-            ret = SyntaxException("Bad-If-Expression")
-        else:
+    elif exprChild.cursor.child == 'cond':
+        ret = specialFormCond(exprChild, env, memoize)
 
-            condResult = eval(cond, env, memoize)
-
-            if isinstance(condResult, Exception):
-                ret = condResult
-            elif condResult:    # replace with try
-                ret = eval(positive, env, memoize)
-            else:
-                if negative is not None:
-                    ret = eval(negative, env, memoize)
-                else:
-                    return False
+    elif exprChild.cursor.child == 'obj':
+        ret = specialFormObj(exprChild, env, memoize)
 
     elif exprChild.cursor.child == 'quote':
         ret = exprChild.curNext().cursorToPyExp()
 
     else:  # i.e. a procedure call
-        childExpr = []
-        procExpr = exprChild
-        while True:
-            childExpr.append(eval(procExpr, env, memoize))
-            try: procExpr = procExpr.curNext()
-            except ValueError: break
-
-        #            for i in exprChild.cursor:
-        #                childExpr.append(self.eval(i, env, memoize))
-
-        #exps = [eval(exp, env) for exp in childExpr]
-        for i in childExpr:
-            if isinstance(i, Exception):
-                ret = i
-                break
-        else:
-            proc = childExpr.pop(0)
-            if hasattr(proc, '__call__'):
-                try:
-                    ret = proc(*childExpr)
-                except ZeroDivisionError:
-                    ret = DivZeroException()
-                except TypeError:
-                    ret = TypeException(childExpr)
-            else:
-                ret = NonProcException(proc)
-
-
+        ret = callProcedure(exprChild, env, memoize)
 
     if memoize:
         memoize(exprBuf.cursor, ret)
 
     return ret
+
+def callProcedure(expBuf, env, memoize):
+    childExpr = []
+    procExpr = expBuf
+    while True:
+        childExpr.append(eval(procExpr, env, memoize))
+        try: procExpr = procExpr.curNext()
+        except ValueError: break
+
+    for i in childExpr:
+        if isinstance(i, Exception):
+            ret = i
+            break
+    else:
+        proc = childExpr.pop(0)
+        if hasattr(proc, '__call__'):
+            try:
+                ret = proc(*childExpr)
+            except ZeroDivisionError:
+                ret = DivZeroException()
+            except TypeError:
+                ret = TypeException(childExpr)
+        else:
+            ret = NonProcException(proc)
+
+    return ret
+
+def specialFormLambda(expBuf, env, memoize):
+    try:
+        vars = expBuf.cursor.next.child.toPyExp()
+        #if not isList(vars):
+        #    raise LambdaSyntaxException("Bad Vars Arg")
+        expBuf = expBuf.curNext().curNext()
+
+        def makeLambda(*args):
+            if args and args[0] == 'inspect':
+                return [expBuf, Env(vars, args[1:], env)]
+            else:
+                return eval(expBuf, Env(vars, args, env), False)
+
+    except AttributeError:
+        ret = LambdaSyntaxException("Err")
+    except LambdaSyntaxException as err:
+        ret = err
+    else:
+        ret = makeLambda
+
+    return ret
+
+def specialFormLet(expBuf, env, memoize):
+    vars = []
+    valResults = []
+
+    try:
+        mapping = expBuf.curNext().curChildExp()
+
+        #build closure
+        for i in mapping.cursor:
+            curVar = i.child.child
+            vars.append(curVar)
+
+        closure = Env(vars, [None]*len(vars), env)
+
+        pair = mapping
+        while True:
+            curVal = pair.curChild().curNext()
+            curVar = pair.curChild().curChildExp()
+            curValResult = eval(curVal, closure, memoize)
+            closure.find(curVar)[curVar] = curValResult
+            valResults.append(curValResult)
+            try:
+                pair = pair.curNext()
+            except ValueError: break
+
+    except  (AttributeError, ValueError):
+        ret = LetSyntaxException("Bad-Var-Syntax")
+
+    else:
+        try:
+            body = expBuf.curNext().curNext()
+
+        except ValueError:
+            ret = LetSyntaxException("NoBody")
+        else:
+            newEnv = Env(vars, valResults, env)
+            ret = eval(body, newEnv, memoize)
+
+    return ret
+
+def specialFormObj(expBuf, env, memoize):
+    vars = []
+    valResults = []
+
+    try:
+        mapping = expBuf.curNext()
+
+        #build closure
+        for i in mapping.cursor:
+            curVar = i.child.child
+            vars.append(curVar)
+
+        closure = Env(vars, [None]*len(vars), env)
+
+        pair = mapping
+        while True:
+            curVal = pair.curChild().curNext()
+            curVar = pair.curChild().curChildExp()
+            curValResult = eval(curVal, closure, memoize)
+            closure.find(curVar)[curVar] = curValResult
+            valResults.append(curValResult)
+            try:
+                pair = pair.curNext()
+            except ValueError: break
+
+    except  (AttributeError, ValueError):
+        ret = LetSyntaxException("Bad-Var-Syntax")
+
+    else:
+        newEnv = Env(vars, valResults, None)
+        def Obj(methodName):
+            try:
+                ret = newEnv.find(methodName)[methodName]
+            except LookUpException:
+                ret = LookUpException(methodName)
+            return ret
+
+        ret = Obj
+
+    return ret
+
+
+def specialFormIf(expBuf, env, memoize):
+    negative = None
+    try:
+        cond = expBuf.curNext()
+        positive = expBuf.curNext().curNext()
+        try:
+            negative = expBuf.curNext().curNext().curNext()
+        except ValueError: pass
+    except ValueError:
+        ret = SyntaxException("Bad-If-Expression")
+    else:
+
+        condResult = eval(cond, env, memoize)
+
+        if isinstance(condResult, Exception):
+            ret = condResult
+        elif condResult:    # replace with try
+            ret = eval(positive, env, memoize)
+        else:
+            if negative is not None:
+                ret = eval(negative, env, memoize)
+            else:
+                ret = False
+
+    return ret
+
+def specialFormCond(expBuf, env, memoize):
+
+    try:
+        condPair = expBuf.curNext()
+        while True:
+            test = condPair.curChildExp()
+            positive = test.curNext()
+            testResult = eval(test, env, memoize)
+
+            if isinstance(testResult, Exception):
+                return testResult
+            elif testResult:    # replace with try
+                return eval(positive, env, memoize)
+            else:
+                try:
+                    condPair = condPair.curNext()
+                except ValueError:
+                    return False
+
+    except ValueError:
+        return SyntaxException("Bad Cond Expression")
+    except AttributeError:
+        return SyntaxException("Bad Cond Expression")

@@ -149,8 +149,8 @@ class WindowManager(fo.FuncObject):
                 curYStep = minYStep
 
             if i == self.winTree.cursor:
-                i.child.draw(0, curY, maxX, curYStep, isActive=True)
-            else: i.child.draw(0, curY, maxX, curYStep, isActive=False)
+                i.child.draw(0, curY, maxX, curYStep, True)
+            else: i.child.draw(0, curY, maxX, curYStep,False)
             curY += curYStep
 
 

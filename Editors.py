@@ -8,7 +8,7 @@ import funobj as fo
 import operator
 import screen
 from reader import Symbol
-from string import printable
+
 
 
 class CellEditor(object):
@@ -88,7 +88,7 @@ class CellEditor(object):
             if len(self.content) > 0:
                 return 'SPACE'
 
-        elif key.char() in printable:
+        elif key.isPrintable():
             self.content.insert(self.index, key.char())
             self.index += 1
 

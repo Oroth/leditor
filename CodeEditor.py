@@ -93,7 +93,7 @@ class evalIOHandler(CodeEditor):
         self.evalBuffer()
 
     def handleKeys(self, key, mouse):
-        if key.char() != 0:
+        if key.isPrintable():
             self.keyHistory.append(key.char())
             self.lastKey = key.char()
 

@@ -1,4 +1,5 @@
 from lib import libtcodpy as libtcod
+from string import printable
 
 KEY_ENTER = libtcod.KEY_ENTER
 KEY_ESCAPE = libtcod.KEY_ESCAPE
@@ -38,6 +39,9 @@ class Key():
 
     def shift(self):
         return self.keyObj.shift
+
+    def isPrintable(self):
+        return chr(self.keyObj.c) in printable
 
 class Mouse():
     def __init__(self, mouseObj):
