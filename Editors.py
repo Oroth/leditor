@@ -152,6 +152,7 @@ class TreeEditor(DisplayEditor):
         self.showValues = False
         self.revealedNodes = {}
         self.zippedNodes = dict(zippedNodes)
+        self.viewHistory = list(rootCursorAdd)
         self.cmdBar = None
 
         self.drawMode = 'cursor'
@@ -208,7 +209,7 @@ class TreeEditor(DisplayEditor):
                     # still to do: finish editing and move cursor
 
             elif cell.lineItemNodeReference:
-                newBuff = self.buffer.cursorToAddress(cell.lineItemNodeReference.nodeAddress)
+                newBuff = self.buffer.newCursorAdd(cell.lineItemNodeReference.nodeAddress)
                 return self.update('buffer', newBuff)
         elif mouse.wheelDown():
             self.topLine += 3
@@ -476,7 +477,12 @@ class TreeEditor(DisplayEditor):
             else:
                 try:
                     if key.char() == 'J':
-                        return self.update('buffer', self.buffer.viewToCursor())
+                        newBuff = self.buffer.viewToCursor()
+                        newHist = list(self.viewHistory)
+                        newHist.append(newBuff.view)
+                        return self.updateList(
+                            ('buffer', newBuff),
+                            ('viewHistory', newHist))
 
                     elif key.char() == 'K':
                         return self.update('buffer', self.buffer.viewUp())

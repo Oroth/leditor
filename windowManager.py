@@ -46,9 +46,11 @@ class WindowManager(fo.FuncObject):
 
         self.ImageRoot = imageRoot
         self.hist = imageRoot
-
         winRoot = self.createListEdFromEditorSettings(imageRoot)
-        self.winTree = buffer.Buffer.fromPyExp(winRoot, [0], [0, 0])
+
+
+        self.winTree = buffer.ViewBuffer.fromPyExp(winRoot, [0], [0, 0])
+        self.winList = self.winTree
         self.imageFileName = imageFileName
 
         self.winCmd = False
@@ -56,12 +58,7 @@ class WindowManager(fo.FuncObject):
         self.wins = 1
 
 
-    def writeImage(self):
-        pyObj = self.ImageRoot.child.toPyNumberedExp()
-        text = reader.to_string(pyObj)
-        f = open(self.imageFileName, 'w')
-        f.write(text)
-        f.close()
+
 
     def getEditSexp(self):
         curWin = self.winTree.cursor
@@ -86,6 +83,13 @@ class WindowManager(fo.FuncObject):
         pyObj = self.getEditSexp()
         text = reader.to_string(pyObj)
         f = open('EditorSettings', 'w')
+        f.write(text)
+        f.close()
+
+    def writeImage(self):
+        pyObj = self.ImageRoot.child.toPyNumberedExp()
+        text = reader.to_string(pyObj)
+        f = open(self.imageFileName, 'w')
         f.write(text)
         f.close()
 
@@ -167,7 +171,7 @@ class WindowManager(fo.FuncObject):
         if mouse.lbuttonPressed():
             windowClicked, windowAddress = self.matchWindowToClick(mouse.x(), mouse.y())
             if windowClicked != self.winTree.cursor:
-                new = self.winTree.cursorToAddress(windowAddress)
+                new = self.winTree.newCursorAdd(windowAddress)
                 self.winTree = new # imperative at the moment to allow simultaenously switching and selecting
                 # an expression
 

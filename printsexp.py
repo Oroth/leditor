@@ -5,7 +5,7 @@ import reader
 from screen import createBlank, putNodeOnImage
 
 
-class ParseState(buffer.Buffer):
+class ParseState(buffer.ViewBuffer):
     def __init__(self, node, address, nesting=0, isCursor=False):
         self.nesting = nesting
         self.isCursor = isCursor

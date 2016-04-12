@@ -1,7 +1,7 @@
 from unittest import TestCase, main
 import tn
 from tn import TNode, createTNodeExpFromPyExp, replaceAdd, deleteAdd, insertAdd
-from buffer import Buffer
+from buffer import ViewBuffer
 
 __author__ = 'chephren'
 
