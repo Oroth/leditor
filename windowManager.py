@@ -72,7 +72,7 @@ class WindowManager(fo.FuncObject):
                 zipList.append(k)
 
         return [reader.Symbol('editor'),
-                    [s('address'), self.winTree.viewAdd], [s('cursor'), self.winTree.cursorAdd],
+                    [s('cursor'), self.winTree.cursorAdd],
                     [reader.Symbol('window'), [reader.Symbol('id'), curEd.id],
                     [reader.Symbol('maxx'), curEd.maxx], [reader.Symbol('maxy'), curEd.maxy],
                     [reader.Symbol('address'), viewAdd], [reader.Symbol('cursor'), cursorAdd],
@@ -97,7 +97,7 @@ class WindowManager(fo.FuncObject):
     def createListEdFromEditorSettings(self, root):
         if os.path.isfile("EditorSettings"):
             pyEditorLoad = reader.loadFile("EditorSettings")
-            window = dict(pyEditorLoad[3][1:])
+            window = dict(pyEditorLoad[2][1:])
             edZipNode = dict(zip(window['zippedNodes'], [True]*len(window['zippedNodes'])))
 
             listEd = CodeEditor.CodeEditor(root, window['address'], window['cursor'], edZipNode)
