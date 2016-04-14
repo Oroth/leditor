@@ -13,11 +13,12 @@ from tn import cons
 # interface
 
 class Window(object):
-    def __init(self, x, y, width, height):
+    def __init(self, x, y, width, height, edBuffer):
         self.x = x
         self.y = y
         self.width = width
         self.height = height
+        self.editorBuffer = edBuffer
         self.image = iop.console_new(width, height)
 
 
@@ -46,11 +47,12 @@ class WindowManager(fo.FuncObject):
 
         self.ImageRoot = imageRoot
         self.hist = imageRoot
-        winRoot = self.createListEdFromEditorSettings(imageRoot)
+        startEditor = self.createListEdFromEditorSettings(imageRoot)
+        self.editorList = tn.TNode(startEditor)
+        startEditorBuffer = buffer.SimpleBuffer(self.editorList, [0, 0])
 
+        self.winTree = buffer.SimpleBuffer.fromPyExp(startEditor, [0, 0])
 
-        self.winTree = buffer.SimpleBuffer.fromPyExp(winRoot, [0, 0])
-        self.winList = self.winTree
         self.imageFileName = imageFileName
 
         self.winCmd = False
@@ -125,7 +127,7 @@ class WindowManager(fo.FuncObject):
         minYStep = screenForWins / self.wins
         leftover = screenForWins % self.wins
 
-        for i in self.winTree.root.child:
+        for i in self.winTree.first():
             if leftover > 0:
                 curYStep = minYStep + 1
                 leftover -= 1
@@ -145,7 +147,7 @@ class WindowManager(fo.FuncObject):
         minYStep = screenForWins / self.wins
         leftover = screenForWins % self.wins
 
-        for i in self.winTree.root.child:
+        for i in self.winTree.first():
             if leftover > 0:
                 curYStep = minYStep + 1
                 leftover -= 1
@@ -180,6 +182,28 @@ class WindowManager(fo.FuncObject):
                 #    ('winCmd', False))
 
         if self.winCmd:
+
+            if key.char() == 'b':
+                curEd = self.winTree.cursor.child
+                newEd = CodeEditor.CodeEditor(self.ImageRoot, [0], curEd.buffer.rootToCursorAdd(),
+                                              zippedNodes=curEd.zippedNodes)
+                newWinList = self.editorList.appendAtCursor(newEd).curNext()
+                newWinTree = self.winTree.replaceAtCursor(newEd)
+                return self.updateList(
+                    ('winTree', newWinTree),
+                    ('winList', newWinList),
+                    ('winCmd', False))
+
+            # change the current window to the next editor:
+            if key.char() == 'n':
+                newWinList = self.editorList.curCycle()
+                nextEd = newWinList.cursor.child
+                newWinTree = self.winTree.replaceAtCursor(nextEd)
+
+                return self.updateList(
+                    ('winList', newWinList),
+                    ('winTree', newWinTree),
+                    ('winCmd', False))
 
             if key.char() == 'j':
                 try:

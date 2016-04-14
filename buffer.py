@@ -31,6 +31,9 @@ class SimpleBuffer(fo.FuncObject):
     def onSubNode(self):
         return self.cursor.isSubNode()
 
+    def first(self):
+        return self.root.child
+
     def cursorToPyExp(self):
         return self.cursor.childToPyExp()
 
@@ -73,6 +76,12 @@ class SimpleBuffer(fo.FuncObject):
             return self.updateList(('cursorAdd', newAddress), ('cursor', self.cursor.next))
         else:
             raise ValueError
+
+    def curCycle(self):
+        if self.cursor.next:
+            return self.curNext()
+        else:
+            return self.curFirst()
 
     def curPrev(self):
         if self.cursorAdd[-1] > 0:
