@@ -128,6 +128,23 @@ class DisplayEditor(fo.FuncObject):
         self.zippedNodes = {}
         self.editing = False
 
+    def getEditorSettings(self):
+        viewAdd = self.buffer.viewAdd
+        cursorAdd = self.buffer.cursorAdd
+        s = reader.Symbol
+        zipList = []
+        for k, v in self.zippedNodes.iteritems():
+            if v is True:
+                zipList.append(k)
+
+        return [s('editor'),
+                    [s('cursor'), 0],
+                    [s('window'), [s('id'), self.id],
+                    [s('maxx'), self.maxx], [s('maxy'), self.maxy],
+                    [s('address'), viewAdd], [s('cursor'), cursorAdd],
+                    [s('printingMode'), self.printingMode],
+                    [s('zippedNodes'), zipList]]]
+
 
     def nodeIsZipped(self, node):
         return node.nodeID in self.zippedNodes and self.zippedNodes[node.nodeID]

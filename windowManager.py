@@ -12,14 +12,32 @@ from tn import cons
 
 # interface
 
-class Window(object):
-    def __init(self, x, y, width, height, edBuffer):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-        self.editorBuffer = edBuffer
-        self.image = iop.console_new(width, height)
+class Window(fo.FuncObject):
+    def __init__(self, editor, x=0, y=0, width=iop.screenWidth(), height=iop.screenHeight()):
+        self.posx = x
+        self.posy = y
+        self.maxx = width
+        self.maxy = height
+        self.editor = editor
+        #self.editorBuffer = edBuffer
+        #self.image = iop.console_new(width, height)
+
+    def setPosition(self, newPosx, newPosy, newMaxx, newMaxy):
+        self.posx = newPosx
+        self.posy = newPosy
+        self.maxx = newMaxx
+        self.maxy = newMaxy
+        self.editor.setPosition(newPosx, newPosy, newMaxx, newMaxy)
+
+    def draw(self, posx, posy, maxx, maxy, isActive):
+        self.editor.draw(posx, posy, maxx, maxy, isActive)
+
+    def handleKeys(self, key, mouse):
+        # need to set relative mouse position
+        return self.update('editor', self.editor.handleKeys(key, mouse))
+
+    def getEditor(self):
+        return self.editor
 
 
 class Column(object):
@@ -51,7 +69,9 @@ class WindowManager(fo.FuncObject):
         self.editorList = tn.TNode(startEditor)
         startEditorBuffer = buffer.SimpleBuffer(self.editorList, [0, 0])
 
-        self.winTree = buffer.SimpleBuffer.fromPyExp(startEditor, [0, 0])
+        startWindow = Window(startEditor, 0, 0, iop.screenWidth(), iop.screenHeight())
+
+        self.winTree = buffer.SimpleBuffer.fromPyExp(startWindow, [0, 0])
 
         self.imageFileName = imageFileName
 
@@ -63,23 +83,25 @@ class WindowManager(fo.FuncObject):
 
 
     def getEditSexp(self):
-        curWin = self.winTree.cursor
-        curEd = curWin.child
-        viewAdd = curEd.buffer.viewAdd
-        cursorAdd = curEd.buffer.cursorAdd
-        s = reader.Symbol
-        zipList = []
-        for k, v in curEd.zippedNodes.iteritems():
-            if v is True:
-                zipList.append(k)
+        curWin = self.winTree.getCurrent()
+        curEd = curWin.getEditor()
+        return curEd.getEditorSettings()
 
-        return [reader.Symbol('editor'),
-                    [s('cursor'), self.winTree.cursorAdd],
-                    [reader.Symbol('window'), [reader.Symbol('id'), curEd.id],
-                    [reader.Symbol('maxx'), curEd.maxx], [reader.Symbol('maxy'), curEd.maxy],
-                    [reader.Symbol('address'), viewAdd], [reader.Symbol('cursor'), cursorAdd],
-                    [reader.Symbol('printingMode'), curEd.printingMode],
-                    [reader.Symbol('zippedNodes'), zipList]]]
+        # viewAdd = curEd.buffer.viewAdd
+        # cursorAdd = curEd.buffer.cursorAdd
+        # s = reader.Symbol
+        # zipList = []
+        # for k, v in curEd.zippedNodes.iteritems():
+        #     if v is True:
+        #         zipList.append(k)
+        #
+        # return [reader.Symbol('editor'),
+        #             [s('cursor'), self.winTree.cursorAdd],
+        #             [reader.Symbol('window'), [reader.Symbol('id'), curEd.id],
+        #             [reader.Symbol('maxx'), curEd.maxx], [reader.Symbol('maxy'), curEd.maxy],
+        #             [reader.Symbol('address'), viewAdd], [reader.Symbol('cursor'), cursorAdd],
+        #             [reader.Symbol('printingMode'), curEd.printingMode],
+        #             [reader.Symbol('zippedNodes'), zipList]]]
 
     def writeEditor(self):
         pyObj = self.getEditSexp()
@@ -114,7 +136,8 @@ class WindowManager(fo.FuncObject):
 
     def addWindow(self, newFunc):
         self.wins += 1
-        newWinTree = self.winTree.appendAtCursor(newFunc).curNext()
+        newWin = Window(newFunc)
+        newWinTree = self.winTree.appendAtCursor(newWin).curNext()
         return newWinTree
 
     # calculates and sets posx, posy, maxx, maxy for all windows trying to allocate available screen real estate
@@ -127,14 +150,14 @@ class WindowManager(fo.FuncObject):
         minYStep = screenForWins / self.wins
         leftover = screenForWins % self.wins
 
-        for i in self.winTree.first():
+        for winNode in self.winTree.first():
             if leftover > 0:
                 curYStep = minYStep + 1
                 leftover -= 1
             else:
                 curYStep = minYStep
 
-            i.child.setPosition(0, curY, maxX, curYStep)
+            winNode.child.setPosition(0, curY, maxX, curYStep)
             curY += curYStep
 
 
@@ -147,22 +170,23 @@ class WindowManager(fo.FuncObject):
         minYStep = screenForWins / self.wins
         leftover = screenForWins % self.wins
 
-        for i in self.winTree.first():
+        for winNode in self.winTree.first():
+            window = winNode.child
             if leftover > 0:
                 curYStep = minYStep + 1
                 leftover -= 1
             else:
                 curYStep = minYStep
 
-            if i == self.winTree.cursor:
-                i.child.draw(0, curY, maxX, curYStep, True)
-            else: i.child.draw(0, curY, maxX, curYStep,False)
+            if winNode == self.winTree.cursor:
+                window.draw(0, curY, maxX, curYStep, True)
+            else: window.draw(0, curY, maxX, curYStep,False)
             curY += curYStep
 
 
     def matchWindowToClick(self, x, y):
         winAdd = [0, 0]
-        for winNode in self.winTree.root.child:
+        for winNode in self.winTree.first():
             win = winNode.child
             if win.posx <= x < win.posx + win.maxx and win.posy <= y < win.posy + win.maxy:
                 return winNode, winAdd
@@ -177,14 +201,13 @@ class WindowManager(fo.FuncObject):
                 self.winTree = new # imperative at the moment to allow simultaenously switching and selecting
                 # an expression
 
-                #return self.updateList(
-                #    ('winTree', new),
-                #    ('winCmd', False))
+        curWin = self.winTree.getCurrent()
+        curEd = curWin.getEditor()
 
         if self.winCmd:
 
             if key.char() == 'b':
-                curEd = self.winTree.cursor.child
+                #curEd = self.winTree.cursor.child
                 newEd = CodeEditor.CodeEditor(self.ImageRoot, [0], curEd.buffer.rootToCursorAdd(),
                                               zippedNodes=curEd.zippedNodes)
                 newWinList = self.editorList.appendAtCursor(newEd).curNext()
@@ -221,7 +244,7 @@ class WindowManager(fo.FuncObject):
 
             elif key.char() == 'o':
                 #cursorToView
-                curEd = self.winTree.cursor.child
+               #curEd = self.winTree.cursor.child
                 newEd = Editors.TreeEditor(self.ImageRoot, curEd.buffer.rootToCursorAdd(),
                                            zippedNodes=curEd.zippedNodes)
                 newWinTree = self.addWindow(newEd)
@@ -254,7 +277,7 @@ class WindowManager(fo.FuncObject):
 
             # run a function like a program
             elif key.code() == iop.KEY_SPACE:
-                curEd = self.winTree.cursor.child
+                #curEd = self.winTree.cursor.child
                 evalBuffer = buffer.BufferSexp(self.ImageRoot, curEd.buffer.rootToCursorAdd())
                 prog = CodeEditor.evalIOHandler(evalBuffer)
                 newWinTree = self.addWindow(prog)
@@ -266,7 +289,7 @@ class WindowManager(fo.FuncObject):
                 return newWM
 
             elif key.code() == iop.KEY_ENTER:
-                curEd = self.winTree.cursor.child
+                #curEd = self.winTree.cursor.child
                 newEd = CodeEditor.CodeEditor(self.ImageRoot, curEd.buffer.rootToCursorAdd(),
                                               zippedNodes=curEd.zippedNodes)
                 newEd.evalBuffer()
@@ -278,7 +301,7 @@ class WindowManager(fo.FuncObject):
 
             elif key.char() == '>':
                 print 'inspecting'
-                curEd = self.winTree.cursor.child
+                #curEd = self.winTree.cursor.child
                 curNode = curEd.buffer.cursor
 
                 if curNode.isSubNode():
@@ -308,41 +331,43 @@ class WindowManager(fo.FuncObject):
 
         elif key.char() == 'w' and key.lctrl():
             self.winCmd = True
-            self.winTree.cursor.child.statusBar.updateMessage("Window Mode")
+            curEd.statusBar.updateMessage("Window Mode")
             print "windowing"
 
         elif key.char() == 's' and key.lctrl():
             self.writeImage()
             self.writeEditor()
-            self.winTree.cursor.child.statusBar.updateMessage("Saving Image")
+            curEd.statusBar.updateMessage("Saving Image")
             print "saving"
 
         else:
-            result = self.winTree.cursor.child.handleKeys(key, mouse)
-            if result == 'ESC':
+            resultWin = curWin.handleKeys(key, mouse)
+            resultEd = resultWin.getEditor()
+            if resultEd == 'ESC':
                 self.writeImage()
                 self.writeEditor()
                 return False
 
-            if result == 'UNDO':
+            if resultEd == 'UNDO':
                 if self.hist.next:
                     self.ImageRoot = self.hist.next
                     self.hist = self.hist.next
 
             else:
-                self.winTree = self.winTree.replaceAtCursor(result)
+                self.winTree = self.winTree.replaceAtCursor(resultWin)
 
-                if isinstance(result, Editors.TreeEditor) and result.syncWithRoot and \
-                                                        self.ImageRoot != result.buffer.root:
-                    self.ImageRoot = result.buffer.root
-                    if result.updateUndo:
+                if isinstance(resultEd, Editors.TreeEditor) and resultEd.syncWithRoot and \
+                                                        self.ImageRoot != resultEd.buffer.root:
+                    self.ImageRoot = resultEd.buffer.root
+                    if resultEd.updateUndo:
                         self.hist = cons(self.ImageRoot.child, self.hist)
                     #print "hist", self.hist.child.toPySexp()
 
             # need to sync all Editors to the newTree
-            for i in self.winTree.root.child:
-                if isinstance(i.child, Editors.TreeEditor) and i.child.syncWithRoot:
-                    i.child = i.child.syncWithImage(self.ImageRoot)
+            for winNode in self.winTree.first():
+                win = winNode.child
+                if isinstance(win.editor, Editors.TreeEditor) and win.editor.syncWithRoot:
+                    win.editor = win.editor.syncWithImage(self.ImageRoot)
             #functional: map(self.winTree.root.child .syncWithImage)
 
             return self

@@ -34,6 +34,9 @@ class SimpleBuffer(fo.FuncObject):
     def first(self):
         return self.root.child
 
+    def getCurrent(self):
+        return self.cursor.child
+
     def cursorToPyExp(self):
         return self.cursor.childToPyExp()
 
