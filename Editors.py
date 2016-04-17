@@ -145,13 +145,12 @@ class DisplayEditor(fo.FuncObject):
     def cursorIsZipped(self, buffer):
         return self.nodeIsZipped(buffer.cursor)
 
-    def draw(self, posx, posy, maxx, maxy, isActive):
+    def draw(self, maxx, maxy, isActive):
         lineList, self.topLine = printsexp.makeLineIndentList(self, maxx, maxy)
         toppedLineList = lineList[self.topLine:]
         self.image = printsexp.drawLineList(toppedLineList, maxx, maxy, self.colourScheme, isActive)
         return self.image
 
-        #screen.printToScreen(self.image, posx, posy)
 
 
 class TreeEditor(DisplayEditor):
@@ -553,15 +552,15 @@ class TreeEditor(DisplayEditor):
         return self
 
 
-    def draw(self, posx, posy, maxx, maxy, isActive):
-        mainImage = super(TreeEditor, self).draw(posx, posy, maxx, maxy+1, isActive)[:]
+    def draw(self, maxx, maxy, isActive):
+        mainImage = super(TreeEditor, self).draw(maxx, maxy+1, isActive)[:]
 
         if self.cmdBar:
-            cmdImage = self.cmdBar.draw(0, posy + maxy - 2, maxx, 2, isActive=True)
+            cmdImage = self.cmdBar.draw(maxx, 2, isActive=True)
             screen.overlayLinesOnImage(mainImage, maxy - 2, cmdImage)
 
         if self.statusBar:
-            statusImage = self.statusBar.draw(0, posy + maxy - 1, maxx, 2, isActive=False)
+            statusImage = self.statusBar.draw(maxx, 2, isActive=False)
             screen.overlayLinesOnImage(mainImage, maxy - 1, statusImage)
 
         return mainImage
@@ -571,8 +570,8 @@ class CmdBar(TreeEditor):
     def __init__(self, *args, **kwargs):
         super(CmdBar, self).__init__(*args, **kwargs)
 
-    def draw(self, posx, posy, maxx, maxy, isActive):
-        super(TreeEditor, self).draw(posx, posy, maxx, maxy, isActive)
+    def draw(self, maxx, maxy, isActive):
+        super(TreeEditor, self).draw(maxx, maxy, isActive)
 
     def handleKeys(self, key, mouse):
 

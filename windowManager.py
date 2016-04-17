@@ -20,13 +20,11 @@ class Window(fo.FuncObject):
         self.editor = editor
 
     def setPosition(self, newPosx, newPosy, newMaxx, newMaxy):
-        self.posx = newPosx
-        self.posy = newPosy
-        self.maxx = newMaxx
-        self.maxy = newMaxy
+        self.posx, self.posy = newPosx, newPosy
+        self.maxx, self.maxy = newMaxx, newMaxy
 
     def draw(self, posx, posy, maxx, maxy, isActive):
-        image = self.editor.draw(posx, posy, maxx, maxy, isActive)
+        image = self.editor.draw(maxx, maxy, isActive)
         screen.printToScreen(image, posx, posy)
 
     def handleKeys(self, key, mouse):
