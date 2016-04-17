@@ -119,8 +119,25 @@ def add_globals(env):
     return env
 
 
-
 global_env = add_globals(Env())
+
+
+class Closure(object):
+    def __init__(self, type, expBuf, vars, parentEnv):
+        self.type = type
+        self.expBuf = expBuf
+        self.vars = vars
+        self.env = parentEnv
+
+    def inspect(self, *args):
+        return [self.expBuf, Env(self.vars, args, self.env)]
+
+    def call(self, *args):
+        env = Env(self.vars, args, self.env)
+        evalResult =  eval(self.expBuf, env, False)
+        return evalResult
+
+
 
 def isidentifier(exp):
     return isinstance(exp, reader.Symbol)
@@ -184,9 +201,13 @@ def callProcedure(expBuf, env, memoize):
             break
     else:
         proc = childExpr.pop(0)
-        if hasattr(proc, '__call__'):
+        if isinstance(proc, Closure) and proc.type == 'lambda':
+            procVal = proc.call
+        else:
+            procVal = proc
+        if hasattr(procVal, '__call__'):
             try:
-                ret = proc(*childExpr)
+                ret = procVal(*childExpr)
             except ZeroDivisionError:
                 ret = DivZeroException()
             except TypeError:
@@ -209,12 +230,15 @@ def specialFormLambda(expBuf, env, memoize):
             else:
                 return eval(expBuf, Env(vars, args, env), False)
 
+        ret = Closure('lambda', expBuf, vars, env)
+
     except AttributeError:
         ret = LambdaSyntaxException("Err")
     except LambdaSyntaxException as err:
         ret = err
-    else:
-        ret = makeLambda
+    #else:
+    #    ret = makeLambda
+
 
     return ret
 

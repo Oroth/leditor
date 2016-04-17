@@ -1,7 +1,6 @@
 __author__ = 'chephren'
 import tn
 import buffer
-import Editors
 import reader
 import screen
 import CodeEditor
@@ -13,10 +12,8 @@ from tn import cons
 
 class Window(fo.FuncObject):
     def __init__(self, editor, x=0, y=0, width=iop.screenWidth(), height=iop.screenHeight()):
-        self.posx = x
-        self.posy = y
-        self.maxx = width
-        self.maxy = height
+        self.posx, self.posy = x, y
+        self.maxx, self.maxy = width, height
         self.editor = editor
 
     def setPosition(self, newPosx, newPosy, newMaxx, newMaxy):
@@ -50,11 +47,8 @@ class WindowManager(fo.FuncObject):
         startEditorBuffer = buffer.SimpleBuffer(self.editorList, [0, 0])
 
         startWindow = Window(startEditor, 0, 0, iop.screenWidth(), iop.screenHeight())
-
         self.winTree = buffer.SimpleBuffer.fromPyExp(startWindow, [0, 0])
-
         self.imageFileName = imageFileName
-
         self.winCmd = False
         self.wins = 1
 
@@ -63,7 +57,6 @@ class WindowManager(fo.FuncObject):
         curWin = self.winTree.getCurrent()
         curEd = curWin.getEditor()
         return curEd.getEditorSettings()
-
 
     def writeEditor(self):
         pyObj = self.getEditSexp()
@@ -89,7 +82,6 @@ class WindowManager(fo.FuncObject):
             listEd = CodeEditor.CodeEditor(root, window['address'], window['cursor'], edZipNode)
             listEd.printingMode = window['printingMode']
             listEd.id = window['id']
-
         else:
             listEd =CodeEditor.CodeEditor(root)
 
@@ -246,17 +238,11 @@ class WindowManager(fo.FuncObject):
                     ('winCmd', False))
 
             elif key.char() == '>':
-                print 'inspecting'
-                #curEd = self.winTree.cursor.child
                 curNode = curEd.buffer.cursor
 
                 if curNode.isSubNode():
-                    args = []
-                    if curNode.child.next:
-                        for i in curNode.child.next:
-                            args.append(curEd.nodeValues[i])
-
-                    (newTree, env) = curEd.nodeValues[curNode.child]('inspect', *args)
+                    args = [curEd.nodeValues[node] for node in curNode.child][1:]
+                    (newTree, env) = curEd.nodeValues[curNode.child].inspect(*args)
 
                     newEd = CodeEditor.InspectionEditor(newTree.root, newTree.rootToCursorAdd(),
                                                   zippedNodes=curEd.zippedNodes)
