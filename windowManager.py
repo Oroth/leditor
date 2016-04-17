@@ -161,10 +161,11 @@ class WindowManager(fo.FuncObject):
         if self.winCmd:
 
             if key.char() == 'b':
-                #curEd = self.winTree.cursor.child
                 newEd = CodeEditor.CodeEditor(self.ImageRoot, [0], curEd.buffer.rootToCursorAdd(),
                                               zippedNodes=curEd.zippedNodes)
-                newWinList = self.editorList.appendAtCursor(newEd).curNext()
+                #newWinList = self.editorList.appendAtCursor(newEd).curNext()
+
+                newWinList = curWin.appendAtCursor(newEd).curNext()
                 newWinTree = self.winTree.replaceAtCursor(newEd)
                 return self.updateList(
                     ('winTree', newWinTree),
@@ -229,8 +230,6 @@ class WindowManager(fo.FuncObject):
             elif key.code() == iop.KEY_ENTER:
                 newEd = CodeEditor.CodeEditor(self.ImageRoot, curEd.buffer.rootToCursorAdd(),
                                              zippedNodes=curEd.zippedNodes)
-
-                #newEd = curEd.update('buffer', curEd.buffer.viewToCursor())
                 newWinTree = self.addWindow(newEd)
 
                 return self.updateList(
@@ -242,16 +241,10 @@ class WindowManager(fo.FuncObject):
 
                 if curNode.isSubNode():
                     args = [curEd.nodeValues[node] for node in curNode.child][1:]
-                    (newTree, env) = curEd.nodeValues[curNode.child].inspect(*args)
-
+                    newTree, env = curEd.nodeValues[curNode.child].inspect(*args)
                     newEd = CodeEditor.InspectionEditor(newTree.root, newTree.rootToCursorAdd(),
                                                   zippedNodes=curEd.zippedNodes)
-
-                    newEd.context = curEd.buffer
-                    newEd.contextParent = curEd.id    # not really needed?
-                    #newEd.showValues = True
                     newEd.env = env
-                    newEd.evalBuffer()
 
                     newWinTree = self.addWindow(newEd)
                     return self.updateList(

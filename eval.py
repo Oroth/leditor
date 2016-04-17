@@ -190,6 +190,7 @@ def eval(exprBuf, env=global_env, memoize=None):
 def callProcedure(expBuf, env, memoize):
     childExpr = []
     procExpr = expBuf
+    #childExpr = [eval(i, env, memoize) for i in procExpr]
     while True:
         childExpr.append(eval(procExpr, env, memoize))
         try: procExpr = procExpr.curNext()
@@ -197,23 +198,23 @@ def callProcedure(expBuf, env, memoize):
 
     for i in childExpr:
         if isinstance(i, Exception):
-            ret = i
-            break
+            return i
+
     else:
         proc = childExpr.pop(0)
         if isinstance(proc, Closure) and proc.type == 'lambda':
             procVal = proc.call
-        else:
+        elif hasattr(proc, '__call__'):
             procVal = proc
-        if hasattr(procVal, '__call__'):
-            try:
-                ret = procVal(*childExpr)
-            except ZeroDivisionError:
-                ret = DivZeroException()
-            except TypeError:
-                ret = TypeException(childExpr)
         else:
-            ret = NonProcException(proc)
+            return NonProcException(proc)
+
+        try:
+            ret = procVal(*childExpr)
+        except ZeroDivisionError:
+            ret = DivZeroException()
+        except TypeError:
+            ret = TypeException(childExpr)
 
     return ret
 
@@ -223,37 +224,23 @@ def specialFormLambda(expBuf, env, memoize):
         #if not isList(vars):
         #    raise LambdaSyntaxException("Bad Vars Arg")
         expBuf = expBuf.curNext().curNext()
-
-        def makeLambda(*args):
-            if args and args[0] == 'inspect':
-                return [expBuf, Env(vars, args[1:], env)]
-            else:
-                return eval(expBuf, Env(vars, args, env), False)
-
         ret = Closure('lambda', expBuf, vars, env)
 
     except AttributeError:
         ret = LambdaSyntaxException("Err")
     except LambdaSyntaxException as err:
         ret = err
-    #else:
-    #    ret = makeLambda
-
 
     return ret
 
 def specialFormLet(expBuf, env, memoize):
-    vars = []
     valResults = []
 
     try:
         mapping = expBuf.curNext().curChildExp()
 
         #build closure
-        for i in mapping.cursor:
-            curVar = i.child.child
-            vars.append(curVar)
-
+        vars = [pair.child.child for pair in mapping.cursor]
         closure = Env(vars, [None]*len(vars), env)
 
         pair = mapping
@@ -283,17 +270,13 @@ def specialFormLet(expBuf, env, memoize):
     return ret
 
 def specialFormObj(expBuf, env, memoize):
-    vars = []
     valResults = []
 
     try:
         mapping = expBuf.curNext()
 
         #build closure
-        for i in mapping.cursor:
-            curVar = i.child.child
-            vars.append(curVar)
-
+        vars = [pair.child.child for pair in mapping.cursor]
         closure = Env(vars, [None]*len(vars), env)
 
         pair = mapping
