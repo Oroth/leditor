@@ -1,4 +1,5 @@
 from lib import libtcodpy as libtcod
+import copy
 from string import printable
 
 KEY_ENTER = libtcod.KEY_ENTER
@@ -58,6 +59,12 @@ class Mouse():
 
     def getPos(self):
         return self.mouseObj.cx, self.mouseObj.cy
+
+    def getMouseWithRelativePosition(self, newX1, newY1):
+        newMouseObj = copy.copy(self.mouseObj)
+        newMouseObj.cx = newMouseObj.cx - newX1
+        newMouseObj.cy = newMouseObj.cy - newY1
+        return Mouse(newMouseObj)
 
     # positions on console
     def x(self):

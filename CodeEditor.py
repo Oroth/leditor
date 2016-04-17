@@ -12,11 +12,11 @@ class CodeEditor(Editors.TreeEditor):
     def __init__(self, *args, **kwargs):
         super(CodeEditor, self).__init__(*args, **kwargs)
         self.statusDescription = reader.Symbol('CodeEditor')
-        self.showValues = True
         self.env = eval.global_env
         self.vars = None
         self.context = None
         self.parent = None
+        self.printingMode = 'code'
         self.nodeValues = {}
 
     def storeNodeValue(self, node, val):
@@ -67,6 +67,28 @@ class CodeEditor(Editors.TreeEditor):
             self.printingMode = 'vertical'
             self.topLine = 0
             return self.update('buffer', newBuff)
+
+        elif key.char() == '>':
+            curNode = self.buffer.cursor
+            if curNode.isSubNode():
+                args = []
+                if curNode.child.next:
+                    for i in curNode.child.next:
+                        args.append(self.nodeValues[i])
+
+                (newTree, env) = self.nodeValues[curNode.child]('inspect', *args)
+
+                newEd = InspectionEditor(newTree.root, newTree.rootToCursorAdd(),
+                                              zippedNodes=self.zippedNodes)
+
+                newEd.context = self.buffer
+                newEd.contextParent = self.id    # not really needed?
+                newEd.env = env
+                newEd.evalBuffer()
+                return newEd
+            else:
+                return self
+
 
         else:
             result = super(CodeEditor, self).handleKeysMain(key, mouse)

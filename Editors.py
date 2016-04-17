@@ -109,15 +109,9 @@ class DisplayEditor(fo.FuncObject):
 
     def __init__(self, root, rootCursorAdd=[0], cursorAdd=[0]):
         self.buffer = buffer.BufferSexp(root, rootCursorAdd, cursorAdd)
-        self.posx = 0
-        self.posy = 0
-        self.maxx = 80
-        self.maxy = 50
         self.printingMode = 'horizontal'
-
         self.topLine = 0
         self.image = None
-
         self.colourScheme = ColourScheme(iop.black, iop.white, iop.light_green, iop.light_sky, iop.azure, iop.light_grey)
         self.statusDescription = reader.Symbol(self.__class__.__name__)
         self.id = DisplayEditor.editors
@@ -140,7 +134,6 @@ class DisplayEditor(fo.FuncObject):
         return [s('editor'),
                     [s('cursor'), 0],
                     [s('window'), [s('id'), self.id],
-                    [s('maxx'), self.maxx], [s('maxy'), self.maxy],
                     [s('address'), viewAdd], [s('cursor'), cursorAdd],
                     [s('printingMode'), self.printingMode],
                     [s('zippedNodes'), zipList]]]
@@ -156,7 +149,9 @@ class DisplayEditor(fo.FuncObject):
         lineList, self.topLine = printsexp.makeLineIndentList(self, maxx, maxy)
         toppedLineList = lineList[self.topLine:]
         self.image = printsexp.drawLineList(toppedLineList, maxx, maxy, self.colourScheme, isActive)
-        screen.printToScreen(self.image, posx, posy)
+        return self.image
+
+        #screen.printToScreen(self.image, posx, posy)
 
 
 class TreeEditor(DisplayEditor):
@@ -168,7 +163,6 @@ class TreeEditor(DisplayEditor):
         self.yankBuffer = None
         self.syncWithRoot = True
         self.updateUndo = False
-        self.showValues = False
         self.revealedNodes = {}
         self.zippedNodes = dict(zippedNodes)
         initialViewHistoryNode = tn.TNode(tn.TNode(View(rootCursorAdd)))
@@ -184,12 +178,6 @@ class TreeEditor(DisplayEditor):
             return self.update('buffer', self.buffer.syncToNewRoot(newImageRoot))
         else:
             return self
-
-    def setPosition(self, newPosx, newPosy, newMaxx, newMaxy):
-        self.posx = newPosx
-        self.posy = newPosy
-        self.maxx = newMaxx
-        self.maxy = newMaxy
 
     def updateStatusBar(self):
         self.statusBar.updateStatus([self.statusDescription, self.buffer.viewAdd, self.buffer.cursorAdd,
@@ -211,7 +199,7 @@ class TreeEditor(DisplayEditor):
 
     def handleMouse(self, mouse):
         if mouse.lbuttonPressed():
-            cell = self.image[mouse.y() - self.posy][mouse.x() - self.posx]
+            cell = self.image[mouse.y()][mouse.x()]
 
             if self.editing:
                 if cell.lineItemNodeReference and cell.lineItemNodeReference.nodeReference == self.buffer.cursor:
@@ -492,14 +480,13 @@ class TreeEditor(DisplayEditor):
                 else:
                     self.revealedNodes[self.buffer.cursor] = True
 
+
             # Go to help pages, will need to be updated
             elif key.char() == '?':
                 helpIter, helpAddress = self.buffer.root.gotoNodeAtNVS(['origin', 'help'])
                 newBuff = buffer.BufferSexp(self.buffer.root, helpAddress)
                 self.printingMode = 'help'
                 return self.update('buffer', newBuff)
-
-
 
             else:
                 try:
@@ -567,19 +554,22 @@ class TreeEditor(DisplayEditor):
 
 
     def draw(self, posx, posy, maxx, maxy, isActive):
-        super(TreeEditor, self).draw(posx, posy, maxx, maxy, isActive)
+        mainImage = super(TreeEditor, self).draw(posx, posy, maxx, maxy+1, isActive)[:]
 
         if self.cmdBar:
-            self.cmdBar.draw(0, posy + maxy - 2, maxx, 2, isActive=True)
+            cmdImage = self.cmdBar.draw(0, posy + maxy - 2, maxx, 2, isActive=True)
+            screen.overlayLinesOnImage(mainImage, maxy - 2, cmdImage)
 
         if self.statusBar:
-            self.statusBar.draw(0, posy + maxy - 1, maxx, 2, isActive=False)
+            statusImage = self.statusBar.draw(0, posy + maxy - 1, maxx, 2, isActive=False)
+            screen.overlayLinesOnImage(mainImage, maxy - 1, statusImage)
+
+        return mainImage
 
 
 class CmdBar(TreeEditor):
     def __init__(self, *args, **kwargs):
         super(CmdBar, self).__init__(*args, **kwargs)
-        #self.colourScheme.idleHiCol = iop.black
 
     def draw(self, posx, posy, maxx, maxy, isActive):
         super(TreeEditor, self).draw(posx, posy, maxx, maxy, isActive)

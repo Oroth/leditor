@@ -25,6 +25,13 @@ def putNodeOnImage(image, x, y, text, lineItemNodeRef, bgcol, fgcol):
         (image[y][x]).fgColour = fgcol
         x += 1
 
+def overlayLinesOnImage(bottomImage, y, topImage):
+    for line in topImage:
+        bottomImage[y] = line
+        y += 1
+
+#def overlayImage(bottomImage, x, y, topImage):
+
 
 def printToScreen(image, posx, posy):
     maxy = len(image) - 1

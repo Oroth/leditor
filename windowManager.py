@@ -3,14 +3,13 @@ import tn
 import buffer
 import Editors
 import reader
+import screen
 import CodeEditor
 import os.path
 import iop
 import funobj as fo
 from tn import cons
 
-
-# interface
 
 class Window(fo.FuncObject):
     def __init__(self, editor, x=0, y=0, width=iop.screenWidth(), height=iop.screenHeight()):
@@ -19,22 +18,20 @@ class Window(fo.FuncObject):
         self.maxx = width
         self.maxy = height
         self.editor = editor
-        #self.editorBuffer = edBuffer
-        #self.image = iop.console_new(width, height)
 
     def setPosition(self, newPosx, newPosy, newMaxx, newMaxy):
         self.posx = newPosx
         self.posy = newPosy
         self.maxx = newMaxx
         self.maxy = newMaxy
-        self.editor.setPosition(newPosx, newPosy, newMaxx, newMaxy)
 
     def draw(self, posx, posy, maxx, maxy, isActive):
-        self.editor.draw(posx, posy, maxx, maxy, isActive)
+        image = self.editor.draw(posx, posy, maxx, maxy, isActive)
+        screen.printToScreen(image, posx, posy)
 
     def handleKeys(self, key, mouse):
-        # need to set relative mouse position
-        return self.update('editor', self.editor.handleKeys(key, mouse))
+        relativePositionMouse = mouse.getMouseWithRelativePosition(self.posx, self.posy)
+        return self.update('editor', self.editor.handleKeys(key, relativePositionMouse))
 
     def getEditor(self):
         return self.editor
@@ -268,7 +265,7 @@ class WindowManager(fo.FuncObject):
 
                     newEd.context = curEd.buffer
                     newEd.contextParent = curEd.id    # not really needed?
-                    newEd.showValues = True
+                    #newEd.showValues = True
                     newEd.env = env
                     newEd.evalBuffer()
 
