@@ -571,7 +571,7 @@ class CmdBar(TreeEditor):
         super(CmdBar, self).__init__(*args, **kwargs)
 
     def draw(self, maxx, maxy, isActive):
-        super(TreeEditor, self).draw(maxx, maxy, isActive)
+        return super(TreeEditor, self).draw(maxx, maxy, isActive)
 
     def handleKeys(self, key, mouse):
 

@@ -24,6 +24,10 @@ class SimpleBuffer(fo.FuncObject):
             bufexp = [pyexp]
         return cls(createTNodeExpFromPyExp(bufexp), *restargs)
 
+    def syncToNewRoot(self, newRoot):
+        newCursor, newCursorAdd = tn.tnodeSyncAddress(newRoot, self.root, self.cursorAdd)
+        return self.new(newRoot, newCursorAdd)
+
     def newCursorAdd(self, newCursorAdd):
         cursor, cursorAdd = tn.tnodeAddress(self.root, newCursorAdd)
         return self.updateList(('cursor', cursor), ('cursorAdd', cursorAdd))

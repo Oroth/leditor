@@ -43,8 +43,7 @@ class WindowManager(fo.FuncObject):
         self.ImageRoot = imageRoot
         self.hist = imageRoot
         startEditor = self.createListEdFromEditorSettings(imageRoot)
-        self.editorList = tn.TNode(startEditor)
-        startEditorBuffer = buffer.SimpleBuffer(self.editorList, [0, 0])
+        self.editorList = buffer.SimpleBuffer(tn.TNode(startEditor), [0, 0])
 
         startWindow = Window(startEditor, 0, 0, iop.screenWidth(), iop.screenHeight())
         self.winTree = buffer.SimpleBuffer.fromPyExp(startWindow, [0, 0])
@@ -87,7 +86,6 @@ class WindowManager(fo.FuncObject):
 
         return listEd
 
-
     def addWindow(self, newFunc):
         self.wins += 1
         newWin = Window(newFunc)
@@ -117,7 +115,6 @@ class WindowManager(fo.FuncObject):
 
     def draw(self):
         self.calculateWindowPositions()
-
         maxX = iop.screenWidth()
         curY = 0
         screenForWins = iop.screenHeight()
@@ -145,6 +142,21 @@ class WindowManager(fo.FuncObject):
             if win.posx <= x < win.posx + win.maxx and win.posy <= y < win.posy + win.maxy:
                 return winNode, winAdd
             winAdd[-1] += 1
+
+    def addEditor(self, newEd):
+        return self.editorList.appendAtCursor(newEd).curNext()
+
+    def syncWindowsToEditorList(self):
+        for winNode in self.winTree.first():
+            win = winNode.child
+            win.syncWithEditorList(self.editorList)
+
+    def syncEditorsToImage(self):
+        for winNode in self.winTree.first():
+            win = winNode.child
+            if win.editor.syncWithRoot:
+                win.editor = win.editor.syncWithImage(self.ImageRoot)
+        #functional: map(self.winTree.root.child .syncWithImage)
 
 
     def handleKeys(self, key, mouse):
@@ -230,9 +242,11 @@ class WindowManager(fo.FuncObject):
             elif key.code() == iop.KEY_ENTER:
                 newEd = CodeEditor.CodeEditor(self.ImageRoot, curEd.buffer.rootToCursorAdd(),
                                              zippedNodes=curEd.zippedNodes)
+                newEditorList = self.addEditor(newEd)
                 newWinTree = self.addWindow(newEd)
 
                 return self.updateList(
+                    ('editorList', newEditorList),
                     ('winTree', newWinTree),
                     ('winCmd', False))
 
@@ -246,8 +260,10 @@ class WindowManager(fo.FuncObject):
                                                   zippedNodes=curEd.zippedNodes)
                     newEd.env = env
 
+                    newEditorList = self.addEditor(newEd)
                     newWinTree = self.addWindow(newEd)
                     return self.updateList(
+                        ('editorList', newEditorList),
                         ('winTree', newWinTree),
                         ('winCmd', False))
 
@@ -285,19 +301,8 @@ class WindowManager(fo.FuncObject):
                     self.ImageRoot = resultEd.buffer.root
                     if resultEd.updateUndo:
                         self.hist = cons(self.ImageRoot.child, self.hist)
-                    #print "hist", self.hist.child.toPySexp()
 
-            # need to sync all Editors to the newTree
-            for winNode in self.winTree.first():
-                win = winNode.child
-                if win.editor.syncWithRoot:
-                    win.editor = win.editor.syncWithImage(self.ImageRoot)
-            #functional: map(self.winTree.root.child .syncWithImage)
-
+            self.syncEditorsToImage()
             return self
-            #return self.update('winTree', self.winTree.replaceAtCursor(result))
 
         return self
-
-
-
