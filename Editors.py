@@ -469,9 +469,15 @@ class TreeEditor(DisplayEditor):
                     ('updateUndo', True))
 
             elif key.char() == ':':
-                self.cmdBar = CmdBar(tn.createTNodeExpFromPyExp([[Symbol(':'), Symbol('')]]), [0], [0, 1])
+                self.cmdBar = CmdBar(tn.createTNodeExpFromPyExp([[Symbol('')]]), [0], [0, 0])
                 self.cmdBar.editing = True
                 self.cmdBar.cellEditor = CellEditor(Symbol(''))
+
+            elif key.char() == '/':
+                if not self.buffer.onSubNode() and self.buffer.cursor.next:
+                    try:
+                        return self.update('buffer', self.buffer.search(self.buffer.getCurrent()))
+                    except ValueError: pass
 
             elif key.char() == '=':
                 if self.buffer.cursor in self.revealedNodes:

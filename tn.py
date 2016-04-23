@@ -126,9 +126,28 @@ def tnodeNVS(exp, nvs, acc=[]):
     accInd = list(acc)
     accInd.append(curPos)
     if nvs[1:] and cur.isSubNode():
-        return tnodeAddress(cur.child, nvs[1:], accInd)
+        return tnodeNVS(cur.child, nvs[1:], accInd)
     else:
         return cur, accInd
+
+def tnodeSearch(exp, searchVal, acc=[]):
+    for num, node in enumerate(exp):
+        if node.child == searchVal:
+            accInd = list(acc)
+            accInd[-1] = acc[-1] + num
+            return node, accInd
+        elif node.isSubNode():
+            accInd = list(acc)
+            accInd[-1] = acc[-1] + num
+            accInd.append(0)
+            foundNode, foundAdd = tnodeSearch(node.child, searchVal, accInd)
+
+            if foundNode is not None:
+                return foundNode, foundAdd
+
+    return None, None
+
+
 
 def tnodeSyncAddress(newexp, oldexp, oldadd, acc=[]):
     oldNode, oldPos = tnodeIndex(oldexp, oldadd[0])
