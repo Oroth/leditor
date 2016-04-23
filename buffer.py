@@ -90,6 +90,12 @@ class SimpleBuffer(fo.FuncObject):
         else:
             return self.curFirst()
 
+    def curCyclePrev(self):
+        try:
+            return self.curPrev()
+        except ValueError:
+            return self.curLast()
+
     def curPrev(self):
         if self.cursorAdd[-1] > 0:
             newAddress = list(self.cursorAdd)
@@ -129,6 +135,10 @@ class SimpleBuffer(fo.FuncObject):
             return self.updateList(('cursorAdd', newAddress), ('cursor', self.cursor.child))
         else:
             raise ValueError
+
+    def mapRoot(self, func):
+        newTree = [func(node.child) for node in self.root.child]
+        return self.fromPyExp(newTree, self.cursorAdd)
 
 
 class ViewBuffer(SimpleBuffer):

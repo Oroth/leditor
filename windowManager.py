@@ -11,25 +11,98 @@ from tn import cons
 
 
 class Window(fo.FuncObject):
-    def __init__(self, editor, x=0, y=0, width=iop.screenWidth(), height=iop.screenHeight()):
+    def __init__(self, editorList, x=0, y=0, width=iop.screenWidth(), height=iop.screenHeight()):
         self.posx, self.posy = x, y
         self.maxx, self.maxy = width, height
-        self.editor = editor
+        self.editorList = editorList
+        self.editorCmd = False
 
     def setPosition(self, newPosx, newPosy, newMaxx, newMaxy):
         self.posx, self.posy = newPosx, newPosy
         self.maxx, self.maxy = newMaxx, newMaxy
 
     def draw(self, posx, posy, maxx, maxy, isActive):
-        image = self.editor.draw(maxx, maxy, isActive)
+        image = self.getEditor().draw(maxx, maxy, isActive)
         screen.printToScreen(image, posx, posy)
 
+    def cmdNewEditorOnCursor(self):
+        newEd = CodeEditor.CodeEditor(self.getEditor().buffer.root, self.getEditor().buffer.rootToCursorAdd(),
+                                      zippedNodes=self.getEditor().zippedNodes)
+
+        return self.updateList(
+            ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
+            ('editorCmd', False))
+
     def handleKeys(self, key, mouse):
-        relativePositionMouse = mouse.getMouseWithRelativePosition(self.posx, self.posy)
-        return self.update('editor', self.editor.handleKeys(key, relativePositionMouse))
+        curEd = self.getEditor()
+        if self.editorCmd:
+            if key.code() == iop.KEY_ENTER:
+                return self.cmdNewEditorOnCursor()
+                # newEd = CodeEditor.CodeEditor(curEd.buffer.root, curEd.buffer.rootToCursorAdd(),
+                #                               zippedNodes=curEd.zippedNodes)
+                #
+                # return self.updateList(
+                #     ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
+                #     ('editorCmd', False))
+
+            # change the current window to the next editor:
+            elif key.char() == 'l':
+                return self.updateList(
+                    ('editorList', self.editorList.curCycle()),
+                    ('editorCmd', False))
+
+            elif key.char() == 'h':
+                print 'lefting'
+                return self.updateList(
+                    ('editorList', self.editorList.curCyclePrev()),
+                    ('editorCmd', False))
+
+            elif key.char() == '>':
+                curNode = curEd.buffer.cursor
+                print 'inspecting'
+
+                if curNode.isSubNode():
+                    args = [curEd.nodeValues[node] for node in curNode.child][1:]
+                    newTree, env = curEd.nodeValues[curNode.child].inspect(*args)
+                    newEd = CodeEditor.InspectionEditor(newTree.root, newTree.rootToCursorAdd(),
+                                                  zippedNodes=curEd.zippedNodes)
+                    newEd.env = env
+
+                    return self.updateList(
+                        ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
+                        ('editorCmd', False))
+
+            if key.isPrintable():
+                return self.update('editorCmd', False)
+            else:
+                return self
+
+        elif key.char() == 'b' and key.lctrl():
+            curEd.statusBar.updateMessage("Editor List Command")
+            print 'edit cmd'
+            return self.update('editorCmd', True)
+
+        else:
+            relativePositionMouse = mouse.getMouseWithRelativePosition(self.posx, self.posy)
+            newEditor = self.getEditor().handleKeys(key, relativePositionMouse)
+            return self.updateList(
+                ('editorList', self.editorList.replaceAtCursor(newEditor)))
 
     def getEditor(self):
-        return self.editor
+        return self.editorList.cursor.child
+
+    def addEditor(self, newEd):
+        newEditorList = self.editorList.appendAtCursor(newEd).curNext()
+        return self.update('editorList', newEditorList)
+
+    def nextEditor(self):
+        return self.update('editorList', self.editorList.curCycle())
+
+    def syncWithEditorList(self, newEditorList):
+        if newEditorList.root != self.editorList.root:
+            return self.update('editorList', self.editorList.syncToNewRoot(newEditorList.root))
+        else:
+            return self
 
 
 
@@ -43,9 +116,9 @@ class WindowManager(fo.FuncObject):
         self.ImageRoot = imageRoot
         self.hist = imageRoot
         startEditor = self.createListEdFromEditorSettings(imageRoot)
-        self.editorList = buffer.SimpleBuffer(tn.TNode(startEditor), [0, 0])
+        self.editorList = buffer.SimpleBuffer.fromPyExp(startEditor, [0, 0])
 
-        startWindow = Window(startEditor, 0, 0, iop.screenWidth(), iop.screenHeight())
+        startWindow = Window(self.editorList, 0, 0, iop.screenWidth(), iop.screenHeight())
         self.winTree = buffer.SimpleBuffer.fromPyExp(startWindow, [0, 0])
         self.imageFileName = imageFileName
         self.winCmd = False
@@ -86,9 +159,8 @@ class WindowManager(fo.FuncObject):
 
         return listEd
 
-    def addWindow(self, newFunc):
+    def addWindow(self, newWin):
         self.wins += 1
-        newWin = Window(newFunc)
         newWinTree = self.winTree.appendAtCursor(newWin).curNext()
         return newWinTree
 
@@ -143,20 +215,36 @@ class WindowManager(fo.FuncObject):
                 return winNode, winAdd
             winAdd[-1] += 1
 
-    def addEditor(self, newEd):
-        return self.editorList.appendAtCursor(newEd).curNext()
+    def integrateUpdatedWindow(self, newWin):
+        newEditorList = newWin.editorList
+        newEditor = newEditorList.cursor.child
 
-    def syncWindowsToEditorList(self):
-        for winNode in self.winTree.first():
-            win = winNode.child
-            win.syncWithEditorList(self.editorList)
+        self.editorList = newWin.editorList
+        self.winTree = self.winTree.replaceAtCursor(newWin)
+
+        if newEditor.syncWithRoot and self.ImageRoot != newEditor.buffer.root:
+            self.ImageRoot = newEditor.buffer.root
+            if newEditor.updateUndo:
+                self.hist = cons(self.ImageRoot.child, self.hist)
+
+        self.syncEditorsToImage()
+        self.winTree = self.syncWindowsToEditorList(self.editorList)
+        return self
+
+    def syncWindowsToEditorList(self, newEditorList):
+        return self.winTree.mapRoot(lambda node: node.syncWithEditorList(newEditorList))
 
     def syncEditorsToImage(self):
-        for winNode in self.winTree.first():
-            win = winNode.child
-            if win.editor.syncWithRoot:
-                win.editor = win.editor.syncWithImage(self.ImageRoot)
+        for edNode in self.editorList.first():
+            if edNode.child.syncWithRoot:
+                edNode.child = edNode.child.syncWithImage(self.ImageRoot)
+
+        # for winNode in self.winTree.first():
+        #     win = winNode.child
+        #     if win.editor.syncWithRoot:
+        #         win.editor = win.editor.syncWithImage(self.ImageRoot)
         #functional: map(self.winTree.root.child .syncWithImage)
+
 
 
     def handleKeys(self, key, mouse):
@@ -171,30 +259,6 @@ class WindowManager(fo.FuncObject):
         curEd = curWin.getEditor()
 
         if self.winCmd:
-
-            if key.char() == 'b':
-                newEd = CodeEditor.CodeEditor(self.ImageRoot, [0], curEd.buffer.rootToCursorAdd(),
-                                              zippedNodes=curEd.zippedNodes)
-                #newWinList = self.editorList.appendAtCursor(newEd).curNext()
-
-                newWinList = curWin.appendAtCursor(newEd).curNext()
-                newWinTree = self.winTree.replaceAtCursor(newEd)
-                return self.updateList(
-                    ('winTree', newWinTree),
-                    ('winList', newWinList),
-                    ('winCmd', False))
-
-            # change the current window to the next editor:
-            if key.char() == 'n':
-                newWinList = self.editorList.curCycle()
-                nextEd = newWinList.cursor.child
-                newWinTree = self.winTree.replaceAtCursor(nextEd)
-
-                return self.updateList(
-                    ('winList', newWinList),
-                    ('winTree', newWinTree),
-                    ('winCmd', False))
-
             if key.char() == 'j':
                 try:
                     return self.updateList(
@@ -240,15 +304,19 @@ class WindowManager(fo.FuncObject):
                 return newWM
 
             elif key.code() == iop.KEY_ENTER:
-                newEd = CodeEditor.CodeEditor(self.ImageRoot, curEd.buffer.rootToCursorAdd(),
-                                             zippedNodes=curEd.zippedNodes)
-                newEditorList = self.addEditor(newEd)
-                newWinTree = self.addWindow(newEd)
+                resultWin = curWin.cmdNewEditorOnCursor()
 
-                return self.updateList(
-                    ('editorList', newEditorList),
-                    ('winTree', newWinTree),
-                    ('winCmd', False))
+                # newEd = CodeEditor.CodeEditor(self.ImageRoot, curEd.buffer.rootToCursorAdd(),
+                #                              zippedNodes=curEd.zippedNodes)
+                # newEditorWin = curWin.addEditor(newEd)
+                # newWinTree = self.addWindow(newEditorWin)
+                # newEditorList = newEditorWin.editorList
+                # newWinTree2 = newWinTree.mapRoot(lambda node: node.syncWithEditorList(newEditorList))
+                #
+                # return self.updateList(
+                #     ('editorList', newEditorList),
+                #     ('winTree', newWinTree2),
+                #     ('winCmd', False))
 
             elif key.char() == '>':
                 curNode = curEd.buffer.cursor
@@ -260,8 +328,8 @@ class WindowManager(fo.FuncObject):
                                                   zippedNodes=curEd.zippedNodes)
                     newEd.env = env
 
-                    newEditorList = self.addEditor(newEd)
-                    newWinTree = self.addWindow(newEd)
+                    newEditorList = curWin.addEditor(newEd)
+                    newWinTree = self.addWindow(newEditorList)
                     return self.updateList(
                         ('editorList', newEditorList),
                         ('winTree', newWinTree),
@@ -270,39 +338,39 @@ class WindowManager(fo.FuncObject):
             elif key.code() == iop.KEY_ESCAPE:
                 return self.update('winCmd', False)
 
+            else:
+                return self
+
         elif key.char() == 'w' and key.lctrl():
             self.winCmd = True
             curEd.statusBar.updateMessage("Window Mode")
             print "windowing"
+            return self
 
         elif key.char() == 's' and key.lctrl():
             self.writeImage()
             self.writeEditor()
             curEd.statusBar.updateMessage("Saving Image")
             print "saving"
+            return self
 
         else:
             resultWin = curWin.handleKeys(key, mouse)
+
             resultEd = resultWin.getEditor()
             if resultEd == 'ESC':
                 self.writeImage()
                 self.writeEditor()
                 return False
 
-            if resultEd == 'UNDO':
+            elif resultEd == 'UNDO':
                 if self.hist.next:
                     self.ImageRoot = self.hist.next
                     self.hist = self.hist.next
 
             else:
-                self.winTree = self.winTree.replaceAtCursor(resultWin)
+                newWinManager = self.integrateUpdatedWindow(resultWin)
+                return newWinManager
 
-                if resultEd.syncWithRoot and self.ImageRoot != resultEd.buffer.root:
-                    self.ImageRoot = resultEd.buffer.root
-                    if resultEd.updateUndo:
-                        self.hist = cons(self.ImageRoot.child, self.hist)
-
-            self.syncEditorsToImage()
-            return self
 
         return self

@@ -68,26 +68,26 @@ class CodeEditor(Editors.TreeEditor):
             self.topLine = 0
             return self.update('buffer', newBuff)
 
-        elif key.char() == '>':
-            curNode = self.buffer.cursor
-            if curNode.isSubNode():
-                args = []
-                if curNode.child.next:
-                    for i in curNode.child.next:
-                        args.append(self.nodeValues[i])
-
-                (newTree, env) = self.nodeValues[curNode.child]('inspect', *args)
-
-                newEd = InspectionEditor(newTree.root, newTree.rootToCursorAdd(),
-                                              zippedNodes=self.zippedNodes)
-
-                newEd.context = self.buffer
-                newEd.contextParent = self.id    # not really needed?
-                newEd.env = env
-                newEd.evalBuffer()
-                return newEd
-            else:
-                return self
+        # elif key.char() == '>':
+        #     curNode = self.buffer.cursor
+        #     if curNode.isSubNode():
+        #         args = []
+        #         if curNode.child.next:
+        #             for i in curNode.child.next:
+        #                 args.append(self.nodeValues[i])
+        #
+        #         (newTree, env) = self.nodeValues[curNode.child]('inspect', *args)
+        #
+        #         newEd = InspectionEditor(newTree.root, newTree.rootToCursorAdd(),
+        #                                       zippedNodes=self.zippedNodes)
+        #
+        #         newEd.context = self.buffer
+        #         newEd.contextParent = self.id    # not really needed?
+        #         newEd.env = env
+        #         newEd.evalBuffer()
+        #         return newEd
+        #    else:
+        #        return self
 
 
         else:
