@@ -75,6 +75,9 @@ class SimpleBuffer(fo.FuncObject):
     def deleteAtCursor(self):
         return self.opAtCursor(deleteAdd)
 
+    def length(self):
+        return sum(1 for _ in self.root.child)
+
 
     def curNext(self):
         if self.cursor.next:
