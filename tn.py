@@ -130,21 +130,35 @@ def tnodeNVS(exp, nvs, acc=[]):
     else:
         return cur, accInd
 
+
 def tnodeSearch(exp, searchVal, acc=[]):
-    for num, node in enumerate(exp):
+    searchValPred = lambda node, address : node.child == searchVal
+    return tnodeSearchPred(exp, searchValPred, acc)
+
+def tnodeSearchAfter(exp, searchVal, startingIndex):
+    def searchValPred(node, address):
+        if address <= startingIndex:
+            return False
         if node.child == searchVal:
-            accInd = list(acc)
-            accInd[-1] = acc[-1] + num
+            return True
+
+        return False
+
+    return tnodeSearchPred(exp, searchValPred, [0])
+
+
+def tnodeSearchPred(exp, searchPred, acc=[]):
+    accInd = list(acc)
+    for node in exp:
+        if searchPred(node, accInd):
             return node, accInd
         elif node.isSubNode():
-            accInd = list(acc)
-            accInd[-1] = acc[-1] + num
-            accInd.append(0)
-            foundNode, foundAdd = tnodeSearch(node.child, searchVal, accInd)
+            foundNode, foundAdd = tnodeSearchPred(node.child, searchPred, accInd + [0])
 
             if foundNode is not None:
                 return foundNode, foundAdd
 
+        accInd[-1] += 1
     return None, None
 
 

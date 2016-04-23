@@ -79,9 +79,7 @@ class SimpleBuffer(fo.FuncObject):
         return sum(1 for _ in self.root.child)
 
     def search(self, searchValue):
-        self.searchAdd = list(self.cursorAdd)
-        self.searchAdd[-1] += 1
-        foundNode, foundAdd = tn.tnodeSearch(self.cursor.next, searchValue, self.searchAdd)
+        foundNode, foundAdd = tn.tnodeSearchAfter(self.root, searchValue, self.cursorAdd)
 
         if foundNode is not None:
             return self.newCursorAdd(foundAdd)

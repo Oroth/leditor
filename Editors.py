@@ -474,7 +474,7 @@ class TreeEditor(DisplayEditor):
                 self.cmdBar.cellEditor = CellEditor(Symbol(''))
 
             elif key.char() == '/':
-                if not self.buffer.onSubNode() and self.buffer.cursor.next:
+                if not self.buffer.onSubNode():
                     try:
                         return self.update('buffer', self.buffer.search(self.buffer.getCurrent()))
                     except ValueError: pass
