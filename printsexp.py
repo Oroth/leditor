@@ -95,7 +95,7 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
                 fgcol = colScheme.symbolCol
             elif isinstance(item.nodeReference.child, str) and item.printRule != 'cellEditorNonString':
                 fgcol = colScheme.stringCol
-            elif isinstance(item.nodeReference.child, int):
+            elif isinstance(item.nodeReference.child, int) or isinstance(item.nodeReference.child, float):
                 fgcol = colScheme.numberCol
             else:
                 fgcol = colScheme.symbolCol
@@ -140,6 +140,9 @@ def makeLineIndentList(editor, winWidth, winHeight):
 
     def recurVertical(parseState):
         node = parseState.cursor
+
+        if editor.nodeIsZipped(node.next):
+            return parseState
         if node.next and node.next.isSubNode():
             ps = parseState.set('newline')
             if node.isSubNode():
@@ -200,10 +203,14 @@ def makeLineIndentList(editor, winWidth, winHeight):
 
         # code editor, needs to go with the code editor code
         try:
-            if editor.revealedNodes[ps.cursor]:
+            if  editor.nodeIsRevealed(ps.cursor) or \
+                    (ps.cursor == editor.buffer.cursor and editor.evalCursorMode == 'active' and ps.onSubNode()):
                 ret.append(TokenNode(ps, '=>'))
                 ret.append(TokenNode(ps, reader.to_string(editor.nodeValues[ps.cursor])))
-        except KeyError: pass
+        # this exception catch is sort of hacky - covers for the fact that e.g. statusBar won't have revealedNodes
+        # potentially should either move revealedNodes to the parent (but isn't relevant to everything
+        # should call a more generic function on each editor
+        # should move all the code so it is a method of the editor
         except AttributeError: pass
 
         if parseState.cursor == viewNode:

@@ -21,8 +21,8 @@ class CellEditor(object):
             self.index = len(content) + index + 1
         else:
             self.index = index
-        # should check to make sure not a symbol
-        if not isinstance(content, Symbol):
+
+        if type(content) is str:
             self.isString = True
         else: self.isString = False
 
@@ -170,6 +170,9 @@ class TreeEditor(DisplayEditor):
 
         self.drawMode = 'cursor'
         self.statusBar = StatusBar()
+
+    def nodeIsRevealed(self, node):
+        return node in self.revealedNodes and self.revealedNodes[node]
 
 
     def syncWithImage(self, newImageRoot):

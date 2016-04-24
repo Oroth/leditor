@@ -17,6 +17,7 @@ class CodeEditor(Editors.TreeEditor):
         self.context = None
         self.parent = None
         self.printingMode = 'code'
+        self.evalCursorMode = 'active'
         self.nodeValues = {}
 
     def storeNodeValue(self, node, val):
@@ -25,6 +26,7 @@ class CodeEditor(Editors.TreeEditor):
     def getNodeValue(self, node):
         if node in self.nodeValues:
             return self.nodeValues[node]
+
 
     def evalBuffer(self):
         eval.eval(buffer.BufferSexp(self.buffer.root), self.env, self.storeNodeValue)
