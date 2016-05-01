@@ -158,6 +158,7 @@ class TreeEditor(DisplayEditor):
         super(TreeEditor, self).__init__(root, rootCursorAdd, cursorAdd)
 
         self.editing = False
+        self.changeMode = False
         self.cellEditor = None
         self.yankBuffer = None
         self.syncWithRoot = True
@@ -224,6 +225,131 @@ class TreeEditor(DisplayEditor):
         else:
             return None
 
+    def handleCellEditor(self, key):
+        finished = self.cellEditor.handleKey(key)
+        if finished == 'END':
+            if self.cellEditor.getContent() == '':
+                isChanged = False if self.cellEditor.original == '' else True
+                return self.updateList(
+                    ('buffer', self.buffer.deleteAtCursor()),
+                    ('editing', False),
+                    ('updateUndo', isChanged))
+            else:
+                content = self.cellEditor.getContent()
+
+                return self.updateList(
+                    ('buffer', self.buffer.replaceAtCursor(content)),
+                    ('editing', False),
+                    ('updateUndo', True))
+
+        elif finished == 'CANCEL':
+            if self.buffer.cursor.child == '':
+                return self.updateList(
+                    ('buffer', self.buffer.deleteAtCursor()),
+                    ('editing', False))
+            else:
+                return self.update('editing', False)
+
+        elif finished == 'PREV':
+            if self.buffer.cursorAdd[-1] != 0 and self.buffer.cursor.next:
+                newBuff = self.buffer.deleteAtCursor().curPrev()
+            else:
+                newBuff = self.buffer.deleteAtCursor()
+
+            # check we didn't delete the last node:
+            if newBuff.onSubNode() or newBuff.cursor.child is None:
+                return self.updateList(
+                    ('buffer', newBuff),
+                    ('editing', False))
+
+            return self.updateList(
+                ('buffer', newBuff),
+                ('cellEditor', CellEditor(newBuff.cursor.child, -1)))
+
+        elif finished == 'SPACE':
+            ## ideal: self.buffer.spliceAtCursor([self.cellEditor.getContent(), ''], [1])
+            newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent())
+            newBuff2 = newBuff.appendAtCursor('').curNext()
+            return self.updateList(
+                ('buffer', newBuff2),
+                ('cellEditor', CellEditor(Symbol(''))))
+
+        elif finished == 'NEST':
+            if self.cellEditor.content:
+                newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent())
+                newBuff2 = newBuff.appendAtCursor(['']).curNext().curChild()
+            else:
+                newBuff2 = self.buffer.replaceAtCursor(['']).curChild()
+
+            return self.updateList(
+                ('buffer', newBuff2),
+                ('cellEditor', CellEditor(Symbol(''))))
+
+        elif finished == 'UNNEST':
+            if self.cellEditor.content:
+                newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent())
+            else:
+                newBuff = self.buffer.deleteAtCursor()
+
+            newBuff2 = newBuff.curUp()
+            newBuff3 = newBuff2.appendAtCursor('').curNext()
+
+            return self.updateList(
+                ('buffer', newBuff3),
+                ('cellEditor', CellEditor(Symbol(''))))
+
+        else:
+            self.statusBar.updateMessage("Editing")
+            return self
+
+    def handleKeysChangeMode(self, key):
+
+        if self.changeMode in ('from', 'to'):
+            if key.isPrintable():
+                text = self.buffer.cursor.child
+                index = text.find(key.char())
+                if self.changeMode == 'from':
+                    newCellEditor =  CellEditor(text, index)
+                else:
+                    newCellEditor = CellEditor(text[index:])
+
+                return self.updateList(
+                    ('cellEditor', newCellEditor),
+                    ('editing', True),
+                    ('changeMode', False))
+            else:
+                return self.update('changeMode', False)
+
+        # change from start
+        if key.char() == 'i':
+            return self.updateList(
+                ('cellEditor', CellEditor(self.buffer.cursor.child)),
+                ('editing', True),
+                ('changeMode', False))
+
+        # change from end
+        elif key.char() == 'a':
+            return self.updateList(
+                ('cellEditor', CellEditor(self.buffer.cursor.child, -1)),
+                ('editing', True),
+                ('changeMode', False))
+
+        # change to end
+        elif key.char() == 'e':
+            return self.updateList(
+                ('cellEditor', CellEditor(Symbol(''))),
+                ('editing', True),
+                ('changeMode', False))
+
+        elif key.char() == 'f':
+            return self.update('changeMode', 'from')
+
+        elif key.char() == 't':
+            return self.update('changeMode', 'to')
+
+        return self.update('changeMode', False)
+
+
     def handleKeysMain(self, key, mouse):
         self.updateUndo = False
         self.updateStatusBar()
@@ -236,83 +362,15 @@ class TreeEditor(DisplayEditor):
         if mouseResult:
             return mouseResult
 
+        if key.code() == 0:
+            return self
+
         if self.editing:
+            return self.handleCellEditor(key)
 
-            finished = self.cellEditor.handleKey(key)
-            if finished == 'END':
-                if self.cellEditor.getContent() == '':
-                    isChanged = False if self.cellEditor.original == '' else True
-                    return self.updateList(
-                        ('buffer', self.buffer.deleteAtCursor()),
-                        ('editing', False),
-                        ('updateUndo', isChanged))
-                else:
-                    content = self.cellEditor.getContent()
+        elif self.changeMode:
+            return self.handleKeysChangeMode(key)
 
-                    return self.updateList(
-                        ('buffer', self.buffer.replaceAtCursor(content)),
-                        ('editing', False),
-                        ('updateUndo', True))
-
-            elif finished == 'CANCEL':
-                if self.buffer.cursor.child == '':
-                    return self.updateList(
-                        ('buffer', self.buffer.deleteAtCursor()),
-                        ('editing', False))
-                else:
-                    return self.update('editing', False)
-
-            elif finished == 'PREV':
-                if self.buffer.cursorAdd[-1] != 0 and self.buffer.cursor.next:
-                    newBuff = self.buffer.deleteAtCursor().curPrev()
-                else:
-                    newBuff = self.buffer.deleteAtCursor()
-
-                # check we didn't delete the last node:
-                if newBuff.onSubNode() or newBuff.cursor.child is None:
-                    return self.updateList(
-                        ('buffer', newBuff),
-                        ('editing', False))
-
-                return self.updateList(
-                    ('buffer', newBuff),
-                    ('cellEditor', CellEditor(newBuff.cursor.child, -1)))
-
-
-            elif finished == 'SPACE':
-                ## ideal: self.buffer.spliceAtCursor([self.cellEditor.getContent(), ''], [1])
-                newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent())
-                newBuff2 = newBuff.appendAtCursor('').curNext()
-                return self.updateList(
-                    ('buffer', newBuff2),
-                    ('cellEditor', CellEditor(Symbol(''))))
-
-            elif finished == 'NEST':
-                if self.cellEditor.content:
-                    newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent())
-                    newBuff2 = newBuff.appendAtCursor(['']).curNext().curChild()
-                else:
-                    newBuff2 = self.buffer.replaceAtCursor(['']).curChild()
-
-                return self.updateList(
-                    ('buffer', newBuff2),
-                    ('cellEditor', CellEditor(Symbol(''))))
-
-            elif finished == 'UNNEST':
-                if self.cellEditor.content:
-                    newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent())
-                else:
-                    newBuff = self.buffer.deleteAtCursor()
-
-                newBuff2 = newBuff.curUp()
-                newBuff3 = newBuff2.appendAtCursor('').curNext()
-
-                return self.updateList(
-                    ('buffer', newBuff3),
-                    ('cellEditor', CellEditor(Symbol(''))))
-
-            else:
-                self.statusBar.updateMessage("Editing")
 
         else:
 
@@ -339,9 +397,11 @@ class TreeEditor(DisplayEditor):
 
             elif key.char() == 'c':
                 if not self.buffer.onSubNode():
-                    return self.updateList(
-                        ('cellEditor', CellEditor(self.buffer.cursor.child)),
-                        ('editing', True))
+                    print 'changeMode on'
+                    return self.update('changeMode', True)
+                    # return self.updateList(
+                    #     ('cellEditor', CellEditor(self.buffer.cursor.child)),
+                    #     ('editing', True))
 
             elif key.char() == 'a':
                 if self.buffer.cursor != self.buffer.view:

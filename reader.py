@@ -23,7 +23,10 @@ def loadFile(filename):
 
 isa = isinstance
 
-class Symbol(str): pass
+class Symbol(str):
+    def __getslice__(self, *args, **kargs):
+        return Symbol(super(Symbol, self).__getslice__(*args, **kargs))
+
 
 def Sym(s, symbol_table={}):
     "Find or create unique Symbol entry for str s in symbol table."
@@ -93,7 +96,6 @@ def atom(token):
         except ValueError:
             try: return complex(token.replace('i', 'j', 1))
             except ValueError:
-                #return Sym(token)
                 return Symbol(token)
 
 def to_string(x):
