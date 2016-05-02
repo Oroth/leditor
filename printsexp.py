@@ -206,7 +206,7 @@ def makeLineIndentList(editor, winWidth, winHeight):
             if  editor.nodeIsRevealed(ps.cursor) or \
                     (ps.cursor == editor.buffer.cursor and editor.evalCursorMode == 'active' and ps.onSubNode()):
                 ret.append(TokenNode(ps, '=>'))
-                ret.append(TokenNode(ps, reader.to_string(editor.nodeValues[ps.cursor])))
+                ret.append(TokenNode(ps, reader.to_string(editor.getNodeValue(ps.cursor))))
         # this exception catch is sort of hacky - covers for the fact that e.g. statusBar won't have revealedNodes
         # potentially should either move revealedNodes to the parent (but isn't relevant to everything
         # should call a more generic function on each editor

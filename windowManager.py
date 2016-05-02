@@ -7,6 +7,7 @@ import CodeEditor
 import os.path
 import iop
 import funobj as fo
+import eval
 from tn import cons
 
 
@@ -34,12 +35,15 @@ class Window(fo.FuncObject):
             ('editorCmd', False))
 
     def cmdInspectProcedureCall(self):
-        curEd = self.getEditor()
-        curNode = curEd.buffer.cursor
+        return self.cmdInspectProcedureCall2(self.getEditor().buffer.cursor)
 
-        if curNode.isSubNode():
-            args = [curEd.nodeValues[node] for node in curNode.child][1:]
-            newTree, env = curEd.nodeValues[curNode.child].inspect(*args)
+    def cmdInspectProcedureCall2(self, procedure):
+        curEd = self.getEditor()
+        #curNode = curEd.buffer.cursor
+
+        if procedure.isSubNode():
+            args = [curEd.nodeValues[node] for node in procedure.child][1:]
+            newTree, env = curEd.nodeValues[procedure.child].inspect(*args)
             newEd = CodeEditor.InspectionEditor(newTree.root, newTree.rootToCursorAdd(),
                                           zippedNodes=curEd.zippedNodes)
             newEd.env = env
@@ -47,6 +51,28 @@ class Window(fo.FuncObject):
             return self.updateList(
                 ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
                 ('editorCmd', False))
+
+
+    def cmdDisplayHelp(self):
+        curEd = self.getEditor()
+        helpPyExp = [reader.Symbol('help'), "all"]
+        helpExp = tn.TNode(tn.createTNodeExpFromPyExp(helpPyExp))
+        helpBuffer = buffer.BufferSexp(helpExp)
+        rootEnv = curEd.getNodeEnv(curEd.buffer.root.child.next.next)
+        helpResult = eval.eval(helpBuffer, rootEnv)
+        helpResultExp = tn.TNode(tn.TNode(helpResult))
+        #helpResultBuffer = buffer.BufferSexp(helpResultExp)
+
+        #args = [curEd.nodeValues[node] for node in helpExp.child][1:]
+
+        #newTree, env = curEd.nodeValues[procedure.child].inspect(*args)
+        newEd = CodeEditor.CodeEditor(helpResultExp, [0])
+        #newEd.env = env
+
+        return self.updateList(
+            ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
+            ('editorCmd', False))
+
 
     def handleKeys(self, key, mouse):
         curEd = self.getEditor()
@@ -69,8 +95,7 @@ class Window(fo.FuncObject):
                 return self.cmdInspectProcedureCall()
 
             elif key.char() == '?':
-                node = '(help)'
-                return self.cmdInspectProcedureCall()
+                return self.cmdDisplayHelp()
 
             if key.isPrintable():
                 return self.update('editorCmd', False)

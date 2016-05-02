@@ -183,7 +183,7 @@ def eval(exprBuf, env=global_env, memoize=None):
         ret = callProcedure(exprChild, env, memoize)
 
     if memoize:
-        memoize(exprBuf.cursor, ret)
+        memoize(exprBuf.cursor, ret, env)
 
     return ret
 

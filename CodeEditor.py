@@ -20,12 +20,18 @@ class CodeEditor(Editors.TreeEditor):
         self.evalCursorMode = 'active'
         self.nodeValues = {}
 
-    def storeNodeValue(self, node, val):
-        self.nodeValues[node] = val
+    def storeNodeValue(self, node, val, env=None):
+        self.nodeValues[node] = (val, env)
 
     def getNodeValue(self, node):
         if node in self.nodeValues:
-            return self.nodeValues[node]
+            val, env = self.nodeValues[node]
+            return val
+
+    def getNodeEnv(self, node):
+        if node in self.nodeValues:
+            val, env = self.nodeValues[node]
+            return env
 
 
     def evalBuffer(self):
@@ -52,7 +58,7 @@ class CodeEditor(Editors.TreeEditor):
         # evaluate the current context
         if key.code() == iop.KEY_ENTER and not self.editing:
 
-            nodeValue = self.nodeValues[self.buffer.cursor]
+            nodeValue = self.getNodeValue(self.buffer.cursor)
             if key.shift():
                 result = self.updateList(
                     ('buffer', self.buffer.appendAtCursor(nodeValue).curNext()),
@@ -124,7 +130,7 @@ class evalIOHandler(CodeEditor):
         return self
 
     def draw(self, posx, posy, maxx, maxy, hlcol=None):
-        self.function = self.nodeValues[self.buffer.cursor]
+        self.function = self.getNodeValue(self.buffer.cursor)
         if self.lastKey != 0:
             self.output = self.function(self.keyHistory)
         pen = utility.Pen(posx, posy, maxx, posy+maxy)
