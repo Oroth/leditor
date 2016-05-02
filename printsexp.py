@@ -104,7 +104,7 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
 
             # Truncate long strings (e.g. evaluation results)
             if len(text) >= winWidth:
-                text = text[0:winWidth - 5] + '...'
+                text = text[0:winWidth - 7] + '...'
 
             putNodeOnImage(image, x, y, text, item, bgcol, fgcol)
 
@@ -212,6 +212,7 @@ def makeLineIndentList(editor, winWidth, winHeight):
         # should call a more generic function on each editor
         # should move all the code so it is a method of the editor
         except AttributeError: pass
+        except KeyError: pass
 
         if parseState.cursor == viewNode:
             return ret
@@ -321,8 +322,9 @@ def makeLineIndentList(editor, winWidth, winHeight):
                     if isinstance(node.nodeReference.child, str):
                         appendStringTokenToLineList(lines, node)
                     else:
-                        lines.append(LineNode(0))
-                        currentLine.addToken(node)
+                        newLine = LineNode(0)
+                        newLine.addToken(node)
+                        lines.append(newLine)
 
                 else:
                     currentLine.addToken(node)

@@ -13,6 +13,22 @@ class View(object):
     def __init__(self, address):
         self.address = address
 
+class EditorAtom(object):
+    def __init__(self, atom):
+        self.atom = atom
+
+    def toPyExp(self):
+        pass
+
+    def toString(self):
+        pass
+
+    def __getslice__(self, *args, **kargs):
+        return self.atom.__getslice__(*args, **kargs)
+
+class IntAtom(EditorAtom):
+    pass
+
 class CellEditor(object):
     def __init__(self, content, index=0):
         self.original = str(content)
@@ -399,9 +415,6 @@ class TreeEditor(DisplayEditor):
                 if not self.buffer.onSubNode():
                     print 'changeMode on'
                     return self.update('changeMode', True)
-                    # return self.updateList(
-                    #     ('cellEditor', CellEditor(self.buffer.cursor.child)),
-                    #     ('editing', True))
 
             elif key.char() == 'a':
                 if self.buffer.cursor != self.buffer.view:

@@ -68,6 +68,10 @@ class Window(fo.FuncObject):
             elif key.char() == '>':
                 return self.cmdInspectProcedureCall()
 
+            elif key.char() == '?':
+                node = '(help)'
+                return self.cmdInspectProcedureCall()
+
             if key.isPrintable():
                 return self.update('editorCmd', False)
             else:
