@@ -4,15 +4,21 @@ __author__ = 'chephren'
 
 import tn
 
-def numberedCons(value, cdr):
-    car = tn.TNode(value[1], value[0])
+def cons(value, cdr):
+    car = tn.TNode(value)
     car.next = cdr
     return car
 
-def foldr(func, lst):
-    if lst[1:]:
-        return func(lst[0], foldr(func, lst[1:]))
-    return lst[0]
+
+def numberedCons(value, id, cdr):
+    car = tn.TNode(value, id)
+    car.next = cdr
+    return car
+
+# def foldr(func, lst):
+#     if lst[1:]:
+#         return func(lst[0], foldr(func, lst[1:]))
+#     return lst[0]
 
 def tnodeIndex2(lst, ind):
     return tnodeIndex2(lst.next, ind-1) if lst.next and ind > 0 else lst[0]
@@ -40,10 +46,36 @@ def foldrpy(func, lst):
 def foldrtpy(func, lst):
     if lst:
         if tn.isPyList(lst[0]):
-            return func(foldrtpy(func, lst[0]), foldrtpy(func, lst[1:]))
+            car = foldrtpy(func, lst[0])
         else:
-            return func(lst[0], foldrtpy(func, lst[1:]))
+            car = lst[0]
+        return func(car, foldrtpy(func, lst[1:]))
     return None
+
+def isNumberedExp(val):
+    if isinstance(val, tn.TNode) and val.child == '#':
+        return True
+    else:
+        return False
+
+def makeNumberedNode(numberedExp):
+    id = numberedExp.next.child
+    val = numberedExp.next.next.child
+    return val
+
+def parseNumberedNode(car, cdr):
+    if isNumberedExp(car):
+        id = car.next.child
+        val = car.next.next.child
+        return numberedCons(val, id, cdr)
+    else:
+        return cons(car, cdr)
+
+def parseNumberedExp(exp):
+    ret = foldrtpy(parseNumberedNode, exp)
+    return makeNumberedNode(ret)
+    #return parseNumberedNode(ret, None)
+
 
 def foldrtnumpy(func, lst):
     if lst:

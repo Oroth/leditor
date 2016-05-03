@@ -1,5 +1,6 @@
 from unittest import TestCase, main
 import tn
+import misc
 from tn import TNode, createTNodeExpFromPyExp, replaceAdd, deleteAdd, insertAdd
 from buffer import ViewBuffer
 
@@ -104,6 +105,24 @@ class TestTNodeFunctions(TestCase):
     def test_tnodeExpFromPyExp2(self):
         tree = tn.createTNodeExpFromPyExp2([22, [11, 10, [9]], [33, 44], 17])
         self.assertEqual(tree.toPyExp(), [22, [11, 10, [9]], [33, 44], 17])
+
+class TestMiscTNode(TestCase):
+    def test_list1(self):
+        tree = misc.foldrpy(misc.cons, [1, 5, "string", 41])
+        self.assertEqual(tree.toPyExp(), [1, 5, "string", 41])
+
+    def test_list2(self):
+        tree = misc.foldrtpy(misc.cons, [[1, 33], 5, ["string", 7], 41])
+        self.assertEqual(tree.toPyExp(), [[1, 33], 5, ["string", 7], 41])
+
+    def test_list3(self):
+        tree = misc.parseNumberedExp(['#', 1, [['#', 2, "string"]]])
+        self.assertEqual(tree.toPyExp(), ["string"])
+
+    def test_list4(self):
+        tree = misc.parseNumberedExp(['#', 1, [['#', 2, 106], ['#', 3, 'notstring'], ['#', 4, 207], ['#', 5, 'gime']]])
+        self.assertEqual(tree.toPyExp(), [106, "notstring", 207, 'gime'])
+
 
 # class TestCopyTNode(TestCase):
 #     def test_copyTNode(self):
