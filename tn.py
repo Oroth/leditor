@@ -1,6 +1,7 @@
 __author__ = 'chephren'
 import copy
 import funobj as fo
+import reader
 
 # Terminology
 # Atom - Something that is either a symbol, a string, a number (currently)
@@ -36,8 +37,8 @@ def cons(value, cdr):
     car.next = cdr
     return car
 
-def numberedCons(value, cdr):
-    car = TNode(value[1], value[0])
+def numberedCons(value, id, cdr):
+    car = TNode(value, id)
     car.next = cdr
     return car
 
@@ -54,33 +55,6 @@ def joinList(lst, node):
 
     curLast.next = node
     return newLst
-
-def append(first, sec):
-    if sec:
-        ret = TNode(sec)
-    else:
-        ret = None
-    first.next = ret
-    return ret
-
-# ========================================== Testing =======================================================
-# differences to paramterise:
-
-def transformPyLst(func, acc, lst):
-    start = cur = acc
-    for i in lst:
-        cur = func(cur, i)
-    return start
-
-def transformPyExp(func, initfunc, acc, exp):
-    start = cur = acc
-
-    for i in exp:
-        if isPyList(i):
-            cur = func(cur, transformPyExp(func, initfunc, initfunc(i[0]) , i[1:]))
-        else:
-            cur = func(cur, i)
-    return start
 
 
 def tnodeIndex(lst, ind):
@@ -146,7 +120,6 @@ def tnodeSearchAfter(exp, searchVal, startingIndex):
 
     return tnodeSearchPred(exp, searchValPred, [0])
 
-
 def tnodeSearchPred(exp, searchPred, acc=[]):
     accInd = list(acc)
     for node in exp:
@@ -161,8 +134,6 @@ def tnodeSearchPred(exp, searchPred, acc=[]):
         accInd[-1] += 1
     return None, None
 
-
-
 def tnodeSyncAddress(newexp, oldexp, oldadd, acc=[]):
     oldNode, oldPos = tnodeIndex(oldexp, oldadd[0])
     curNode, curPos = tnodeMatch(newexp, oldNode, oldadd[0])
@@ -173,92 +144,51 @@ def tnodeSyncAddress(newexp, oldexp, oldadd, acc=[]):
     else:
         return curNode, accInd
 
-def createTNodeExpFromPyExp2(pyexp):
-    return transformPyExp(append, TNode, TNode(pyexp[0]), pyexp[1:]) if isPyList(pyexp) else pyexp
+# ==================================PyList Functions==================================================
 
-def createTNodeExpFromPyNumberedExp3(pyexp):
-    def parse(exp):
-        if isPyList(exp):
-            if exp[0] == '#':
-                return numberedCons()
+def foldrpy(func, lst):
+    return func(lst[0], foldrpy(func, lst[1:])) if lst else None
 
-
-def foldrtnumpy(func, lst):
+def foldrtpy(func, lst):
     if lst:
-        if tnodeNumberedExpContainsAtom(lst):
-            return lst
-        elif isPyList(lst):
-            return func(foldrtnumpy(func, lst[0]), foldrtnumpy(func, lst[1:]))
+        if isPyList(lst[0]):
+            car = foldrtpy(func, lst[0])
         else:
-            return func(lst[0], foldrtnumpy(func, lst[1:]))
+            car = lst[0]
+        return func(car, foldrtpy(func, lst[1:]))
     return None
 
-def createTNodeExpFromPyNumberedExp2(pyexp):
-    return foldrtnumpy(numberedCons, pyexp) if isPyList(pyexp) else pyexp
-
-
-# ======================================================================================================
-
-def createTNodeExpFromPyExp(pyexp):
-    startNode = None
-    lastNode = None
-
-    if pyexp is not None:
-        if isPyList(pyexp):
-            for i in pyexp:
-                if startNode:
-                    newNode = TNode(createTNodeExpFromPyExp(i))
-                    lastNode.next = newNode
-                    lastNode = lastNode.next
-                else:
-                    startNode = TNode(createTNodeExpFromPyExp(i))
-                    lastNode = startNode
-        else:
-            return pyexp
-
-    return startNode
-
-# Should be an integer-pyObj Pair
-def tnodeNumberedExpContainsAtom(pynumexp):
-    if len(pynumexp) == 2 and not isPyList(pynumexp[0]) and not isPyList(pynumexp[1]):
+def isNumberedExp(val):
+    if isinstance(val, TNode) and val.child == '#':
         return True
     else:
         return False
 
-# like createTreeFromSexp, but picks up the nodeID
+def parseNumberedNode(car, cdr):
+    if isNumberedExp(car):
+        id = car.next.child
+        val = car.next.next.child
+        return numberedCons(val, id, cdr)
+    else:
+        return cons(car, cdr)
+
+def createTNodeExpFromPyExp(pyexp):
+    return foldrtpy(cons, pyexp) if isPyList(pyexp) else pyexp
+
 def createTNodeExpFromPyNumberedExp(pyexp):
-    if tnodeNumberedExpContainsAtom(pyexp):
-        return TNode(pyexp[1], pyexp[0])
+    return foldrtpy(parseNumberedNode, pyexp).next
 
-    else:  # sexp = (id (sexp|atom ...))
-        nodeID, pysubexp = pyexp[0], pyexp[1]
-
-        startNode = None
-        lastNode = None
-        for i in pysubexp:
-            if startNode:
-                node = createTNodeExpFromPyNumberedExp(i)
-                lastNode.next = node
-                lastNode = lastNode.next
-            else:
-                startNode = createTNodeExpFromPyNumberedExp(i)
-                lastNode = startNode
-
-        return TNode(startNode, nodeID)
-
-
+# ======================================================================================================
 
 def opAtNVSAdd(node, nvs, op):
     def opAtAdd2(node, nvs, curDest):
         if node.isSubNode() and node.child.child == curDest:
-
             if nvs:
                 newNvs = nvs[1:]
                 newDest = nvs[0]
                 return TNode(opAtAdd2(node.child, newNvs, newDest), node.nodeID, node.next)
             else:
                 return TNode(node.child.child, node.nodeID, op(node.child.next))
-
         else:
             return join(node, opAtAdd2(node.next, nvs, curDest))
 
@@ -347,7 +277,7 @@ class TNode(fo.FuncObject):
     def toPyNumberedExp(self):
         ret = list()
         for i in self:
-            newNode = [i.nodeID]
+            newNode = [reader.Symbol('#'), i.nodeID]
             if i.isSubNode():
                 newNode.append(i.child.toPyNumberedExp())
             else: newNode.append(i.child)

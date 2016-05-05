@@ -113,7 +113,7 @@ def add_globals(env):
          'screen-height':lambda :iop.screenHeight(),
          'make-vector':lambda size,t:list(t) * size,
          'make-string':lambda size,c:str(c) * size,
-         'count-wins':lambda :wm().wins
+         'count-wins':lambda :wm().getWinCount()
          #,'^':lambda *vars,*body: (lambda *args: eval(body, Env(vars, args, global_env)))
         })
     return env

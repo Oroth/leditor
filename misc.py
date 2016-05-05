@@ -10,11 +10,6 @@ def cons(value, cdr):
     return car
 
 
-def numberedCons(value, id, cdr):
-    car = tn.TNode(value, id)
-    car.next = cdr
-    return car
-
 # def foldr(func, lst):
 #     if lst[1:]:
 #         return func(lst[0], foldr(func, lst[1:]))
@@ -40,53 +35,108 @@ def tnodeFoldR(func, lst, last):
     else:
         return func(lst, last)
 
-def foldrpy(func, lst):
-    return func(lst[0], foldrpy(func, lst[1:])) if lst else None
 
-def foldrtpy(func, lst):
-    if lst:
-        if tn.isPyList(lst[0]):
-            car = foldrtpy(func, lst[0])
-        else:
-            car = lst[0]
-        return func(car, foldrtpy(func, lst[1:]))
-    return None
 
-def isNumberedExp(val):
-    if isinstance(val, tn.TNode) and val.child == '#':
-        return True
+def append(first, sec):
+    if sec:
+        ret = tn.TNode(sec)
     else:
-        return False
+        ret = None
+    first.next = ret
+    return ret
+
+def numberedCons(value, cdr):
+    car = tn.TNode(value[1], value[0])
+    car.next = cdr
+    return car
 
 def makeNumberedNode(numberedExp):
     id = numberedExp.next.child
     val = numberedExp.next.next.child
     return val
 
-def parseNumberedNode(car, cdr):
-    if isNumberedExp(car):
-        id = car.next.child
-        val = car.next.next.child
-        return numberedCons(val, id, cdr)
-    else:
-        return cons(car, cdr)
 
-def parseNumberedExp(exp):
-    ret = foldrtpy(parseNumberedNode, exp)
-    return makeNumberedNode(ret)
-    #return parseNumberedNode(ret, None)
+def transformPyLst(func, acc, lst):
+    start = cur = acc
+    for i in lst:
+        cur = func(cur, i)
+    return start
+
+def transformPyExp(func, initfunc, acc, exp):
+    start = cur = acc
+
+    for i in exp:
+        if tn.isPyList(i):
+            cur = func(cur, transformPyExp(func, initfunc, initfunc(i[0]) , i[1:]))
+        else:
+            cur = func(cur, i)
+    return start
+
+
+def createTNodeExpFromPyExp2(pyexp):
+    return transformPyExp(append, tn.TNode, tn.TNode(pyexp[0]), pyexp[1:]) if tn.isPyList(pyexp) else pyexp
 
 
 def foldrtnumpy(func, lst):
     if lst:
-        if not tn.tnodeNumberedExpContainsAtom(lst):
+        if tnodeNumberedExpContainsAtom(lst):
+            return lst
+        elif tn.isPyList(lst):
             return func(foldrtnumpy(func, lst[0]), foldrtnumpy(func, lst[1:]))
         else:
             return func(lst[0], foldrtnumpy(func, lst[1:]))
     return None
 
-def createTNodeExpFromPyExp2(pyexp):
-    return foldrtpy(tn.cons, pyexp) if tn.isPyList(pyexp) else pyexp
-
-def createTNodeExpFromPyNumberedExp3(pyexp):
+def createTNodeExpFromPyNumberedExp2(pyexp):
     return foldrtnumpy(numberedCons, pyexp) if tn.isPyList(pyexp) else pyexp
+
+
+
+
+def createTNodeExpFromPyExp3(pyexp):
+    startNode = None
+    lastNode = None
+
+    if pyexp is not None:
+        if tn.isPyList(pyexp):
+            for i in pyexp:
+                if startNode:
+                    newNode = tn.TNode(createTNodeExpFromPyExp3(i))
+                    lastNode.next = newNode
+                    lastNode = lastNode.next
+                else:
+                    startNode = tn.TNode(createTNodeExpFromPyExp3(i))
+                    lastNode = startNode
+        else:
+            return pyexp
+
+    return startNode
+
+# Should be an integer-pyObj Pair
+def tnodeNumberedExpContainsAtom(pynumexp):
+    if len(pynumexp) == 2 and not tn.isPyList(pynumexp[0]) and not tn.isPyList(pynumexp[1]):
+        return True
+    else:
+        return False
+
+# like createTreeFromSexp, but picks up the nodeID
+def createTNodeExpFromPyNumberedExp4(pyexp):
+    if tnodeNumberedExpContainsAtom(pyexp):
+        return tn.TNode(pyexp[1], pyexp[0])
+
+    else:  # sexp = (id (sexp|atom ...))
+        nodeID, pysubexp = pyexp[0], pyexp[1]
+
+        startNode = None
+        lastNode = None
+        for i in pysubexp:
+            if startNode:
+                node = createTNodeExpFromPyNumberedExp4(i)
+                lastNode.next = node
+                lastNode = lastNode.next
+            else:
+                startNode = createTNodeExpFromPyNumberedExp4(i)
+                lastNode = startNode
+
+        return tn.TNode(startNode, nodeID)
+

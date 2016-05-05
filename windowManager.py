@@ -154,6 +154,8 @@ class WindowManager(fo.FuncObject):
         self.imageFileName = imageFileName
         self.winCmd = False
 
+    def getWinCount(self):
+        return self.winTree.length()
 
     def getEditSexp(self):
         curWin = self.winTree.getCurrent()
