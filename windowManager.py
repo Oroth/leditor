@@ -55,19 +55,12 @@ class Window(fo.FuncObject):
 
     def cmdDisplayHelp(self):
         curEd = self.getEditor()
-        helpPyExp = [reader.Symbol('help'), "all"]
-        helpExp = tn.TNode(tn.createTNodeExpFromPyExp(helpPyExp))
-        helpBuffer = buffer.BufferSexp(helpExp)
-        rootEnv = curEd.getNodeEnv(curEd.buffer.root.child.next.next)
-        helpResult = eval.eval(helpBuffer, rootEnv)
-        helpResultExp = tn.TNode(tn.TNode(helpResult))
-        #helpResultBuffer = buffer.BufferSexp(helpResultExp)
 
-        #args = [curEd.nodeValues[node] for node in helpExp.child][1:]
-
-        #newTree, env = curEd.nodeValues[procedure.child].inspect(*args)
-        newEd = CodeEditor.CodeEditor(helpResultExp, [0])
-        #newEd.env = env
+        rootObj = curEd.getNodeValue(curEd.buffer.root)
+        helpResult = rootObj.call(reader.Symbol('help')).call("all")
+        newBuff = rootObj.updateVarSource('evalBuffer', helpResult)
+        newEd = CodeEditor.CodeEditor(newBuff.root, newBuff.cursorAdd)
+        newEd.printingMode = 'vertical'
 
         return self.updateList(
             ('editorList', self.editorList.appendAtCursor(newEd).curNext()),

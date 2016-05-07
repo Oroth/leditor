@@ -3,31 +3,6 @@ import copy
 import funobj as fo
 import reader
 
-# Terminology
-# Atom - Something that is either a symbol, a string, a number (currently)
-# Obj - Something that can be any python object, but not a TNode or List
-
-# PyList - A normal python list of Objs
-# PyExp - A normal python list of Objs, which may also include other PyLists
-# PySexp - A python list of atoms and other PySexps
-
-# TNode - Any generic TNode
-# TNodeAtom
-# TNodeObj
-# TNodeList
-# TNodeTree
-# TNodeTreeRoot
-# TNodeExp - Any generic TNode
-# TNodeWinList
-# TNodeWinListRoot
-# TNodeSexp
-
-# TNodeNumberedExp
-# TNodeIDExpPair
-
-# Buffer
-# BufferSexp
-
 
 def isPyList(lst):
     return isinstance(lst, list)

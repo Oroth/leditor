@@ -2,6 +2,8 @@ __author__ = 'chephren'
 import reader
 import iop
 import buffer
+import funobj as fo
+import tn
 
 wm = None
 isa = isinstance
@@ -72,6 +74,12 @@ class Env(dict):
         else:
             raise LookUpException(var)
 
+    def extend(self, var, val):
+        if var in self:
+            raise LookUpException(var)
+        else:
+            pass
+
 
 def charToInt(char):
     try:
@@ -122,7 +130,7 @@ def add_globals(env):
 global_env = add_globals(Env())
 
 
-class Closure(object):
+class Closure(fo.FuncObject):
     def __init__(self, type, expBuf, vars, parentEnv):
         self.type = type
         self.expBuf = expBuf
@@ -134,10 +142,40 @@ class Closure(object):
 
     def call(self, *args):
         env = Env(self.vars, args, self.env)
-        evalResult =  eval(self.expBuf, env, False)
+        evalResult = eval(self.expBuf, env, False)
         return evalResult
 
+class Obj(Closure):
+    def __init__(self, vars, varExps, vals, valExps, parentEnv=None):
+        self.vars = vars
+        self.varExps = varExps
+        self.vals = vals
+        self.valExps = valExps
+        self.valExpEnv = dict(zip(vars, valExps))
+        self.env = Env(vars, vals, parentEnv)
 
+    def inspect(self):
+        pass
+
+    def inspectVar(self, var):
+        return self.valExpEnv[var]
+
+    def updateVarSource(self, var, newExp):
+        varSource = self.valExpEnv[var]
+        return varSource.replaceAtCursor(newExp)
+
+
+    def toExp(self):
+        mappingExp = zip(self.varExps, self.valExps)
+        pyExp = [reader.Symbol('Obj'), mappingExp]
+        return tn.createTNodeExpFromPyExp(pyExp)
+
+    def call(self, methodName):
+        try:
+            ret = self.env.find(methodName)[methodName]
+        except LookUpException:
+            ret = LookUpException(methodName)
+        return ret
 
 def isidentifier(exp):
     return isinstance(exp, reader.Symbol)
@@ -202,7 +240,7 @@ def callProcedure(expBuf, env, memoize):
 
     else:
         proc = childExpr.pop(0)
-        if isinstance(proc, Closure) and proc.type == 'lambda':
+        if isinstance(proc, Closure):
             procVal = proc.call
         elif hasattr(proc, '__call__'):
             procVal = proc
@@ -223,8 +261,8 @@ def specialFormLambda(expBuf, env, memoize):
         vars = expBuf.cursor.next.child.toPyExp()
         #if not isList(vars):
         #    raise LambdaSyntaxException("Bad Vars Arg")
-        expBuf = expBuf.curNext().curNext()
-        ret = Closure('lambda', expBuf, vars, env)
+        bodyExp = expBuf.curNext().curNext()
+        ret = Closure('lambda', bodyExp, vars, env)
 
     except AttributeError:
         ret = LambdaSyntaxException("Err")
@@ -271,19 +309,31 @@ def specialFormLet(expBuf, env, memoize):
 
 def specialFormObj(expBuf, env, memoize):
     valResults = []
-
+    valExps = []
     try:
         mapping = expBuf.curNext()
+        varExps = [pair.child for pair in mapping.cursor]
+        #valExps = [pair.child.next for pair in mapping.cursor]
 
         #build closure
-        vars = [pair.child.child for pair in mapping.cursor]
+        vars = []
+        for pair in mapping.cursor:
+            var = pair.child
+            if var.isSubNode():
+                raise AttributeError
+            else:
+                vars.append(var.child)
+
         closure = Env(vars, [None]*len(vars), env)
 
         pair = mapping
+
         while True:
             curVal = pair.curChild().curNext()
+            valExps.append(curVal)
             curVar = pair.curChild().curChildExp()
             curValResult = eval(curVal, closure, memoize)
+
             closure.find(curVar)[curVar] = curValResult
             valResults.append(curValResult)
             try:
@@ -292,17 +342,21 @@ def specialFormObj(expBuf, env, memoize):
 
     except  (AttributeError, ValueError):
         ret = LetSyntaxException("Bad-Var-Syntax")
+    except LookUpException as e:
+        ret = e
 
     else:
-        newEnv = Env(vars, valResults, None)
-        def Obj(methodName):
-            try:
-                ret = newEnv.find(methodName)[methodName]
-            except LookUpException:
-                ret = LookUpException(methodName)
-            return ret
+        #newEnv = Env(vars, valResults, env)
+        # def Obj(methodName):
+        #     try:
+        #         ret = newEnv.find(methodName)[methodName]
+        #     except LookUpException:
+        #         ret = LookUpException(methodName)
+        #     return ret
 
-        ret = Obj
+        #ret = Obj
+
+        ret = Obj(vars, varExps, valResults, valExps)
 
     return ret
 

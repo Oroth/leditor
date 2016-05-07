@@ -24,6 +24,9 @@ class FuncObject(object):
         args = zip(lst, [True]*len(lst))
         return wrapper(self.updateList, args)
 
+    def __str__(self):
+        return '<' + type(self).__name__ + '>'
+
 def wrapper(func, args):
     return func(*args)
 
