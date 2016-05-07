@@ -230,7 +230,7 @@ class BufferSexp(ViewBuffer):
         return self.new(newRoot, newViewAdd, newCursorAdd)
 
     def quoteAtCursor(self):
-        return self.opAtCursor(quoteAdd)
+        return self.opAtCursor(quoteAdd, not self.cursor.quoted)
 
     def toggleStringAtCursor(self):
         if isinstance(self.cursor.child, reader.Symbol):

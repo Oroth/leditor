@@ -149,7 +149,7 @@ def eval(exprBuf, env=global_env, memoize=None):
 
     exprChild = exprBuf.curChildExp()
 
-    if not exprBuf.cursor.evaled:
+    if exprBuf.cursor.quoted:
         ret = exprBuf.cursorToPyExp()
 
     elif isidentifier(exprChild):             # variable reference

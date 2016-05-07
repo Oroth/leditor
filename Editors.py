@@ -528,7 +528,8 @@ class TreeEditor(DisplayEditor):
                     self.zippedNodes[self.buffer.cursor.nodeID] = True
 
             elif key.char() == "'":
-                newBuff = self.buffer.nestCursor().curChild().insertAtCursor(Symbol('quote'))
+                newBuff = self.buffer.quoteAtCursor()
+                #newBuff = self.buffer.nestCursor().curChild().insertAtCursor(Symbol('quote'))
                 return self.update('buffer', newBuff)
 
             elif key.char() == '+':

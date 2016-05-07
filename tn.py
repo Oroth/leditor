@@ -32,6 +32,11 @@ import reader
 def isPyList(lst):
     return isinstance(lst, list)
 
+def rawCons(node, cdr):
+    car = copy.copy(node)
+    car.next = cdr
+    return car
+
 def cons(value, cdr):
     car = TNode(value)
     car.next = cdr
@@ -104,7 +109,6 @@ def tnodeNVS(exp, nvs, acc=[]):
     else:
         return cur, accInd
 
-
 def tnodeSearch(exp, searchVal, acc=[]):
     searchValPred = lambda node, address : node.child == searchVal
     return tnodeSearchPred(exp, searchValPred, acc)
@@ -164,16 +168,29 @@ def isNumberedExp(val):
     else:
         return False
 
+def isQuotedExp(val):
+    if isinstance(val, TNode) and val.child == 'quote':
+        return True
+    else:
+        return False
+
 def parseNumberedNode(car, cdr):
     if isNumberedExp(car):
         id = car.next.child
-        val = car.next.next.child
-        return numberedCons(val, id, cdr)
+        newNode = car.next.next.update('nodeID', id)
+        return rawCons(newNode, cdr)
+
+    elif isQuotedExp(car):
+        val = car.next.child
+        newNode = TNode(val, quoted=True)
+        newNode.quoted = True
+        return rawCons(newNode, cdr)
     else:
         return cons(car, cdr)
 
+
 def createTNodeExpFromPyExp(pyexp):
-    return foldrtpy(cons, pyexp) if isPyList(pyexp) else pyexp
+    return foldrtpy(parseNumberedNode, pyexp) if isPyList(pyexp) else pyexp
 
 def createTNodeExpFromPyNumberedExp(pyexp):
     return foldrtpy(parseNumberedNode, pyexp).next
@@ -233,17 +250,15 @@ def denestAdd(node, add):
     return opAtAdd(node, add, lambda addNode: joinList(addNode.child, addNode.next))
 
 def quoteAdd(node, add, value):
-    return opAtAdd(node, add, lambda addNode: addNode.update('evaled', value))
+    return opAtAdd(node, add, lambda addNode: addNode.update('quoted', value))
 
 
 class TNode(fo.FuncObject):
     __nodes__ = 0
-    def __init__(self, val=None, id=None, next=None):
+    def __init__(self, val=None, id=None, next=None, quoted=False):
         self.next = next
         self.child = self.parseValue(val)
-
-        self.evaled = True
-        self.displayValue = False
+        self.quoted = quoted
 
         if not id:
             self.nodeID = TNode.__nodes__
@@ -278,21 +293,35 @@ class TNode(fo.FuncObject):
         ret = list()
         for i in self:
             newNode = [reader.Symbol('#'), i.nodeID]
+
             if i.isSubNode():
-                newNode.append(i.child.toPyNumberedExp())
-            else: newNode.append(i.child)
+                pyExp = i.child.toPyNumberedExp()
+            else: pyExp = (i.child)
+
+            if i.quoted:
+                newNode.append([reader.Symbol('quote'), pyExp])
+            else:
+                newNode.append(pyExp)
+
             ret.append(newNode)
 
         return ret
+
 
     def toPyExp(self):
         ret = list()
         for i in self:
             if i.isSubNode():
-                ret.append(i.child.toPyExp())
-            else: ret.append(i.child)
+                pyExp = i.child.toPyExp()
+            else: pyExp = (i.child)
+
+            if i.quoted:
+                ret.append(['quote', pyExp])
+            else:
+                ret.append(pyExp)
 
         return ret
+
 
     def childToPyExp(self):
         if self.isSubNode():

@@ -3,6 +3,8 @@ import copy
 class FuncObject(object):
     def update(self, prop, val):
         newSelf = copy.copy(self)
+        if not hasattr(newSelf, prop):
+            raise AttributeError
         setattr(newSelf, prop, val)
         return newSelf
 

@@ -78,7 +78,8 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
 
         for item in line.tokenList:
             #Add space between symbols
-            if prevItem and prevItem.nodeToString() != '(' and item.nodeToString() != ')':
+            if prevItem and prevItem.nodeToString() not in ("'", '(') \
+                        and item.nodeToString() != ')':
                 if item.isCursor and prevItem.isCursor:
                     bgcol = hlcol
                 else:
@@ -178,6 +179,8 @@ def makeLineIndentList(editor, winWidth, winHeight):
             ret = [TokenNode(ps, '...')]
             return ret
 
+
+
         if ps.cursor == editor.buffer.cursor and editor.editing:
             # slightly hacky, isCursor is technically True, but we call it false to stop it
             # from highlighting the entire node. need to re-engineer the rules really
@@ -190,6 +193,7 @@ def makeLineIndentList(editor, winWidth, winHeight):
                 editingNode.highlightIndex = editor.cellEditor.index
             ret = [editingNode]
 
+
         elif ps.onSubNode():
             ret = [TokenNode(ps, '(')]
             ret.extend(makeLineTokenStream(ps.curChild().reset('newline', 'reindent')))
@@ -200,6 +204,9 @@ def makeLineIndentList(editor, winWidth, winHeight):
 
         else:
             ret = [TokenNode(ps)]
+
+        if ps.cursor.quoted:
+            ret.insert(0, TokenNode(ps, "'"))
 
         # code editor, needs to go with the code editor code
         try:
