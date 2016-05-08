@@ -30,8 +30,10 @@ def overlayLinesOnImage(bottomImage, y, topImage):
         bottomImage[y] = line
         y += 1
 
-#def overlayImage(bottomImage, x, y, topImage):
-
+def stringToImage(text, maxx, maxy):
+    image = createBlank(maxx, maxy)
+    putNodeOnImage(image, 0, 0, text, None, iop.defaultBG(), iop.defaultFG())
+    return image
 
 def printToScreen(image, posx, posy):
     maxy = len(image) - 1
@@ -41,5 +43,3 @@ def printToScreen(image, posx, posy):
         for y in xrange(maxy):
             cell = image[y][x]
             iop.screenPrint(posx + x, posy + y, cell.character, cell.bgColour, cell.fgColour)
-
-

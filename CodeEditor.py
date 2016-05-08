@@ -1,6 +1,6 @@
 __author__ = 'chephren'
 import Editors
-import utility
+import screen
 import buffer
 import iop
 import reader
@@ -129,9 +129,8 @@ class evalIOHandler(CodeEditor):
 
         return self
 
-    def draw(self, posx, posy, maxx, maxy, hlcol=None):
+    def draw(self, maxx, maxy, isActive=False):
         self.function = self.getNodeValue(self.buffer.cursor)
         if self.lastKey != 0:
-            self.output = self.function(self.keyHistory)
-        pen = utility.Pen(posx, posy, maxx, posy+maxy)
-        pen.write(str(self.output))
+            self.output = self.function.call(self.keyHistory)
+        return screen.stringToImage(self.output, maxx, maxy)

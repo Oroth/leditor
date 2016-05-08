@@ -84,11 +84,27 @@ class Window(fo.FuncObject):
                     ('editorList', self.editorList.curCyclePrev()),
                     ('editorCmd', False))
 
+            elif key.char() == 'd':
+                if self.editorList.length() > 1:
+                    return self.updateList(
+                        ('editorList', self.editorList.deleteAtCursor()),
+                        ('editorCmd', False))
+
             elif key.char() == '>':
                 return self.cmdInspectProcedureCall()
 
             elif key.char() == '?':
                 return self.cmdDisplayHelp()
+
+            elif key.code() == iop.KEY_SPACE:
+                imageRoot = curEd.buffer.root
+                evalBuffer = buffer.BufferSexp(imageRoot, curEd.buffer.rootToCursorAdd())
+                prog = CodeEditor.evalIOHandler(evalBuffer)
+                newEditorList =  self.editorList.appendAtCursor(prog).curNext()
+
+                return self.updateList(
+                    ('editorList', newEditorList),
+                    ('editorCmd', False))
 
             if key.isPrintable():
                 return self.update('editorCmd', False)
