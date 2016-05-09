@@ -322,6 +322,7 @@ def makeLineIndentList(editor, winWidth, winHeight):
                     if cursorTopLine is None:
                         cursorTopLine = currentLineNumber
                     cursorBottomLine = currentLineNumber
+                    #print cursorTopLine, cursorBottomLine
 
                 tokenLength = len(node.nodeToString()) + 1  ## technically parens will only be 1 char
 
@@ -336,9 +337,17 @@ def makeLineIndentList(editor, winWidth, winHeight):
                 else:
                     currentLine.addToken(node)
 
+        totalLineCount = len(lines)
+
         #check if we found the last line
-        if cursorTopLine >= editor.topLine + winHeight:
+        if cursorTopLine >= editor.topLine + winHeight and editor.drawMode == 'cursor':
             newTopLine = cursorBottomLine - winHeight +1
+        #don't allow scrolling past the bottom
+        elif totalLineCount < winHeight:
+            newTopLine = 0
+        elif totalLineCount <= editor.topLine + winHeight:
+            newTopLine = totalLineCount - winHeight
+
 
         return lines, newTopLine
 

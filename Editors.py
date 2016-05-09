@@ -137,6 +137,7 @@ class DisplayEditor(fo.FuncObject):
         # display routined)
         self.zippedNodes = {}
         self.editing = False
+        self.drawMode = 'notCursor'
 
     def getEditorSettings(self):
         viewAdd = self.buffer.viewAdd
@@ -368,6 +369,7 @@ class TreeEditor(DisplayEditor):
 
     def handleKeysMain(self, key, mouse):
         self.updateUndo = False
+        self.drawMode = 'uncursor'
         self.updateStatusBar()
 
         if key.code() != 0:
@@ -380,6 +382,10 @@ class TreeEditor(DisplayEditor):
 
         if key.code() == 0:
             return self
+
+        # Reset the screen to include the cursor if we aren't scrolling
+        if key.char() not in ('t', 'T'):
+            self.drawMode = 'cursor'
 
         if self.editing:
             return self.handleCellEditor(key)

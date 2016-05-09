@@ -33,10 +33,8 @@ class CodeEditor(Editors.TreeEditor):
             val, env = self.nodeValues[node]
             return env
 
-
     def evalBuffer(self):
         eval.eval(buffer.BufferSexp(self.buffer.root), self.env, self.storeNodeValue)
-
 
     def syncWithImage(self, newImageRoot):
         if newImageRoot != self.buffer.root:

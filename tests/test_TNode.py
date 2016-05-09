@@ -1,8 +1,8 @@
 from unittest import TestCase, main
+
 import tn
-import misc
-from tn import TNode, createTNodeExpFromPyExp, replaceAdd, deleteAdd, insertAdd
-from buffer import ViewBuffer
+from tn import createTNodeExpFromPyExp
+from unused import misc
 
 __author__ = 'chephren'
 
