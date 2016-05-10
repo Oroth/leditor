@@ -61,7 +61,7 @@ class Window(fo.FuncObject):
         newBuff = rootObj.updateVarSource('evalBuffer', helpResult)
         newEd = CodeEditor.CodeEditor(newBuff.root, newBuff.cursorAdd)
         newEd.printingMode = 'vertical'
-        newEd.evalCursorMode = 'inactive'
+        newEd.evalCursorMode = 'disabled'
 
         return self.updateList(
             ('editorList', self.editorList.appendAtCursor(newEd).curNext()),

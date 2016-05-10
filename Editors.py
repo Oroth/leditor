@@ -537,6 +537,10 @@ class TreeEditor(DisplayEditor):
                 #newBuff = self.buffer.nestCursor().curChild().insertAtCursor(Symbol('quote'))
                 return self.update('buffer', newBuff)
 
+            elif key.char() == '.':
+                newBuff = self.buffer.updateAtCursor()
+                return self.update('buffer', newBuff)
+
             elif key.char() == '+':
                 numList = self.buffer.cursorToPyExp()
                 result = reduce(operator.add, numList)

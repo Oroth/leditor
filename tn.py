@@ -224,16 +224,20 @@ def nestAdd(node, add):
 def denestAdd(node, add):
     return opAtAdd(node, add, lambda addNode: joinList(addNode.child, addNode.next))
 
+def updateAdd(node, add, value):
+    return opAtAdd(node, add, lambda addNode: addNode.update(value[0], value[1]))
+
 def quoteAdd(node, add, value):
     return opAtAdd(node, add, lambda addNode: addNode.update('quoted', value))
 
 
 class TNode(fo.FuncObject):
     __nodes__ = 0
-    def __init__(self, val=None, id=None, next=None, quoted=False):
+    def __init__(self, val=None, id=None, next=None, quoted=False, methodCall=False):
         self.next = next
         self.child = self.parseValue(val)
         self.quoted = quoted
+        self.methodCall = methodCall
 
         if not id:
             self.nodeID = TNode.__nodes__

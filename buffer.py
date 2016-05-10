@@ -2,7 +2,7 @@ import funobj as fo
 import reader
 import tn
 from tn import replaceAdd, appendAdd, insertAdd, deleteAdd, nestAdd, denestAdd, quoteAdd, isPyList, \
-    createTNodeExpFromPyExp
+    createTNodeExpFromPyExp, updateAdd
 
 class SimpleBuffer(fo.FuncObject):
     def __init__(self, root, cursorAdd=[0]):
@@ -231,6 +231,9 @@ class BufferSexp(ViewBuffer):
 
     def quoteAtCursor(self):
         return self.opAtCursor(quoteAdd, not self.cursor.quoted)
+
+    def updateAtCursor(self):
+        return self.opAtCursor(updateAdd, ['methodCall', not self.cursor.methodCall])
 
     def toggleStringAtCursor(self):
         if isinstance(self.cursor.child, reader.Symbol):

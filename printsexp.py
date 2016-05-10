@@ -78,12 +78,13 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
 
         for item in line.tokenList:
             #Add space between symbols
-            if prevItem and prevItem.nodeToString() not in ("'", '(') \
-                        and item.nodeToString() != ')':
+            if prevItem and prevItem.nodeToString() not in ("'", '.', '(') \
+                        and item.nodeToString() not in ('.' ')'):
                 if item.isCursor and prevItem.isCursor:
                     bgcol = hlcol
                 else:
                     bgcol = colScheme.bgCol
+
                 putNodeOnImage(image, x, y, ' ', item, bgcol, colScheme.symbolCol)
                 x += 1
 
@@ -207,6 +208,8 @@ def makeLineIndentList(editor, winWidth, winHeight):
 
         if ps.cursor.quoted:
             ret.insert(0, TokenNode(ps, "'"))
+        elif ps.cursor.methodCall:
+            ret.insert(0, TokenNode(ps, "."))
 
         # code editor, needs to go with the code editor code
         try:
