@@ -642,17 +642,20 @@ class TreeEditor(DisplayEditor):
 
 
     def draw(self, maxx, maxy, isActive):
-        mainImage = super(TreeEditor, self).draw(maxx, maxy+1, isActive)[:]
+        finalImage = screen.createBlank(maxx, maxy+1)
+        mainImage = super(TreeEditor, self).draw(maxx, maxy-1, isActive)[:]
+
+        screen.overlayLinesOnImage(finalImage, 0, mainImage)
 
         if self.cmdBar:
             cmdImage = self.cmdBar.draw(maxx, 2, isActive=True)
-            screen.overlayLinesOnImage(mainImage, maxy - 2, cmdImage)
+            screen.overlayLinesOnImage(finalImage, maxy - 2, cmdImage)
 
         if self.statusBar:
             statusImage = self.statusBar.draw(maxx, 2, isActive=False)
-            screen.overlayLinesOnImage(mainImage, maxy - 1, statusImage)
+            screen.overlayLinesOnImage(finalImage, maxy - 1, statusImage)
 
-        return mainImage
+        return finalImage
 
 
 class CmdBar(TreeEditor):
