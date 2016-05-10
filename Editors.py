@@ -538,8 +538,10 @@ class TreeEditor(DisplayEditor):
                 return self.update('buffer', newBuff)
 
             elif key.char() == '.':
-                newBuff = self.buffer.updateAtCursor()
-                return self.update('buffer', newBuff)
+                if not self.buffer.onSubNode() and self.buffer.cursor.next:
+                    #newBuff = self.buffer.updateAtCursor('methodCall', not self.buffer.cursor.methodCall)
+                    newBuff = self.buffer.methodChainAtCursor()
+                    return self.update('buffer', newBuff)
 
             elif key.char() == '+':
                 numList = self.buffer.cursorToPyExp()

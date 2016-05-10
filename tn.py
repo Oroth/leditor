@@ -230,14 +230,21 @@ def updateAdd(node, add, value):
 def quoteAdd(node, add, value):
     return opAtAdd(node, add, lambda addNode: addNode.update('quoted', value))
 
+def methodChainAdd(node, add):
+    return opAtAdd(node, add, methodChainOp)
+
+def methodChainOp(addNode):
+    nextNode = TNode(addNode.next.child)
+    currentNode = TNode(addNode.child, next=nextNode)
+    return TNode(currentNode, next=addNode.next.next, methodChain=True)
 
 class TNode(fo.FuncObject):
     __nodes__ = 0
-    def __init__(self, val=None, id=None, next=None, quoted=False, methodCall=False):
+    def __init__(self, val=None, id=None, next=None, quoted=False, methodChain=False):
         self.next = next
         self.child = self.parseValue(val)
         self.quoted = quoted
-        self.methodCall = methodCall
+        self.methodChain = methodChain
 
         if not id:
             self.nodeID = TNode.__nodes__

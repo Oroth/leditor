@@ -6,13 +6,14 @@ from screen import createBlank, putNodeOnImage
 
 
 class ParseState(buffer.ViewBuffer):
-    def __init__(self, node, address, nesting=0, isCursor=False):
+    def __init__(self, node, address, nesting=0, isCursor=False, isMethodChain=False):
         self.nesting = nesting
         self.isCursor = isCursor
         self.newline = False        # While True will start a newline at each node
         self.reindent = False       # While true will increase the amount of nesting...
         self.parenAlignment = 0
         self.letSyntax = False
+        self.isMethodChain = isMethodChain
         super(ParseState, self).__init__(node, [0], address)
 
     def incNesting(self):
@@ -196,9 +197,13 @@ def makeLineIndentList(editor, winWidth, winHeight):
 
 
         elif ps.onSubNode():
-            ret = [TokenNode(ps, '(')]
-            ret.extend(makeLineTokenStream(ps.curChild().reset('newline', 'reindent')))
-            ret.append(TokenNode(ps, ')'))
+            if ps.cursor.methodChain:
+                methodChainps = ps.curChild().reset('newline', 'reindent').set('isMethodChain')
+                ret = makeLineTokenStream(methodChainps)
+            else:
+                ret = [TokenNode(ps, '(')]
+                ret.extend(makeLineTokenStream(ps.curChild().reset('newline', 'reindent')))
+                ret.append(TokenNode(ps, ')'))
 
         elif ps.cursor.child is None:
             ret = [TokenNode(ps, '('), TokenNode(ps, ')')]
@@ -208,8 +213,9 @@ def makeLineIndentList(editor, winWidth, winHeight):
 
         if ps.cursor.quoted:
             ret.insert(0, TokenNode(ps, "'"))
-        elif ps.cursor.methodCall:
-            ret.insert(0, TokenNode(ps, "."))
+
+        if ps.isMethodChain and ps.cursor.next:
+            ret.append(TokenNode(ps, "."))
 
         # code editor, needs to go with the code editor code
         try:
