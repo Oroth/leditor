@@ -2,7 +2,7 @@ from unittest import TestCase, main
 
 import tn
 from tn import createTNodeExpFromPyExp
-from unused import misc
+from unused import unusedListFuncs
 
 __author__ = 'chephren'
 
@@ -108,19 +108,19 @@ class TestTNodeFunctions(TestCase):
 
 class TestMiscTNode(TestCase):
     def test_list1(self):
-        tree = misc.foldrpy(misc.cons, [1, 5, "string", 41])
+        tree = unusedListFuncs.foldrpy(unusedListFuncs.cons, [1, 5, "string", 41])
         self.assertEqual(tree.toPyExp(), [1, 5, "string", 41])
 
     def test_list2(self):
-        tree = misc.foldrtpy(misc.cons, [[1, 33], 5, ["string", 7], 41])
+        tree = unusedListFuncs.foldrtpy(unusedListFuncs.cons, [[1, 33], 5, ["string", 7], 41])
         self.assertEqual(tree.toPyExp(), [[1, 33], 5, ["string", 7], 41])
 
     def test_list3(self):
-        tree = misc.parseNumberedExp(['#', 1, [['#', 2, "string"]]])
+        tree = unusedListFuncs.parseNumberedExp(['#', 1, [['#', 2, "string"]]])
         self.assertEqual(tree.toPyExp(), ["string"])
 
     def test_list4(self):
-        tree = misc.parseNumberedExp(['#', 1, [['#', 2, 106], ['#', 3, 'notstring'], ['#', 4, 207], ['#', 5, 'gime']]])
+        tree = unusedListFuncs.parseNumberedExp(['#', 1, [['#', 2, 106], ['#', 3, 'notstring'], ['#', 4, 207], ['#', 5, 'gime']]])
         self.assertEqual(tree.toPyExp(), [106, "notstring", 207, 'gime'])
 
 

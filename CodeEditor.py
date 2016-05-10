@@ -5,6 +5,7 @@ import buffer
 import iop
 import reader
 import eval
+import misc
 from reader import Symbol
 
 
@@ -17,7 +18,9 @@ class CodeEditor(Editors.TreeEditor):
         self.context = None
         self.parent = None
         self.printingMode = 'code'
+        self.printingModeOptions = ['code', 'horizontal', 'vertical']
         self.evalCursorMode = 'active'
+        self.evalCursorModeOptions = ['active', 'disabled']
         self.nodeValues = {}
 
     def storeNodeValue(self, node, val, env=None):
@@ -65,6 +68,10 @@ class CodeEditor(Editors.TreeEditor):
             else:
                 self.statusBar.updateMessage('Result to buffer')
                 result = self.update('yankBuffer', nodeValue)
+
+        elif key.code() == iop.KEY_F2:
+            newCursorMode = misc.cycleThroughList(self.evalCursorMode, self.evalCursorModeOptions)
+            result = self.update('evalCursorMode', newCursorMode)
 
         # Create a repl like environment to evaluate code in
         elif key.code() == iop.KEY_F8:

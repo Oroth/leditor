@@ -7,6 +7,7 @@ import buffer
 import funobj as fo
 import operator
 import screen
+import misc
 from reader import Symbol
 
 class View(object):
@@ -126,6 +127,7 @@ class DisplayEditor(fo.FuncObject):
     def __init__(self, root, rootCursorAdd=[0], cursorAdd=[0]):
         self.buffer = buffer.BufferSexp(root, rootCursorAdd, cursorAdd)
         self.printingMode = 'horizontal'
+        self.printingModeOptions = ['horizontal', 'vertical']
         self.topLine = 0
         self.image = None
         self.colourScheme = ColourScheme(iop.black, iop.white, iop.light_green, iop.light_sky, iop.azure, iop.light_grey)
@@ -475,13 +477,10 @@ class TreeEditor(DisplayEditor):
                         ('editing', True))
 
             elif key.char() == 'm':
-                modes = ['code', 'horizontal', 'vertical']
-                if self.printingMode == 'help':
-                    currentModePos = 2
-                else:
-                    currentModePos = modes.index(self.printingMode)
-                self.printingMode = modes[(currentModePos + 1) % len(modes)]
-                self.statusBar.updateMessage("DisplayMode: " + self.printingMode)
+                newPrintingMode = misc.cycleThroughList(self.printingMode, self.printingModeOptions)
+                self.statusBar.updateMessage("DisplayMode: " + newPrintingMode)
+
+                return self.update('printingMode', newPrintingMode)
 
 
             elif key.char() == 'N':
@@ -568,13 +567,6 @@ class TreeEditor(DisplayEditor):
                 else:
                     self.revealedNodes[self.buffer.cursor] = True
 
-
-            # Go to help pages, will need to be updated
-            elif key.char() == '?':
-                helpIter, helpAddress = self.buffer.root.gotoNodeAtNVS(['origin', 'help'])
-                newBuff = buffer.BufferSexp(self.buffer.root, helpAddress)
-                self.printingMode = 'help'
-                return self.update('buffer', newBuff)
 
             else:
                 try:

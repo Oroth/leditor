@@ -8,6 +8,7 @@ KEY_BACKSPACE = libtcod.KEY_BACKSPACE
 KEY_DELETE = libtcod.KEY_DELETE
 KEY_SPACE = libtcod.KEY_SPACE
 KEY_F1 = libtcod.KEY_F1
+KEY_F2 = libtcod.KEY_F2
 KEY_F8 = libtcod.KEY_F8
 KEY_LEFT = libtcod.KEY_LEFT
 KEY_RIGHT = libtcod.KEY_RIGHT
