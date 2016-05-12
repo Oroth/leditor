@@ -538,7 +538,7 @@ class TreeEditor(DisplayEditor):
                 return self.update('buffer', newBuff)
 
             elif key.char() == '.':
-                if not self.buffer.onSubNode() and self.buffer.cursor.next:
+                if self.buffer.cursor.next and not self.buffer.cursor.next.isSubNode():
                     #newBuff = self.buffer.updateAtCursor('methodCall', not self.buffer.cursor.methodCall)
                     newBuff = self.buffer.methodChainAtCursor()
                     return self.update('buffer', newBuff)

@@ -80,7 +80,8 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
         for item in line.tokenList:
             #Add space between symbols
             if prevItem and prevItem.nodeToString() not in ("'", '.', '(') \
-                        and item.nodeToString() not in ('.' ')'):
+                        and item.nodeToString() not in ('.', ')'):
+
                 if item.isCursor and prevItem.isCursor:
                     bgcol = hlcol
                 else:
