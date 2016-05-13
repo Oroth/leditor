@@ -534,13 +534,21 @@ class TreeEditor(DisplayEditor):
 
             elif key.char() == "'":
                 newBuff = self.buffer.quoteAtCursor()
-                #newBuff = self.buffer.nestCursor().curChild().insertAtCursor(Symbol('quote'))
                 return self.update('buffer', newBuff)
 
             elif key.char() == '.':
                 if self.buffer.cursor.next and not self.buffer.cursor.next.isSubNode():
-                    #newBuff = self.buffer.updateAtCursor('methodCall', not self.buffer.cursor.methodCall)
                     newBuff = self.buffer.methodChainAtCursor()
+                    return self.update('buffer', newBuff)
+
+            elif key.char() == '>':
+                if self.buffer.onSubNode() or self.buffer.cursor.child is None:
+                    newBuff = self.buffer.slurpAtCursor()
+                    return self.update('buffer', newBuff)
+
+            elif key.char() == '<':
+                if self.buffer.onSubNode() and self.buffer.cursor.child:
+                    newBuff = self.buffer.barfAtCursor()
                     return self.update('buffer', newBuff)
 
             elif key.char() == '+':

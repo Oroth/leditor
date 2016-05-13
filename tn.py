@@ -7,18 +7,8 @@ import reader
 def isPyList(lst):
     return isinstance(lst, list)
 
-def rawCons(node, cdr):
-    car = copy.copy(node)
-    car.next = cdr
-    return car
-
 def cons(value, cdr):
     car = TNode(value)
-    car.next = cdr
-    return car
-
-def numberedCons(value, id, cdr):
-    car = TNode(value, id)
     car.next = cdr
     return car
 
@@ -30,10 +20,27 @@ def join(node1, node2):
 def joinList(lst, node):
     newLst = copy.deepcopy(lst)
     curLast = newLst
+
+    if curLast is None:
+        return node
+
     while curLast.next:
         curLast = curLast.next
 
     curLast.next = node
+    return newLst
+
+def dropLast(lst):
+    newLst = copy.deepcopy(lst)
+    curLast = newLst
+
+    if curLast.next is None:
+        return None
+
+    while curLast.next and curLast.next.next:
+        curLast = curLast.next
+
+    curLast.next = None
     return newLst
 
 
@@ -153,13 +160,13 @@ def parseNumberedNode(car, cdr):
     if isNumberedExp(car):
         id = car.next.child
         newNode = car.next.next.update('nodeID', id)
-        return rawCons(newNode, cdr)
+        return join(newNode, cdr)
 
     elif isQuotedExp(car):
         val = car.next.child
         newNode = TNode(val, quoted=True)
         newNode.quoted = True
-        return rawCons(newNode, cdr)
+        return join(newNode, cdr)
     else:
         return cons(car, cdr)
 
@@ -195,7 +202,8 @@ def opAtAdd(node, add, op):
         elif add:
             newAdd = add[1:]
             newDest = add[0]
-            return TNode(opAtAdd2(node.child, newAdd, newDest), node.nodeID, node.next)
+            return node.update('child', opAtAdd2(node.child, newAdd, newDest))
+            #return TNode(opAtAdd2(node.child, newAdd, newDest), node.nodeID, node.next)
         else:
             return op(node)
 
@@ -224,6 +232,12 @@ def nestAdd(node, add):
 def denestAdd(node, add):
     return opAtAdd(node, add, lambda addNode: joinList(addNode.child, addNode.next))
 
+def slurpAdd(node, add):
+    return opAtAdd(node, add, slurpOp)
+
+def barfAdd(node, add):
+    return opAtAdd(node, add, barfOp)
+
 def updateAdd(node, add, value):
     return opAtAdd(node, add, lambda addNode: addNode.update(value[0], value[1]))
 
@@ -232,6 +246,16 @@ def quoteAdd(node, add, value):
 
 def methodChainAdd(node, add):
     return opAtAdd(node, add, methodChainOp)
+
+def slurpOp(addNode):
+    slurpNode = addNode.next.update('next', None)
+    newNode = joinList(addNode.child, slurpNode)
+    return cons(newNode, addNode.next.next)
+
+def barfOp(addNode):
+    barfNode = addNode.child.last()
+    newListNode = dropLast(addNode.child)
+    return cons(newListNode, join(barfNode, addNode.next))
 
 def methodChainOp(addNode):
     nextNode = TNode(addNode.next.child)
@@ -321,6 +345,12 @@ class TNode(fo.FuncObject):
         if isinstance(self.child, TNode):
             return True
         return False
+
+    def last(self):
+        if self.next:
+            return self.next.last()
+        else:
+            return self
 
 
 def isTNode(obj):

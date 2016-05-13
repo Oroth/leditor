@@ -79,7 +79,7 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
 
         for item in line.tokenList:
             #Add space between symbols
-            if prevItem and prevItem.nodeToString() not in ("'", '.', '(') \
+            if prevItem and prevItem.nodeToString() not in ("'", '.', '(', '#') \
                         and item.nodeToString() not in ('.', ')'):
 
                 if item.isCursor and prevItem.isCursor:
@@ -200,7 +200,12 @@ def makeLineIndentList(editor, winWidth, winHeight):
         elif ps.onSubNode():
             if ps.cursor.methodChain:
                 methodChainps = ps.curChild().reset('newline', 'reindent').set('isMethodChain')
-                ret = makeLineTokenStream(methodChainps)
+                if ps.cursor.child and ps.cursor.child.next:
+                    ret = []
+                else:
+                    ret = [TokenNode(ps, '#')]
+                ret.extend(makeLineTokenStream(methodChainps))
+                #ret = makeLineTokenStream(methodChainps)
             else:
                 ret = [TokenNode(ps, '(')]
                 ret.extend(makeLineTokenStream(ps.curChild().reset('newline', 'reindent')))

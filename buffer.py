@@ -2,7 +2,7 @@ import funobj as fo
 import reader
 import tn
 from tn import replaceAdd, appendAdd, insertAdd, deleteAdd, nestAdd, denestAdd, quoteAdd, isPyList, \
-    createTNodeExpFromPyExp, updateAdd, methodChainAdd
+    createTNodeExpFromPyExp, updateAdd, methodChainAdd, slurpAdd, barfAdd
 
 class SimpleBuffer(fo.FuncObject):
     def __init__(self, root, cursorAdd=[0]):
@@ -74,6 +74,12 @@ class SimpleBuffer(fo.FuncObject):
 
     def deleteAtCursor(self):
         return self.opAtCursor(deleteAdd)
+
+    def slurpAtCursor(self):
+        return self.opAtCursor(slurpAdd)
+
+    def barfAtCursor(self):
+        return self.opAtCursor(barfAdd)
 
     def length(self):
         return sum(1 for _ in self.root.child)
