@@ -174,11 +174,11 @@ def parseNumberedNode(car, cdr):
         newNode.quoted = True
         return join(newNode, cdr)
 
-    # elif isMethodCallExp(car):
-    #     methodNameNode = TNode(car.next.child)
-    #     objExpNode = TNode(car.child, next=methodNameNode)
-    #     newNode = TNode(objExpNode, methodChain=True)
-    #     return join(newNode, cdr)
+    elif isMethodCallExp(car):
+        methodNameNode = TNode(car.next.child)
+        objExpNode = TNode(car.child, next=methodNameNode)
+        newNode = TNode(objExpNode, methodChain=True)
+        return join(newNode, cdr)
     else:
         return cons(car, cdr)
 
@@ -322,6 +322,9 @@ class TNode(fo.FuncObject):
 
             if i.quoted:
                 newNode.append([reader.Symbol('quote'), pyExp])
+            elif i.methodChain:
+                pyExp[1] = [reader.Symbol('quote'), pyExp[1]]
+                newNode.append(pyExp)
             else:
                 newNode.append(pyExp)
 
@@ -339,6 +342,9 @@ class TNode(fo.FuncObject):
 
             if i.quoted:
                 ret.append(['quote', pyExp])
+            elif i.methodChain:
+                pyExp[1] = ['quote', pyExp[1]]
+                ret.append(pyExp)
             else:
                 ret.append(pyExp)
 
