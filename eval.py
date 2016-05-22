@@ -189,6 +189,8 @@ def eval(exprBuf, env=global_env, memoize=None):
 
     if exprBuf.cursor.quoted:
         ret = exprBuf.cursorToPyExp()
+    elif exprBuf.cursor.methodChain:
+        ret = specialFormMethodCall(exprChild, env, memoize)
 
     elif isidentifier(exprChild):             # variable reference
         try:
@@ -216,6 +218,8 @@ def eval(exprBuf, env=global_env, memoize=None):
 
     elif exprChild.cursor.child == 'quote':
         ret = exprChild.curNext().cursorToPyExp()
+
+
 
     else:  # i.e. a procedure call
         ret = callProcedure(exprChild, env, memoize)
@@ -360,6 +364,28 @@ def specialFormObj(expBuf, env, memoize):
 
     return ret
 
+# copies procedure call
+def specialFormMethodCall(expBuf, env, memoize):
+    objExpr = expBuf
+
+    try:
+        methodExpr = expBuf.curNext()
+    except ValueError:
+        return SyntaxException("No method supplied")
+
+    if methodExpr.onSubNode():
+        return SyntaxException("Not a method call")
+
+    qMethodExpr = methodExpr.quoteAtCursor()
+    objVal = eval(objExpr, env, memoize)
+    qMethodVal = eval(qMethodExpr, env, memoize)
+
+    try:
+        ret = objVal.call(qMethodVal)
+    except TypeError:
+        ret = TypeException(qMethodExpr)
+
+    return ret
 
 def specialFormIf(expBuf, env, memoize):
     negative = None

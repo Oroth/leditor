@@ -113,13 +113,20 @@ class CellEditor(object):
 
 
 class ColourScheme(fo.FuncObject):
-    def __init__(self, bgCol, symbolCol, stringCol, numberCol, activeHiCol, idleHiCol):
+    def __init__(self,
+                 bgCol, symbolCol, identifierCol,
+                 stringCol, numberCol,
+                 activeHiCol, idleHiCol,
+                 operatorCol=iop.dark_red, keyWordCol=iop.light_sky):
         self.bgCol = bgCol
         self.symbolCol = symbolCol
+        self.identifierCol = identifierCol
         self.stringCol = stringCol
         self.numberCol = numberCol
         self.activeHiCol = activeHiCol
         self.idleHiCol = idleHiCol
+        self.operatorCol = operatorCol
+        self.keyWordCol = keyWordCol
 
 class DisplayEditor(fo.FuncObject):
     editors = 0
@@ -130,10 +137,15 @@ class DisplayEditor(fo.FuncObject):
         self.printingModeOptions = ['horizontal', 'vertical']
         self.topLine = 0
         self.image = None
-        self.colourScheme = ColourScheme(iop.black, iop.white, iop.light_green, iop.light_sky, iop.azure, iop.light_grey)
+
         self.statusDescription = reader.Symbol(self.__class__.__name__)
         self.id = DisplayEditor.editors
         DisplayEditor.editors += 1
+
+        self.colourScheme = ColourScheme(
+            bgCol=iop.black, symbolCol=iop.grey,
+            identifierCol=iop.white, stringCol=iop.light_green,
+            numberCol=iop.light_purple, activeHiCol=iop.azure, idleHiCol=iop.light_grey)
 
         #need to be refactored out, back into TreeEditor (e.g. by creating a much simpler
         # display routined)
@@ -684,8 +696,10 @@ class StatusBar(DisplayEditor):
         self.status = [reader.Symbol('Editor')]
         super(StatusBar, self).__init__(tn.createTNodeExpFromPyExp(self.status))
         self.message = None
-        self.colourScheme = ColourScheme(iop.white, iop.black, iop.darker_green, iop.darker_sky, iop.white, iop.white)
-
+        self.colourScheme = ColourScheme(
+            bgCol=iop.white, symbolCol=iop.black,
+            identifierCol=iop.black, stringCol=iop.darker_green,
+            numberCol=iop.darker_sky, activeHiCol=iop.white, idleHiCol=iop.white)
 
     def refreshBuffer(self):
         statusList = list(self.status)

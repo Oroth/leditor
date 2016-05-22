@@ -19,9 +19,12 @@ black = libtcod.black
 white = libtcod.white
 light_green = libtcod.light_green
 light_sky = libtcod.light_sky
+light_purple = libtcod.light_purple
 azure = libtcod.azure
 light_grey = libtcod.light_grey
+grey = libtcod.grey
 dark_green = libtcod.dark_green
+dark_red = libtcod.dark_red
 darker_green = libtcod.darker_green
 darker_sky = libtcod.darker_sky
 

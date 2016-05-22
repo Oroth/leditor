@@ -96,7 +96,14 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
                 bgcol = colScheme.bgCol
 
             if isinstance(item.nodeReference.child, reader.Symbol):
-                fgcol = colScheme.symbolCol
+                if item.nodeToString() in ("'", '.', '(', ')', '#'):
+                    fgcol = colScheme.symbolCol
+                elif item.nodeToString() in ('=', '+', '-', '*', '/', '>', '>=', '<', '=<', '!='):
+                    fgcol = colScheme.operatorCol
+                elif item.nodeToString() in ('obj', '^', 'let', 'if'):
+                    fgcol = colScheme.keyWordCol
+                else:
+                    fgcol = colScheme.identifierCol
             elif isinstance(item.nodeReference.child, str) and item.printRule != 'cellEditorNonString':
                 fgcol = colScheme.stringCol
             elif isinstance(item.nodeReference.child, int) or isinstance(item.nodeReference.child, float):
