@@ -119,6 +119,14 @@ class InspectionEditor(CodeEditor):
         eval.eval(buffer.BufferSexp(self.buffer.root, self.buffer.viewAdd), self.env, self.storeNodeValue)
 
 
+class ProgException(Exception):
+    def __init__(self, value, msg):
+        self.value = value
+        self.messsage = msg
+    def __str__(self):
+        return "(ProgException " + self.value + " " + self.message + ")"
+
+
 class evalIOHandler(CodeEditor):
     def __init__(self, buffer):
         super(evalIOHandler, self).__init__(buffer.root, buffer.viewAdd, buffer.cursorAdd)
@@ -137,5 +145,8 @@ class evalIOHandler(CodeEditor):
     def draw(self, maxx, maxy, isActive=False):
         self.function = self.getNodeValue(self.buffer.cursor)
         if self.lastKey != 0:
-            self.output = self.function.call(self.keyHistory)
+            if hasattr(self.function, 'call'):
+                self.output = self.function.call(self.keyHistory)
+            else:
+                self.output = "Not a function" #ProgException(self.function, "Not a Function")
         return screen.stringToImage(self.output, maxx, maxy)

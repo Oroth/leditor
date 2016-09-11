@@ -14,8 +14,7 @@ class EvalException(Exception):
         self.value = value
     def __str__(self):
         return "(EvalException " + self.value + ")"
-        #    def __repr__(self):
-#        return ["Err:", self.value]
+
 
 class LookUpException(EvalException):
     def __str__(self):
@@ -138,7 +137,7 @@ class Closure(fo.FuncObject):
         self.env = parentEnv
 
     def inspect(self, *args):
-        return [self.expBuf, Env(self.vars, args, self.env)]
+        return self.expBuf, Env(self.vars, args, self.env)
 
     def call(self, *args):
         env = Env(self.vars, args, self.env)

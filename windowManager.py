@@ -42,8 +42,9 @@ class Window(fo.FuncObject):
         #curNode = curEd.buffer.cursor
 
         if procedure.isSubNode():
-            args = [curEd.nodeValues[node] for node in procedure.child][1:]
-            newTree, env = curEd.nodeValues[procedure.child].inspect(*args)
+            args = [curEd.getNodeValue(node) for node in procedure.child][1:]
+            procValue = curEd.getNodeValue(procedure.child)
+            newTree, env = procValue.inspect(*args)
             newEd = CodeEditor.InspectionEditor(newTree.root, newTree.rootToCursorAdd(),
                                           zippedNodes=curEd.zippedNodes)
             newEd.env = env
