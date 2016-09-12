@@ -68,6 +68,17 @@ class Window(fo.FuncObject):
             ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
             ('editorCmd', False))
 
+    def cmdRunProg(self):
+        curEd = self.getEditor()
+        imageRoot = curEd.buffer.root
+        evalBuffer = buffer.BufferSexp(imageRoot, curEd.buffer.rootToCursorAdd())
+        prog = CodeEditor.evalIOHandler(evalBuffer)
+        newEditorList =  self.editorList.appendAtCursor(prog).curNext()
+
+        return self.updateList(
+            ('editorList', newEditorList),
+            ('editorCmd', False))
+
 
     def handleKeys(self, key, mouse):
         curEd = self.getEditor()
@@ -99,14 +110,8 @@ class Window(fo.FuncObject):
                 return self.cmdDisplayHelp()
 
             elif key.code() == iop.KEY_SPACE:
-                imageRoot = curEd.buffer.root
-                evalBuffer = buffer.BufferSexp(imageRoot, curEd.buffer.rootToCursorAdd())
-                prog = CodeEditor.evalIOHandler(evalBuffer)
-                newEditorList =  self.editorList.appendAtCursor(prog).curNext()
+                return self.cmdRunProg()
 
-                return self.updateList(
-                    ('editorList', newEditorList),
-                    ('editorCmd', False))
 
             if key.isPrintable():
                 return self.update('editorCmd', False)
@@ -278,6 +283,11 @@ class WindowManager(fo.FuncObject):
             ('winTree', syncWindowsToEditorList(newWinList, syncedEditorList)))
 
 
+    def addWindow(self, newWindow):
+        newWinList = self.winTree.appendAtCursor(newWindow).curNext()
+        return self.integrateUpdatedWindowList(newWinList)
+
+
     def handleKeys(self, key, mouse):
         if mouse.lbuttonPressed():
             windowClicked, windowAddress = self.matchWindowToClick(mouse.x(), mouse.y())
@@ -323,27 +333,16 @@ class WindowManager(fo.FuncObject):
 
             # run a function like a program
             elif key.code() == iop.KEY_SPACE:
-                evalBuffer = buffer.BufferSexp(self.ImageRoot, curEd.buffer.rootToCursorAdd())
-                prog = CodeEditor.evalIOHandler(evalBuffer)
-                newWinTree = self.addWindow(prog)
-
-                newWM = self.updateList(
-                    ('winTree', newWinTree),
-                    ('winCmd', False))
-
-                return newWM
+                self.winCmd = False
+                return self.addWindow(curWin.cmdRunProg())
 
             elif key.code() == iop.KEY_ENTER:
-                resultWin = curWin.cmdNewEditorOnCursor()
-                newWinList = self.winTree.appendAtCursor(resultWin).curNext()
                 self.winCmd = False
-                return self.integrateUpdatedWindowList(newWinList)
+                return self.addWindow(curWin.cmdNewEditorOnCursor())
 
             elif key.char() == '>':
-                resultWin = curWin.cmdInspectProcedureCall()
-                newWinList = self.winTree.appendAtCursor(resultWin).curNext()
                 self.winCmd = False
-                return self.integrateUpdatedWindowList(newWinList)
+                return self.addWindow(curWin.cmdInspectProcedureCall())
 
             elif key.code() == iop.KEY_ESCAPE:
                 return self.update('winCmd', False)

@@ -49,7 +49,7 @@ class CodeEditor(Editors.TreeEditor):
 
     def updateStatusBar(self):
         self.statusBar.updateStatus([self.statusDescription, self.buffer.viewAdd, self.buffer.cursorAdd,
-                     Symbol('nodeID'), self.buffer.cursor.nodeID, self.getNodeValue(self.buffer.cursor)])
+                     [Symbol('nodeID'), self.buffer.cursor.nodeID], self.getNodeValue(self.buffer.cursor)])
 
 
     # a bit of a hack, necessary because everything is handled in handleKeys. We need to make sure that
