@@ -123,6 +123,24 @@ class InspectionEditor(CodeEditor):
     def evalBuffer(self):
         eval.eval(buffer.BufferSexp(self.buffer.root, self.buffer.viewAdd), self.env, self.storeNodeValue)
 
+    def updateStatusBar(self):
+        self.statusBar.updateStatus(
+            [self.statusDescription,
+            [[Symbol(key), value] for key, value in self.env.items()],
+            [Symbol('='), self.getNodeValue(self.buffer.cursor)]])
+
+
+class ProgInspectionEditor(InspectionEditor):
+    def __init__(self, *args, **kwargs):
+        super(InspectionEditor, self).__init__(*args, **kwargs)
+        self.statusDescription = reader.Symbol('InspectionEditor')
+        self.progID = None
+
+    #def syncArgsToProgInput(self, input):
+    #    self.env = eval.Env(self.env.vars, )
+
+
+
 
 
 class evalIOHandler(CodeEditor):

@@ -37,16 +37,22 @@ class Window(fo.FuncObject):
             ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
             ('editorCmd', False))
 
-    def cmdInspectProcedureCall(self):
-        return self.cmdInspectProcedureCall2(self.getEditor().buffer.cursor)
+    def cmdInspectProcedureCall(self, args=None):
+        return self.cmdInspectProcedureCall2(self.getEditor().buffer.cursor, args)
 
-    def cmdInspectProcedureCall2(self, procedure):
+    def cmdInspectProcedureCall2(self, procedure, args=None):
         curEd = self.getEditor()
-        procValue = curEd.getNodeValue(procedure.child)
+        if args is None:
+            procValue = curEd.getNodeValue(procedure.child)
+        else:
+            procValue = curEd.getNodeValue(procedure)
 
         if procedure.isSubNode() and hasattr(procValue, 'inspect'):
-            args = [curEd.getNodeValue(node) for node in procedure.child][1:]
-            newTree, env = procValue.inspect(*args)
+            if args is None:
+                args2 = [curEd.getNodeValue(node) for node in procedure.child][1:]
+            else:
+                args2 = args
+            newTree, env = procValue.inspect(*args2)
             newEd = CodeEditor.InspectionEditor(newTree.root, newTree.rootToCursorAdd(),
                                           zippedNodes=curEd.zippedNodes)
             newEd.env = env
@@ -159,6 +165,8 @@ def syncWindowsToEditorList(winTree, newEditorList):
 
 def syncEditorsToImage(editorList, newImage):
     return editorList.mapRoot(lambda node: node.syncWithImage(newImage))
+
+
 
 
 class WindowManager(fo.FuncObject):
@@ -284,6 +292,10 @@ class WindowManager(fo.FuncObject):
             if newEditor.updateUndo:
                 self.hist = cons(self.ImageRoot.child, self.hist)
 
+
+        #if newEditor == evalIOHandler:
+        #    syncInspectionEditorsToNewInput
+
         syncedEditorList = syncEditorsToImage(newEditorList, newImage)
 
         return self.updateList(
@@ -295,6 +307,9 @@ class WindowManager(fo.FuncObject):
         newWinList = self.winTree.appendAtCursor(newWindow).curNext()
         return self.integrateUpdatedWindowList(newWinList)
 
+    def replaceWindow(self, newWindow):
+        newWinList = self.winTree.replaceAtCursor(newWindow)
+        return self.integrateUpdatedWindowList(newWinList)
 
     def handleKeys(self, key, mouse):
         if mouse.lbuttonPressed():
@@ -355,6 +370,11 @@ class WindowManager(fo.FuncObject):
                 except ex.UnappliedProcedureException:
                     return self
 
+            elif key.code() == iop.KEY_F5:
+                self.winCmd = False
+                #return self.replaceWindow(curWin.cmdRunProg())
+                return self.addWindow(curWin.cmdInspectProcedureCall(["abc"]))
+
             elif key.code() == iop.KEY_ESCAPE:
                 return self.update('winCmd', False)
 
@@ -385,8 +405,9 @@ class WindowManager(fo.FuncObject):
 
             elif resultEd == 'UNDO':
                 if self.hist.next:
-                    self.ImageRoot = self.hist.next
                     self.hist = self.hist.next
+                    self.ImageRoot = tn.TNode(self.hist.child)
+
 
                     syncedEditorList = syncEditorsToImage(self.editorList, self.ImageRoot)
 
@@ -395,9 +416,7 @@ class WindowManager(fo.FuncObject):
                         ('winTree', syncWindowsToEditorList(self.winTree, syncedEditorList)))
 
             else:
-                newWinList = self.winTree.replaceAtCursor(resultWin)
-                newWinManager = self.integrateUpdatedWindowList(newWinList)
-                return newWinManager
+                return self.replaceWindow(resultWin)
 
 
         return self
