@@ -35,7 +35,7 @@ class CellEditor(object):
         self.original = str(content)
         self.content = list(str(content).encode('string_escape'))
         if index < 0:
-            self.index = len(content) + index + 1
+            self.index = len(self.content) + index + 1
         else:
             self.index = index
 

@@ -27,8 +27,10 @@ class Window(fo.FuncObject):
         screen.printToScreen(image, posx, posy)
 
     def cmdNewEditorOnCursor(self):
-        newEd = CodeEditor.CodeEditor(self.getEditor().buffer.root, self.getEditor().buffer.rootToCursorAdd(),
-                                      zippedNodes=self.getEditor().zippedNodes)
+        newEd = CodeEditor.CodeEditor(
+            root = self.getEditor().buffer.root,
+            rootCursorAdd = self.getEditor().buffer.rootToCursorAdd(),
+            zippedNodes = self.getEditor().zippedNodes)
 
         return self.updateList(
             ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
@@ -41,7 +43,7 @@ class Window(fo.FuncObject):
         curEd = self.getEditor()
         #curNode = curEd.buffer.cursor
 
-        if procedure.isSubNode():
+        if procedure.isSubNode() and curEd.hasNodeValue(procedure.child):
             args = [curEd.getNodeValue(node) for node in procedure.child][1:]
             procValue = curEd.getNodeValue(procedure.child)
             newTree, env = procValue.inspect(*args)
@@ -52,6 +54,9 @@ class Window(fo.FuncObject):
             return self.updateList(
                 ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
                 ('editorCmd', False))
+
+        else:
+            raise 
 
 
     def cmdDisplayHelp(self):

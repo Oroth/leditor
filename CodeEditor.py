@@ -31,6 +31,9 @@ class CodeEditor(Editors.TreeEditor):
             val, env = self.nodeValues[node]
             return val
 
+    def hasNodeValue(self, node):
+        return True if node in self.nodeValues else False
+
     def getNodeEnv(self, node):
         if node in self.nodeValues:
             val, env = self.nodeValues[node]
@@ -118,13 +121,6 @@ class InspectionEditor(CodeEditor):
     def evalBuffer(self):
         eval.eval(buffer.BufferSexp(self.buffer.root, self.buffer.viewAdd), self.env, self.storeNodeValue)
 
-
-class ProgException(Exception):
-    def __init__(self, value, msg):
-        self.value = value
-        self.messsage = msg
-    def __str__(self):
-        return "(ProgException " + self.value + " " + self.message + ")"
 
 
 class evalIOHandler(CodeEditor):

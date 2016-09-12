@@ -4,60 +4,30 @@ import iop
 import buffer
 import funobj as fo
 import tn
+import leditor_exceptions as ex
 
 wm = None
 isa = isinstance
 
 
-class EvalException(Exception):
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return "(EvalException " + self.value + ")"
+class EvalException(ex.GeneralException): pass
 
+class LookUpException(EvalException): pass
 
-class LookUpException(EvalException):
-    def __str__(self):
-        return "(LookUpException " + self.value + ")"
-    pass
+class DivZeroException(EvalException): pass
 
-class DivZeroException(EvalException):
-    def __init__(self):
-        pass
+class LetSyntaxException(EvalException): pass
 
-    def __str__(self):
-        return "(DivZeroException)"
-    pass
+class SyntaxException(EvalException): pass
 
-class LetSyntaxException(EvalException):
-    def __str__(self):
-        return "(LetSyntaxException " + str(self.value) + ")"
-    pass
+class ListException(EvalException): pass
 
-class SyntaxException(EvalException):
-    def __str__(self):
-        return "(SyntaxException " + str(self.value) + ")"
-    pass
+class LambdaSyntaxException(EvalException): pass
 
-class ListException(EvalException):
-    def __str__(self):
-        return "(ListException " + str(self.value) + ")"
-    pass
+class NonProcException(EvalException): pass
 
-class LambdaSyntaxException(EvalException):
-    def __str__(self):
-        return "(LambdaSyntaxException)"
-    pass
+class TypeException(EvalException): pass
 
-class NonProcException(EvalException):
-    def __str__(self):
-        return "(NonProcException " + str(self.value) + ")"
-    pass
-
-class TypeException(EvalException):
-    def __str__(self):
-        return "(TypeException " + str(self.value) + ")"
-    pass
 
 class Env(dict):
     "An environment: a dict of {'var':val} pairs, with an outer Env."
