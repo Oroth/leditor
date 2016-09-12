@@ -7,5 +7,4 @@ class GeneralException(Exception):
     def __str__(self):
         return "(" + self.__class__.__name__ + self.value + self.message + ")"
 
-class ProgException(GeneralException):
-    pass
+class UnappliedProcedureException(GeneralException): pass

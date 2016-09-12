@@ -8,6 +8,7 @@ import os.path
 import iop
 import funobj as fo
 import eval
+import leditor_exceptions as ex
 from tn import cons
 
 
@@ -41,11 +42,10 @@ class Window(fo.FuncObject):
 
     def cmdInspectProcedureCall2(self, procedure):
         curEd = self.getEditor()
-        #curNode = curEd.buffer.cursor
+        procValue = curEd.getNodeValue(procedure.child)
 
-        if procedure.isSubNode() and curEd.hasNodeValue(procedure.child):
+        if procedure.isSubNode() and hasattr(procValue, 'inspect'):
             args = [curEd.getNodeValue(node) for node in procedure.child][1:]
-            procValue = curEd.getNodeValue(procedure.child)
             newTree, env = procValue.inspect(*args)
             newEd = CodeEditor.InspectionEditor(newTree.root, newTree.rootToCursorAdd(),
                                           zippedNodes=curEd.zippedNodes)
@@ -56,7 +56,7 @@ class Window(fo.FuncObject):
                 ('editorCmd', False))
 
         else:
-            raise 
+            raise ex.UnappliedProcedureException(procValue)
 
 
     def cmdDisplayHelp(self):
@@ -109,7 +109,10 @@ class Window(fo.FuncObject):
                         ('editorCmd', False))
 
             elif key.char() == '>':
-                return self.cmdInspectProcedureCall()
+                try:
+                    return self.cmdInspectProcedureCall()
+                except ex.UnappliedProcedureException:
+                    return self.update('editorCmd', False)
 
             elif key.char() == '?':
                 return self.cmdDisplayHelp()
@@ -347,7 +350,10 @@ class WindowManager(fo.FuncObject):
 
             elif key.char() == '>':
                 self.winCmd = False
-                return self.addWindow(curWin.cmdInspectProcedureCall())
+                try:
+                    return self.addWindow(curWin.cmdInspectProcedureCall())
+                except ex.UnappliedProcedureException:
+                    return self
 
             elif key.code() == iop.KEY_ESCAPE:
                 return self.update('winCmd', False)
