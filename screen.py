@@ -30,9 +30,16 @@ def overlayLinesOnImage(bottomImage, y, topImage):
         bottomImage[y] = line
         y += 1
 
-def stringToImage(text, maxx, maxy):
+def stringToImage(text, maxx, maxy, bgCol=iop.defaultBG(), fgCol=iop.defaultFG()):
     image = createBlank(maxx, maxy)
-    putNodeOnImage(image, 0, 0, text, None, iop.defaultBG(), iop.defaultFG())
+
+    if len(text) > 0:
+        textList = [text[start:start+maxx] for start in xrange(0, len(text), maxx)]
+    else:
+        textList = [' ']
+
+    for y in range(0, min(maxy, len(textList))):
+        putNodeOnImage(image, 0, y, textList[y], None, bgCol, fgCol)
     return image
 
 def printToScreen(image, posx, posy):

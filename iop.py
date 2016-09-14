@@ -7,6 +7,7 @@ KEY_ESCAPE = libtcod.KEY_ESCAPE
 KEY_BACKSPACE = libtcod.KEY_BACKSPACE
 KEY_DELETE = libtcod.KEY_DELETE
 KEY_SPACE = libtcod.KEY_SPACE
+KEY_TAB = libtcod.KEY_TAB
 KEY_F1 = libtcod.KEY_F1
 KEY_F2 = libtcod.KEY_F2
 KEY_F5 = libtcod.KEY_F5

@@ -83,6 +83,13 @@ class Window(fo.FuncObject):
         curEd = self.getEditor()
         imageRoot = curEd.buffer.root
         evalBuffer = buffer.BufferSexp(imageRoot, curEd.buffer.rootToCursorAdd())
+
+        #procedure = self.getEditor().buffer.cursor
+        #procValue = curEd.getNodeValue(procedure.child)
+        #newTree, env = procValue.inspect(*args2)
+        #newEd = CodeEditor.InspectionEditor(newTree.root, newTree.rootToCursorAdd())
+
+
         prog = CodeEditor.evalIOHandler(evalBuffer)
         newEditorList =  self.editorList.appendAtCursor(prog).curNext()
 
