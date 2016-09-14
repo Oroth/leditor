@@ -51,6 +51,85 @@ class LineNode(fo.FuncObject):
         spaces = len(self.tokenList)
         return self.indent + self.parenAlignment + len(''.join(text)) + spaces
 
+# draws the indent space at the beginning of lines
+# returns the size of the indent
+def drawIndentSpace(line, prevLine, indentWidth, colScheme, hlcol, image, x, y):
+    totalLineIndent = line.indent * indentWidth + line.parenAlignment
+
+    # print the indentation space
+    if line.indent > 0:
+        firstItem = line.tokenList[0]
+        # highlight the indented space if it carries over from the previous line
+        if firstItem.isCursor and prevLine and prevLine.tokenList[-1].isCursor:
+            bgcol = hlcol
+        else:
+            bgcol = colScheme.bgCol
+        indentString = totalLineIndent * ' '
+        putNodeOnImage(image, 0, y, indentString, firstItem, bgcol, colScheme.symbolCol)
+
+    return totalLineIndent
+
+
+def drawItem(item, prevItem, colScheme, hlcol, image, x, y, winWidth, winHeight):
+    fgcol = lookupItemFGColour(item, colScheme)
+    text = item.nodeToString()
+
+    if item.isCursor:
+        bgcol = hlcol
+
+    elif \
+            text in ('.', ')') \
+            and prevItem.printRule in [ 'cellEditorString', 'cellEditorNonString'] \
+            and prevItem.highlightIndex == len(prevItem.nodeToString()):
+        bgcol = hlcol
+
+    else:
+        bgcol = colScheme.bgCol
+
+    # Truncate long strings (e.g. evaluation results)
+    if len(text) >= winWidth:
+        text = text[0:winWidth - 7] + '...'
+
+    putNodeOnImage(image, x, y, text, item, bgcol, fgcol)
+
+    # highlight the current character if we are using the cell editor
+    if item.printRule in [ 'cellEditorString', 'cellEditorNonString']:
+        if item.highlightIndex is not None:
+            (image[y][x+item.highlightIndex]).bgColour = hlcol
+            x += 1
+
+
+
+def lookupItemFGColour(item, colScheme):
+   if isinstance(item.nodeReference.child, reader.Symbol):
+        if item.nodeToString() in ("'", '.', '(', ')', '#'):
+            fgcol = colScheme.symbolCol
+        elif item.nodeToString() in ('=', '+', '-', '*', '/', '>', '>=', '<', '=<', '!='):
+            fgcol = colScheme.operatorCol
+        elif item.nodeToString() in ('obj', '^', 'let', 'if'):
+            fgcol = colScheme.keyWordCol
+        else:
+            fgcol = colScheme.identifierCol
+   elif isinstance(item.nodeReference.child, str) and item.printRule != 'cellEditorNonString':
+       fgcol = colScheme.stringCol
+   elif isinstance(item.nodeReference.child, int) or isinstance(item.nodeReference.child, float):
+       fgcol = colScheme.numberCol
+   else:
+       fgcol = colScheme.symbolCol
+
+   return fgcol
+
+def drawSymbolSpace(item, prevItem, colScheme, hlcol, image, x, y):
+    if item.isCursor and prevItem.isCursor:
+        bgcol = hlcol
+    elif prevItem.printRule in [ 'cellEditorString', 'cellEditorNonString'] \
+                and prevItem.highlightIndex == len(prevItem.nodeToString()):
+        bgcol = hlcol
+    else:
+        bgcol = colScheme.bgCol
+
+    putNodeOnImage(image, x, y, ' ', item, bgcol, colScheme.symbolCol)
+
 
 def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
     image = createBlank(winWidth, winHeight, colScheme.bgCol, colScheme.symbolCol)
@@ -60,72 +139,21 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
     y = 0
 
     for line in lineList[:winHeight]:
-        totalLineIndent = line.indent * indentWidth + line.parenAlignment
-        x = totalLineIndent
-
-        # print the indentation space
-        if line.indent > 0:
-            firstItem = line.tokenList[0]
-            # highlight the indented space if it carries over from the previous line
-            if firstItem.isCursor and prevLine and prevLine.tokenList[-1].isCursor:
-                bgcol = hlcol
-            else:
-                bgcol = colScheme.bgCol
-            indentString = totalLineIndent * ' '
-            putNodeOnImage(image, 0, y, indentString, firstItem, bgcol, colScheme.symbolCol)
+        x = drawIndentSpace(line, prevLine, indentWidth, colScheme, hlcol, image, 0, y)
 
         prevLine = line
         prevItem = None
 
         for item in line.tokenList:
-            #Add space between symbols
             if prevItem and prevItem.nodeToString() not in ("'", '.', '(', '#') \
                         and item.nodeToString() not in ('.', ')'):
 
-                if item.isCursor and prevItem.isCursor:
-                    bgcol = hlcol
-                else:
-                    bgcol = colScheme.bgCol
-
-                putNodeOnImage(image, x, y, ' ', item, bgcol, colScheme.symbolCol)
+                drawSymbolSpace(item, prevItem, colScheme, hlcol, image, x, y)
                 x += 1
 
-            if item.isCursor:
-                bgcol = hlcol
-            else:
-                bgcol = colScheme.bgCol
+            drawItem(item, prevItem, colScheme, hlcol, image, x, y, winWidth, winHeight)
+            x += len(item.nodeToString())
 
-            if isinstance(item.nodeReference.child, reader.Symbol):
-                if item.nodeToString() in ("'", '.', '(', ')', '#'):
-                    fgcol = colScheme.symbolCol
-                elif item.nodeToString() in ('=', '+', '-', '*', '/', '>', '>=', '<', '=<', '!='):
-                    fgcol = colScheme.operatorCol
-                elif item.nodeToString() in ('obj', '^', 'let', 'if'):
-                    fgcol = colScheme.keyWordCol
-                else:
-                    fgcol = colScheme.identifierCol
-            elif isinstance(item.nodeReference.child, str) and item.printRule != 'cellEditorNonString':
-                fgcol = colScheme.stringCol
-            elif isinstance(item.nodeReference.child, int) or isinstance(item.nodeReference.child, float):
-                fgcol = colScheme.numberCol
-            else:
-                fgcol = colScheme.symbolCol
-
-            text = item.nodeToString()
-
-            # Truncate long strings (e.g. evaluation results)
-            if len(text) >= winWidth:
-                text = text[0:winWidth - 7] + '...'
-
-            putNodeOnImage(image, x, y, text, item, bgcol, fgcol)
-
-            # highlight the current character if we are using the cell editor
-            if item.printRule in [ 'cellEditorString', 'cellEditorNonString']:
-                if item.highlightIndex is not None:
-                    (image[y][x+item.highlightIndex]).bgColour = hlcol
-                    x += 1
-
-            x += len(text)
             prevItem = item
 
         y += 1
