@@ -14,10 +14,17 @@ class ParseState(buffer.ViewBuffer):
         self.parenAlignment = 0
         self.letSyntax = False
         self.isMethodChain = isMethodChain
+        self.codeState = {}
+        self.startOfLine = False
         super(ParseState, self).__init__(node, [0], address)
 
     def incNesting(self):
         return self.update('nesting', self.nesting+1)
+
+    def setNewline(self):
+        return self.updateList(
+            ('newline', True),
+            ('startOfLine', True))
 
 
 class TokenNode(fo.FuncObject):
@@ -196,15 +203,36 @@ def makeLineIndentList(editor, winWidth, winHeight):
 
         if editor.nodeIsZipped(node.next):
             return parseState
-        elif isComplex(node.next) or (node.next.isSubNode() and isComplex(node.next.child)):
-            ps = parseState.set('newline')
+
+        if node.child == 'let':
+            parseState.codeState['letState'] = parseState.nesting +1
+
+        if node.child in ('^', 'if'):
+            return parseState.incNesting()
+
+        if (node.isSubNode() and isComplex(node.child)):
+            return parseState.setNewline().update('parenAlignment', 1)
+
+        if isComplex(node.next) or (node.next.isSubNode() and isComplex(node.next.child)):
+
+            ps = parseState.setNewline()
             # if the first node is a list, assume it is part of a let-syntax, so we know not to reindent
             if node.isSubNode():
+                #return ps
                 return ps.update('parenAlignment', 1)
             else:
                 return ps.incNesting()
 
-        return parseState
+
+
+        # if 'letState' in parseState.codeState and parseState.codeState['letState'] != 'off':
+        #     if parseState.codeState['letState'] == parseState.nesting and not parseState.startOfLine:
+        #        return parseState.setNewline()
+        #     elif parseState.codeState['letState'] < parseState.nesting:
+        #       parseState.codeState['letState'] = 'off'
+
+
+        return parseState.reset('startOfLine')
 
 
     def makeLineTokenStream(parseState):
