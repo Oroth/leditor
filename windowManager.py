@@ -4,6 +4,7 @@ import buffer
 import reader
 import screen
 import CodeEditor
+import screenEditor
 import os.path
 import iop
 import funobj as fo
@@ -26,6 +27,13 @@ class Window(fo.FuncObject):
     def draw(self, posx, posy, maxx, maxy, isActive):
         image = self.getEditor().draw(maxx, maxy, isActive)
         screen.printToScreen(image, posx, posy)
+
+    def cmdNewScreenEditor(self):
+        newEd = screenEditor.ScreenEditor(self.maxx, self.maxy)
+
+        return self.updateList(
+            ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
+            ('editorCmd', False))
 
     def cmdNewEditorOnCursor(self):
         newEd = CodeEditor.CodeEditor(
@@ -292,18 +300,19 @@ class WindowManager(fo.FuncObject):
         newWin = newWinList.cursor.child
         newEditorList = newWin.editorList
         newEditor = newEditorList.cursor.child
-        newImage = newEditor.buffer.root
 
-        if newEditor.syncWithRoot and self.ImageRoot != newImage:
-            self.ImageRoot = newImage
-            if newEditor.updateUndo:
-                self.hist = cons(self.ImageRoot.child, self.hist)
+        if newEditor.isRootImageEditor():
+            newImage = newEditor.buffer.root
 
+            if newEditor.syncWithRoot and self.ImageRoot != newImage:
+                self.ImageRoot = newImage
+                if newEditor.updateUndo:
+                    self.hist = cons(self.ImageRoot.child, self.hist)
 
-        #if newEditor == evalIOHandler:
-        #    syncInspectionEditorsToNewInput
+            syncedEditorList = syncEditorsToImage(newEditorList, newImage)
 
-        syncedEditorList = syncEditorsToImage(newEditorList, newImage)
+        else:
+            syncedEditorList = newEditorList
 
         return self.updateList(
             ('editorList', syncedEditorList),
@@ -385,6 +394,10 @@ class WindowManager(fo.FuncObject):
             elif key.code() == iop.KEY_ESCAPE:
                 return self.update('winCmd', False)
 
+            elif key.code() == iop.KEY_F10:
+                iop.toggleFullScreen()
+                return self.update('winCmd', False)
+
             else:
                 return self
 
@@ -400,6 +413,10 @@ class WindowManager(fo.FuncObject):
             curEd.statusBar.updateMessage("Saving Image")
             print "saving"
             return self
+
+        elif key.code() == iop.KEY_F9 and key.lalt():
+            print "changing to screen mode"
+            return self.replaceWindow(curWin.cmdNewScreenEditor())
 
         else:
             resultWin = curWin.handleKeys(key, mouse)

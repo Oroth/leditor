@@ -4,7 +4,7 @@ import eval
 import os.path
 
 # Size is in cells
-SCREEN_WIDTH = 150
+SCREEN_WIDTH = 120
 SCREEN_HEIGHT = 50
 LIMIT_FPS = 20
 

@@ -8,10 +8,13 @@ KEY_BACKSPACE = libtcod.KEY_BACKSPACE
 KEY_DELETE = libtcod.KEY_DELETE
 KEY_SPACE = libtcod.KEY_SPACE
 KEY_TAB = libtcod.KEY_TAB
+KEY_ALT = libtcod.KEY_ALT
 KEY_F1 = libtcod.KEY_F1
 KEY_F2 = libtcod.KEY_F2
 KEY_F5 = libtcod.KEY_F5
 KEY_F8 = libtcod.KEY_F8
+KEY_F9 = libtcod.KEY_F9
+KEY_F10 = libtcod.KEY_F10
 KEY_LEFT = libtcod.KEY_LEFT
 KEY_RIGHT = libtcod.KEY_RIGHT
 KEY_UP = libtcod.KEY_UP
@@ -43,6 +46,10 @@ class Key():
 
     def lctrl(self):
         return self.keyObj.lctrl
+
+    def lalt(self):
+        return self.keyObj.lalt
+        #return self.keyObj.vk == KEY_ALT
 
     def shift(self):
         return self.keyObj.shift
@@ -108,6 +115,9 @@ def setUp(screenWidth, screenHeight, FPS):
 
 def isWindowClosed():
     return libtcod.console_is_window_closed()
+
+def toggleFullScreen():
+    libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
 
 def getInput():
     libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS|libtcod.EVENT_MOUSE,key,mouse)

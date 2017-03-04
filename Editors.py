@@ -132,6 +132,7 @@ class DisplayEditor(fo.FuncObject):
     editors = 0
 
     def __init__(self, root, rootCursorAdd=[0], cursorAdd=[0]):
+        self._isRootImageEditor = True
         self.buffer = buffer.BufferSexp(root, rootCursorAdd, cursorAdd)
         self.printingMode = 'horizontal'
         self.printingModeOptions = ['horizontal', 'vertical']
@@ -153,6 +154,9 @@ class DisplayEditor(fo.FuncObject):
         self.editing = False
         self.drawMode = 'notCursor'
 
+    def isRootImageEditor(self):
+        return self._isRootImageEditor
+
     def getEditorSettings(self):
         viewAdd = self.buffer.viewAdd
         cursorAdd = self.buffer.cursorAdd
@@ -163,11 +167,11 @@ class DisplayEditor(fo.FuncObject):
                 zipList.append(k)
 
         return [s('editor'),
-                    [s('cursor'), 0],
-                    [s('window'), [s('id'), self.id],
-                    [s('address'), viewAdd], [s('cursor'), cursorAdd],
-                    [s('printingMode'), self.printingMode],
-                    [s('zippedNodes'), zipList]]]
+                [s('cursor'), 0],
+                [s('window'), [s('id'), self.id],
+                [s('address'), viewAdd], [s('cursor'), cursorAdd],
+                [s('printingMode'), self.printingMode],
+                [s('zippedNodes'), zipList]]]
 
 
     def nodeIsZipped(self, node):
@@ -187,6 +191,7 @@ class DisplayEditor(fo.FuncObject):
 class TreeEditor(DisplayEditor):
     def __init__(self, root, rootCursorAdd=[0], cursorAdd=[0], zippedNodes={}):
         super(TreeEditor, self).__init__(root, rootCursorAdd, cursorAdd)
+
 
         self.editing = False
         self.changeMode = False
@@ -225,6 +230,14 @@ class TreeEditor(DisplayEditor):
             cmdResult = self.cmdBar.handleKeys(key, mouse)
             if cmdResult == 'ESCAPE':
                 return self.update('cmdBar', None)
+
+            elif cmdResult == 'PRINT':
+                cmd = self.cmdBar.buffer.root.childToPyExp()
+                self.statusBar.updateMessage(cmd)
+                return self.updateList(
+                    ('cmdBar', None)
+                    ,('statusBar', self.statusBar.refreshBuffer())
+                )
             else:
                 return self.update('cmdBar', cmdResult)
 
@@ -366,7 +379,7 @@ class TreeEditor(DisplayEditor):
                 ('changeMode', False))
 
         # change to end
-        elif key.char() == 'e':
+        elif key.char() in ('e', 'l'):
             return self.updateList(
                 ('cellEditor', CellEditor(Symbol(''))),
                 ('editing', True),
@@ -683,10 +696,21 @@ class CmdBar(TreeEditor):
     def draw(self, maxx, maxy, isActive):
         return super(TreeEditor, self).draw(maxx, maxy, isActive)
 
+    def parseCommand(self):
+        cmd = self.buffer.root.toPyExp()
+        return 'PRINT'
+       #if cmd[0] == 'testmsg':
+        #    return 'PRINT'
+
+        #return self
+
     def handleKeys(self, key, mouse):
 
         if key.code() == iop.KEY_ESCAPE:
             return 'ESCAPE'
+
+        if key.code() == iop.KEY_ENTER:
+            return self.parseCommand()
 
         return super(CmdBar, self).handleKeys(key, mouse)
 

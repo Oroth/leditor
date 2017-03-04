@@ -25,6 +25,10 @@ def putNodeOnImage(image, x, y, text, lineItemNodeRef, bgcol, fgcol):
         (image[y][x]).fgColour = fgcol
         x += 1
 
+def setCellColour(image, x, y, bgcol, fgcol):
+    (image[y][x]).bgColour = bgcol
+    (image[y][x]).fgColour = fgcol
+
 def overlayLinesOnImage(bottomImage, y, topImage):
     for line in topImage:
         bottomImage[y] = line
