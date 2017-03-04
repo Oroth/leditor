@@ -5,7 +5,10 @@ import reader
 import screen
 import CodeEditor
 import screenEditor
+import fileEditor
 import os.path
+from os import listdir
+from os import walk
 import iop
 import funobj as fo
 import eval
@@ -30,6 +33,23 @@ class Window(fo.FuncObject):
 
     def cmdNewScreenEditor(self):
         newEd = screenEditor.ScreenEditor(self.maxx, self.maxy)
+
+        return self.updateList(
+            ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
+            ('editorCmd', False))
+
+    def cmdNewFileEditor(self):
+        path = './'
+        fileList = fileEditor.dirToList(path)
+        # fileList =  \
+        #     [
+        #         [reader.Symbol('file1'),
+        #          [reader.Symbol('file2'), reader.Symbol('file3')],
+        #          reader.Symbol('file4')
+        #          ]]
+        #fileList = [map(reader.Symbol, listdir(path))]
+        fileRoot = tn.createTNodeExpFromPyExp([fileList])
+        newEd = fileEditor.FileEditor(fileRoot)
 
         return self.updateList(
             ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
@@ -417,6 +437,10 @@ class WindowManager(fo.FuncObject):
         elif key.code() == iop.KEY_F9 and key.lalt():
             print "changing to screen mode"
             return self.replaceWindow(curWin.cmdNewScreenEditor())
+
+        elif key.code() == iop.KEY_F10 and key.lalt():
+            print "changing to file edit mode"
+            return self.replaceWindow(curWin.cmdNewFileEditor())
 
         else:
             resultWin = curWin.handleKeys(key, mouse)

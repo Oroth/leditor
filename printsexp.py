@@ -138,12 +138,12 @@ def drawSymbolSpace(item, prevItem, colScheme, hlcol, image, x, y):
     putNodeOnImage(image, x, y, ' ', item, bgcol, colScheme.symbolCol)
 
 
-def drawLineList(lineList, winWidth, winHeight, colScheme, isActive):
+def drawLineList(lineList, winWidth, winHeight, colScheme, isActive, indentWidth):
     image = createBlank(winWidth, winHeight, colScheme.bgCol, colScheme.symbolCol)
     hlcol = colScheme.activeHiCol if isActive else colScheme.idleHiCol
-    indentWidth = 2
     prevLine = None
     y = 0
+
 
     for line in lineList[:winHeight]:
         x = drawIndentSpace(line, prevLine, indentWidth, colScheme, hlcol, image, 0, y)
@@ -197,6 +197,26 @@ def makeLineIndentList(editor, winWidth, winHeight):
                 return ps.incNesting()
 
         return parseState
+
+    def recurAllVertical(parseState):
+        node = parseState.cursor
+        ps = parseState.set('newline')
+
+        if editor.nodeIsZipped(node.next):
+            return parseState
+
+        if node.next and node.next.isSubNode() and not node.next.next:
+            return ps.incNesting().update('parenAlignment', 0)
+
+        else:
+            return ps.update('parenAlignment', 1)
+            #if node.isSubNode():
+            #    return ps.update('parenAlignment', 1)
+            #else:
+            #return ps.incNesting()
+
+        #return ps
+
 
     def recurCode(parseState):
         node = parseState.cursor
@@ -430,7 +450,13 @@ def makeLineIndentList(editor, winWidth, winHeight):
         return lines, newTopLine
 
 
-    recurModes = {'code': recurCode, 'horizontal': recurHorizontal, 'vertical': recurVertical}
+    recurModes = \
+        {
+            'code': recurCode,
+            'horizontal': recurHorizontal,
+            'vertical': recurVertical,
+            'allVertical': recurAllVertical
+        }
     recurMode = recurModes[editor.printingMode]
 
     viewNode = editor.buffer.view

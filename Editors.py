@@ -138,6 +138,7 @@ class DisplayEditor(fo.FuncObject):
         self.printingModeOptions = ['horizontal', 'vertical']
         self.topLine = 0
         self.image = None
+        self.indentWidth = 2
 
         self.statusDescription = reader.Symbol(self.__class__.__name__)
         self.id = DisplayEditor.editors
@@ -183,7 +184,7 @@ class DisplayEditor(fo.FuncObject):
     def draw(self, maxx, maxy, isActive):
         lineList, self.topLine = printsexp.makeLineIndentList(self, maxx, maxy)
         toppedLineList = lineList[self.topLine:]
-        self.image = printsexp.drawLineList(toppedLineList, maxx, maxy, self.colourScheme, isActive)
+        self.image = printsexp.drawLineList(toppedLineList, maxx, maxy, self.colourScheme, isActive, self.indentWidth)
         return self.image
 
 
