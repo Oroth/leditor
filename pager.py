@@ -1,14 +1,12 @@
 import funobj as fo
 import screen
 import Editors
-import iop
 
 class Pager(fo.FuncObject):
     def __init__(self, textlist):
-        #self.image = screen.createBlank(maxx, maxy)
         self.statusBar = Editors.StatusBar()
-        #self.maxx = maxx; self.maxy = maxy
         self.text = textlist
+        self.topLine = 0
 
     def syncWithImage(self, newImage):
         return self
@@ -17,11 +15,13 @@ class Pager(fo.FuncObject):
         return False
 
     def draw(self, maxx, maxy, isActive):
-        #return screen.stringToImage(self.text, maxx, maxy)
-        return screen.createImageFromStringList(self.text, maxx, maxy)
-
-
+        return screen.createImageFromStringList(self.text[self.topLine:], maxx, maxy)
 
     def handleKeys(self, key, mouse):
-        return self
+        if key.char() == 'j' and self.topLine < len(self.text) - 10:
+            return self.update('topLine', self.topLine + 1)
 
+        elif key.char() == 'k' and self.topLine > 0:
+            return self.update('topLine', self.topLine - 1)
+
+        return self

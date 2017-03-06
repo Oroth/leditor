@@ -39,8 +39,9 @@ def createImageFromStringList(lst, maxx, maxy):
 
     for idx, string in enumerate(lst[:maxy]):
         # temp hack [:-1] to remove newlines read in from file, need to move to read section
-        # also need constraint on overruning line length [:maxx]
-        putNodeOnImage(image, 0, idx, string[:-1], None, iop.black, iop.white)
+        stringMinusNewLine = string[:-1]
+        stringWithLimit = stringMinusNewLine[:maxx]
+        putNodeOnImage(image, 0, idx, stringWithLimit, None, iop.black, iop.white)
 
     return image
 

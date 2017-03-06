@@ -86,7 +86,7 @@ def drawItem(item, prevItem, colScheme, hlcol, image, x, y, winWidth, winHeight)
 
     elif \
             text in ('.', ')') \
-            and prevItem.printRule in [ 'cellEditorString', 'cellEditorNonString'] \
+            and prevItem and prevItem.printRule in [ 'cellEditorString', 'cellEditorNonString'] \
             and prevItem.highlightIndex == len(prevItem.nodeToString()):
         bgcol = hlcol
 
