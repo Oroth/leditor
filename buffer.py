@@ -157,6 +157,9 @@ class SimpleBuffer(fo.FuncObject):
         newTree = [func(node.child) for node in self.root.child]
         return self.fromPyExp(newTree, self.cursorAdd)
 
+    def getNVSListAtCursor(self):
+        return tn.tnodeGetNVSFromAdd(self.root.child, self.cursorAdd[1:])
+
 
 class ViewBuffer(SimpleBuffer):
     def __init__(self, root, viewAdd=[0], cursorAdd=[0]):

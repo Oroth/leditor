@@ -82,6 +82,24 @@ def tnodeAddress(exp, add, acc=[]):
     else:
         return cur, accInd
 
+def tnodeGetNVSFromAdd(exp, add, acc=[]):
+    cur, curPos = tnodeIndex(exp, add[0])
+    accNVS = list(acc)
+
+    if add[2:] and cur.isSubNode():
+        accNVS.append(cur.child.child)
+        return tnodeGetNVSFromAdd(cur.child.next.child, add[2:], accNVS)
+    elif add[1:] and cur.isSubNode():
+        return tnodeGetNVSFromAdd(cur.child, add[1:], accNVS)
+    else:
+        accNVS.append(cur.child)
+        return cur, accNVS
+
+    # if add[1:] and cur.isSubNode():
+    #     return tnodeGetNVSFromAdd(cur.child, add[1:], accNVS)
+    # else:
+    #     return cur, accNVS
+
 def tnodeNVS(exp, nvs, acc=[]):
     cur, curPos = tnodeFindChild(exp, nvs[0])
     accInd = list(acc)

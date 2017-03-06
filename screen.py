@@ -34,6 +34,16 @@ def overlayLinesOnImage(bottomImage, y, topImage):
         bottomImage[y] = line
         y += 1
 
+def createImageFromStringList(lst, maxx, maxy):
+    image = createBlank(maxx, maxy)
+
+    for idx, string in enumerate(lst[:maxy]):
+        # temp hack [:-1] to remove newlines read in from file, need to move to read section
+        # also need constraint on overruning line length [:maxx]
+        putNodeOnImage(image, 0, idx, string[:-1], None, iop.black, iop.white)
+
+    return image
+
 def stringToImage(text, maxx, maxy, bgCol=iop.defaultBG(), fgCol=iop.defaultFG()):
     image = createBlank(maxx, maxy)
 

@@ -4,10 +4,8 @@ import Editors
 import iop
 
 class ScreenEditor(fo.FuncObject):
-
     def __init__(self, maxx, maxy):
         self.image = screen.createBlank(maxx, maxy)
-        self.text = 'x'
         self.statusBar = Editors.StatusBar()
         self.x = 0; self.y = 0
         self.maxx = maxx; self.maxy = maxy
@@ -23,15 +21,12 @@ class ScreenEditor(fo.FuncObject):
 
         return self.image
 
-
-
     def handleKeys(self, key, mouse):
         screen.setCellColour(self.image, self.x, self.y, iop.black, iop.white)
 
         if mouse.lbuttonPressed():
             self.x = mouse.x()
             self.y = mouse.y()
-            #cell = self.image[mouse.y()][mouse.x()]
 
         if key.code() == iop.KEY_RIGHT and self.x < self.maxx:
             self.x += 1

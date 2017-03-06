@@ -7,8 +7,7 @@ import CodeEditor
 import screenEditor
 import fileEditor
 import os.path
-from os import listdir
-from os import walk
+import pager
 import iop
 import funobj as fo
 import eval
@@ -54,6 +53,22 @@ class Window(fo.FuncObject):
         return self.updateList(
             ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
             ('editorCmd', False))
+
+    def cmdNewPager(self):
+        text = "some example text - awawy awyay"
+        file, pathList = self.editorList.getCurrent().buffer.getNVSListAtCursor()
+        print pathList
+        pathText = '.\\' + '\\'.join(pathList)
+        print pathText
+        f = open(pathText, 'r')
+        flist = f.readlines()
+        newEd = pager.Pager(flist)
+        f.close()
+
+        return self.updateList(
+            ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
+            ('editorCmd', False))
+
 
     def cmdNewEditorOnCursor(self):
         newEd = CodeEditor.CodeEditor(
@@ -441,6 +456,10 @@ class WindowManager(fo.FuncObject):
         elif key.code() == iop.KEY_F10 and key.lalt():
             print "changing to file edit mode"
             return self.replaceWindow(curWin.cmdNewFileEditor())
+
+        elif key.code() == iop.KEY_F11 and key.lalt():
+            print "changing to file edit mode"
+            return self.replaceWindow(curWin.cmdNewPager())
 
         else:
             resultWin = curWin.handleKeys(key, mouse)
