@@ -579,8 +579,13 @@ class TreeEditor(DisplayEditor):
 
             elif key.char() == '+':
                 numList = self.buffer.cursorToPyExp()
-                result = reduce(operator.add, numList)
-                newBuff = self.buffer.replaceAtCursor(result)
+                try:
+                    result = reduce(operator.add, numList)
+                except TypeError:
+                    newBuff = self.buffer
+                else:
+                    newBuff = self.buffer.replaceAtCursor(result)
+
                 return self.updateList(
                     ('buffer', newBuff),
                     ('updateUndo', True))
