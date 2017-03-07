@@ -229,11 +229,11 @@ class TreeEditor(DisplayEditor):
     def handleKeysInitial(self, key, mouse):
         if self.cmdBar:
             cmdResult = self.cmdBar.handleKeys(key, mouse)
-            if cmdResult == 'ESCAPE':
+            if cmdResult.returnState == 'ESCAPE':
                 return self.update('cmdBar', None)
 
-            elif cmdResult == 'PRINT':
-                cmd = self.cmdBar.buffer.root.childToPyExp()
+            elif cmdResult.returnState == 'PRINT':
+                cmd = cmdResult.buffer.root.childToPyExp()
                 self.statusBar.updateMessage(cmd)
                 return self.updateList(
                     ('cmdBar', None)
@@ -698,25 +698,24 @@ class TreeEditor(DisplayEditor):
 class CmdBar(TreeEditor):
     def __init__(self, *args, **kwargs):
         super(CmdBar, self).__init__(*args, **kwargs)
+        self.returnState = 'EDIT'
 
     def draw(self, maxx, maxy, isActive):
         return super(TreeEditor, self).draw(maxx, maxy, isActive)
 
     def parseCommand(self):
-        cmd = self.buffer.root.toPyExp()
-        return 'PRINT'
-       #if cmd[0] == 'testmsg':
-        #    return 'PRINT'
+        return self.update('returnState', 'PRINT')
 
-        #return self
 
     def handleKeys(self, key, mouse):
+        self.returnState = 'EDIT'
 
         if key.code() == iop.KEY_ESCAPE:
-            return 'ESCAPE'
+            return self.update('returnState' 'ESCAPE')
 
         if key.code() == iop.KEY_ENTER:
-            return self.parseCommand()
+            return super(CmdBar, self).handleKeys(key, mouse).parseCommand()
+
 
         return super(CmdBar, self).handleKeys(key, mouse)
 
