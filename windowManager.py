@@ -487,107 +487,10 @@ class WindowManager(fo.FuncObject):
         if mainResult:
             return mainResult
 
-
-            # if key.char() == 'j':
-            #     return self.cmdWinDown()
-            #     # try:
-            #     #     return self.updateList(
-            #     #         ('winTree', self.winTree.curNext()),
-            #     #         ('winCmd', False))
-            #     # except ValueError: pass
-            #
-            # elif key.char() == 'k':
-            #     return self.cmdWinUp()
-            #     # try:
-            #     #     return self.updateList(
-            #     #         ('winTree', self.winTree.curPrev()),
-            #     #         ('winCmd', False))
-            #     # except ValueError: pass
-            #
-            # elif key.char() == 'd':
-            #     if self.winTree.length() > 1:
-            #         return self.updateList(
-            #             ('winTree', self.winTree.deleteAtCursor()),
-            #             ('winCmd', False))
-            #
-            # elif key.char() == 'u':
-            #     if self.hist.next:
-            #         return self.updateList(
-            #             ('ImageRoot', self.hist.next),
-            #             ('hist', self.hist.next))
-            #
-            # elif key.char() == 'w':
-            #     return self.updateList(
-            #         ('winTree', self.winTree.curCycle()),
-            #         ('winCmd', False))
-            #
-            # # run a function like a program
-            # elif key.code() == iop.KEY_SPACE:
-            #     self.winCmd = False
-            #     return self.addWindow(curWin.cmdRunProg())
-            #
-            # elif key.code() == iop.KEY_ENTER:
-            #     self.winCmd = False
-            #     return self.addWindow(curWin.cmdNewEditorOnCursor())
-            #
-            # elif key.char() == '>':
-            #     self.winCmd = False
-            #     try:
-            #         return self.addWindow(curWin.cmdInspectProcedureCall())
-            #     except ex.UnappliedProcedureException:
-            #         return self
-            #
-            # elif key.code() == iop.KEY_F5:
-            #     self.winCmd = False
-            #     #return self.replaceWindow(curWin.cmdRunProg())
-            #     return self.addWindow(curWin.cmdInspectProcedureCall(["abc"]))
-            #
-            # elif key.code() == iop.KEY_ESCAPE:
-            #     return self.update('winCmd', False)
-            #
-            # elif key.code() == iop.KEY_F10:
-            #     iop.toggleFullScreen()
-            #     return self.update('winCmd', False)
-            #
-            # else:
-            #     return self
-
-        # elif key.char() == 'w' and key.lctrl():
-        #     self.winCmd = True
-        #     curEd.statusBar.updateMessage("Window Mode")
-        #     print "windowing"
-        #     return self
-        #
-        # elif key.char() == 's' and key.lctrl():
-        #     self.writeImage()
-        #     self.writeEditor()
-        #     curEd.statusBar.updateMessage("Saving Image")
-        #     print "saving"
-        #     return self
-        #
-        # elif key.char() ==':':
-        #     return self.update('cmdBar', CmdBar())
-        #
-        # elif key.code() == iop.KEY_F9 and key.lalt():
-        #     print "changing to screen mode"
-        #     return self.replaceWindow(curWin.cmdNewScreenEditor())
-        #
-        # elif key.code() == iop.KEY_F10 and key.lalt():
-        #     print "changing to file edit mode"
-        #     return self.replaceWindow(curWin.cmdNewFileEditor())
-        #
-        # elif key.code() == iop.KEY_F11 and key.lalt():
-        #     print "changing to file edit mode"
-        #     return self.replaceWindow(curWin.cmdNewPager())
-
         else:
             resultWin = curWin.handleKeys(key, mouse)
 
             resultEd = resultWin.getEditor()
-            # if resultEd == 'ESC':
-            #     self.writeImage()
-            #     self.writeEditor()
-            #     return False
 
             if resultEd == 'UNDO':
                 if self.hist.next:
