@@ -2,7 +2,6 @@ __author__ = 'chephren'
 import operator
 
 import buffer
-import eval
 import funobj as fo
 import iop
 import misc
@@ -205,8 +204,6 @@ class TreeEditor(DisplayEditor):
         self.zippedNodes = dict(zippedNodes)
         initialViewHistoryNode = tn.TNode(tn.TNode(View(rootCursorAdd)))
         self.viewHistory = buffer.SimpleBuffer(initialViewHistoryNode, [0, 0])
-        self.cmdBar = None
-
         self.drawMode = 'cursor'
         self.statusBar = StatusBar()
 
@@ -223,53 +220,12 @@ class TreeEditor(DisplayEditor):
         self.statusBar.updateStatus([self.statusDescription, self.buffer.viewAdd, self.buffer.cursorAdd,
                              Symbol('nodeID'), self.buffer.cursor.nodeID])
 
-    def test(self):
-        print 'test'
-        return 'tested'
-
-    def evalCmdBarResult(self, cmdBuffer):
-
-        # Maybe should get done in the actual cmdbar
-        cmd = cmdBuffer.toPyExp()
-        print cmd
-
-        env = eval.Env(('write', 'test'), (self.test, self.test), eval.global_env)
-        result = eval.eval(buffer.BufferSexp(cmdBuffer.root), env)
-
-        print result
-
-        if cmd[0] == 'paste':
-            if self.yankBuffer:
-                toInsert = tn.createTNodeExpFromPyExp(self.yankBuffer)
-                return self.updateList(
-                    ('buffer', self.buffer.appendAtCursor(toInsert)),
-                    ('updateUndo', True),
-                    ('cmdBar', None))
-
-        else:
-            self.statusBar.updateMessage(result)
-            return self.updateList(
-                ('cmdBar', None),
-                ('statusBar', self.statusBar.refreshBuffer()))
-
     def handleKeys(self, key, mouse):
         return self.handleKeysInitial(key, mouse)
 
     # split out for flexibility when inheriting
     def handleKeysInitial(self, key, mouse):
-        if self.cmdBar:
-            cmdResult = self.cmdBar.handleKeys(key, mouse)
-            if cmdResult.returnState == 'ESCAPE':
-                return self.update('cmdBar', None)
-
-            elif cmdResult.returnState == 'PRINT':
-                return self.evalCmdBarResult(cmdResult.buffer)
-
-            else:
-                return self.update('cmdBar', cmdResult)
-
-        else:
-            return self.handleKeysMain(key, mouse)
+        return self.handleKeysMain(key, mouse)
 
     def handleMouse(self, mouse):
         if mouse.lbuttonPressed():
@@ -620,11 +576,6 @@ class TreeEditor(DisplayEditor):
                     ('buffer', self.buffer.toggleStringAtCursor()),
                     ('updateUndo', True))
 
-            # elif key.char() == ':':
-            #     self.cmdBar = CmdBar(tn.createTNodeExpFromPyExp([[Symbol('')]]), [0], [0, 0])
-            #     self.cmdBar.editing = True
-            #     self.cmdBar.cellEditor = CellEditor(Symbol(''))
-
             elif key.char() == '/':
                 if not self.buffer.onSubNode():
                     try:
@@ -709,10 +660,6 @@ class TreeEditor(DisplayEditor):
 
         screen.overlayLinesOnImage(finalImage, 0, mainImage)
 
-        # if self.cmdBar:
-        #     cmdImage = self.cmdBar.draw(maxx, 2, isActive=True)
-        #     screen.overlayLinesOnImage(finalImage, maxy - 2, cmdImage)
-
         if self.statusBar:
             statusImage = self.statusBar.draw(maxx, 2, isActive=False)
             screen.overlayLinesOnImage(finalImage, maxy - 1, statusImage)
@@ -745,5 +692,4 @@ class StatusBar(DisplayEditor):
 
     def clearMessage(self):
         self.message = None
-
 
