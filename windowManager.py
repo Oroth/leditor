@@ -10,10 +10,12 @@ from cmdBar import CmdBar
 import os.path
 import pager
 import iop
+from iop import Key
 import funobj as fo
 import eval
 import leditor_exceptions as ex
 from tn import cons
+import cmdList
 
 
 class Window(fo.FuncObject):
@@ -242,6 +244,30 @@ class WindowManager(fo.FuncObject):
         self.cmdBar = None
         self.message = ''
 
+        self.wincl = cmdList.CmdList(
+            [(Key.c('j'), 'cmdWinDown'),
+             (Key.c('k'), 'cmdWinUp'),
+             (Key.c('d'), 'cmdWinDel'),
+             (Key.c('u'), 'cmdWinUndo'),
+             (Key.c('w'), 'cmdWinNext'),
+             (Key.c('>'), 'cmdOpenWinInspectProc'),
+             (Key.vk(iop.KEY_SPACE), 'cmdRunProg'),
+             (Key.vk(iop.KEY_ENTER), 'cmdOpenWinOnCursor'),
+             #(Key.vk(iop.KEY_F5), 'cmdWinUp'),
+             (Key.vk(iop.KEY_F10), 'cmdToggleFullScreen'),
+             (Key.vk(iop.KEY_ESCAPE), 'cmdExitWinMode')
+             ])
+
+        self.mainCl = cmdList.CmdList([
+            (Key.c('w', lctrl=True), 'cmdStartWinMode'),
+            (Key.c('s', lctrl=True), 'cmdSave'),
+            (Key.c(':'), 'cmdStartCmdBar'),
+            (Key.vk(iop.KEY_F9, lalt=True), 'cmdScreenEditor'),
+            (Key.vk(iop.KEY_F10, lalt=True), 'cmdFileEditor'),
+            (Key.vk(iop.KEY_F11, lalt=True), 'cmdTextPager'),
+
+        ])
+
     def test(self):
         print 'test'
         return 'tested'
@@ -259,11 +285,10 @@ class WindowManager(fo.FuncObject):
         curEd = curWin.getEditor()
         return curEd.getEditorSettings()
 
-    def cmdSave(self):
-        self.writeImage()
-        self.writeEditor()
-        print "saving"
-        return self.update('message', "Saving Image")
+    def curWin(self):
+        return self.winTree.getCurrent()
+
+
 
     def writeEditor(self):
         pyObj = self.getEditSexp()
@@ -393,11 +418,6 @@ class WindowManager(fo.FuncObject):
         return self.integrateUpdatedWindowList(newWinList)
 
 
-    def cmdSplit(self):
-        curWin = self.winTree.getCurrent()
-        newEd = curWin.getEditor().clone()
-        newWin = curWin.addEditor(newEd)
-        return self.addWindow(newWin)
 
 
     def evalCmdBarResult(self, cmdBuffer):
@@ -409,7 +429,7 @@ class WindowManager(fo.FuncObject):
         if cmd[0] in ('q', 'quit'):
             return False
 
-        env = eval.Env(('write', 'test', 'split'), (self.cmdSave, self.test, self.cmdSplit), eval.global_env)
+        env = eval.Env(('write', 'test', 'split'), (self.cmdSave, self.test, self.cmdWinSplit), eval.global_env)
         result = eval.eval(buffer.BufferSexp(cmdBuffer.root), env)
         print result
 
@@ -459,106 +479,117 @@ class WindowManager(fo.FuncObject):
         curEd = curWin.getEditor()
 
         if self.winCmd:
-            if key.char() == 'j':
-                try:
-                    return self.updateList(
-                        ('winTree', self.winTree.curNext()),
-                        ('winCmd', False))
-                except ValueError: pass
+            result = self.wincl.process(key, self)
+            return result if result else self
 
-            elif key.char() == 'k':
-                try:
-                    return self.updateList(
-                        ('winTree', self.winTree.curPrev()),
-                        ('winCmd', False))
-                except ValueError: pass
+        mainResult = self.mainCl.process(key, self)
 
-            elif key.char() == 'd':
-                if self.winTree.length() > 1:
-                    return self.updateList(
-                        ('winTree', self.winTree.deleteAtCursor()),
-                        ('winCmd', False))
+        if mainResult:
+            return mainResult
 
-            elif key.char() == 'u':
-                if self.hist.next:
-                    return self.updateList(
-                        ('ImageRoot', self.hist.next),
-                        ('hist', self.hist.next))
 
-            elif key.char() == 'w':
-                return self.updateList(
-                    ('winTree', self.winTree.curCycle()),
-                    ('winCmd', False))
+            # if key.char() == 'j':
+            #     return self.cmdWinDown()
+            #     # try:
+            #     #     return self.updateList(
+            #     #         ('winTree', self.winTree.curNext()),
+            #     #         ('winCmd', False))
+            #     # except ValueError: pass
+            #
+            # elif key.char() == 'k':
+            #     return self.cmdWinUp()
+            #     # try:
+            #     #     return self.updateList(
+            #     #         ('winTree', self.winTree.curPrev()),
+            #     #         ('winCmd', False))
+            #     # except ValueError: pass
+            #
+            # elif key.char() == 'd':
+            #     if self.winTree.length() > 1:
+            #         return self.updateList(
+            #             ('winTree', self.winTree.deleteAtCursor()),
+            #             ('winCmd', False))
+            #
+            # elif key.char() == 'u':
+            #     if self.hist.next:
+            #         return self.updateList(
+            #             ('ImageRoot', self.hist.next),
+            #             ('hist', self.hist.next))
+            #
+            # elif key.char() == 'w':
+            #     return self.updateList(
+            #         ('winTree', self.winTree.curCycle()),
+            #         ('winCmd', False))
+            #
+            # # run a function like a program
+            # elif key.code() == iop.KEY_SPACE:
+            #     self.winCmd = False
+            #     return self.addWindow(curWin.cmdRunProg())
+            #
+            # elif key.code() == iop.KEY_ENTER:
+            #     self.winCmd = False
+            #     return self.addWindow(curWin.cmdNewEditorOnCursor())
+            #
+            # elif key.char() == '>':
+            #     self.winCmd = False
+            #     try:
+            #         return self.addWindow(curWin.cmdInspectProcedureCall())
+            #     except ex.UnappliedProcedureException:
+            #         return self
+            #
+            # elif key.code() == iop.KEY_F5:
+            #     self.winCmd = False
+            #     #return self.replaceWindow(curWin.cmdRunProg())
+            #     return self.addWindow(curWin.cmdInspectProcedureCall(["abc"]))
+            #
+            # elif key.code() == iop.KEY_ESCAPE:
+            #     return self.update('winCmd', False)
+            #
+            # elif key.code() == iop.KEY_F10:
+            #     iop.toggleFullScreen()
+            #     return self.update('winCmd', False)
+            #
+            # else:
+            #     return self
 
-            # run a function like a program
-            elif key.code() == iop.KEY_SPACE:
-                self.winCmd = False
-                return self.addWindow(curWin.cmdRunProg())
-
-            elif key.code() == iop.KEY_ENTER:
-                self.winCmd = False
-                return self.addWindow(curWin.cmdNewEditorOnCursor())
-
-            elif key.char() == '>':
-                self.winCmd = False
-                try:
-                    return self.addWindow(curWin.cmdInspectProcedureCall())
-                except ex.UnappliedProcedureException:
-                    return self
-
-            elif key.code() == iop.KEY_F5:
-                self.winCmd = False
-                #return self.replaceWindow(curWin.cmdRunProg())
-                return self.addWindow(curWin.cmdInspectProcedureCall(["abc"]))
-
-            elif key.code() == iop.KEY_ESCAPE:
-                return self.update('winCmd', False)
-
-            elif key.code() == iop.KEY_F10:
-                iop.toggleFullScreen()
-                return self.update('winCmd', False)
-
-            else:
-                return self
-
-        elif key.char() == 'w' and key.lctrl():
-            self.winCmd = True
-            curEd.statusBar.updateMessage("Window Mode")
-            print "windowing"
-            return self
-
-        elif key.char() == 's' and key.lctrl():
-            self.writeImage()
-            self.writeEditor()
-            curEd.statusBar.updateMessage("Saving Image")
-            print "saving"
-            return self
-
-        elif key.char() ==':':
-            return self.update('cmdBar', CmdBar())
-
-        elif key.code() == iop.KEY_F9 and key.lalt():
-            print "changing to screen mode"
-            return self.replaceWindow(curWin.cmdNewScreenEditor())
-
-        elif key.code() == iop.KEY_F10 and key.lalt():
-            print "changing to file edit mode"
-            return self.replaceWindow(curWin.cmdNewFileEditor())
-
-        elif key.code() == iop.KEY_F11 and key.lalt():
-            print "changing to file edit mode"
-            return self.replaceWindow(curWin.cmdNewPager())
+        # elif key.char() == 'w' and key.lctrl():
+        #     self.winCmd = True
+        #     curEd.statusBar.updateMessage("Window Mode")
+        #     print "windowing"
+        #     return self
+        #
+        # elif key.char() == 's' and key.lctrl():
+        #     self.writeImage()
+        #     self.writeEditor()
+        #     curEd.statusBar.updateMessage("Saving Image")
+        #     print "saving"
+        #     return self
+        #
+        # elif key.char() ==':':
+        #     return self.update('cmdBar', CmdBar())
+        #
+        # elif key.code() == iop.KEY_F9 and key.lalt():
+        #     print "changing to screen mode"
+        #     return self.replaceWindow(curWin.cmdNewScreenEditor())
+        #
+        # elif key.code() == iop.KEY_F10 and key.lalt():
+        #     print "changing to file edit mode"
+        #     return self.replaceWindow(curWin.cmdNewFileEditor())
+        #
+        # elif key.code() == iop.KEY_F11 and key.lalt():
+        #     print "changing to file edit mode"
+        #     return self.replaceWindow(curWin.cmdNewPager())
 
         else:
             resultWin = curWin.handleKeys(key, mouse)
 
             resultEd = resultWin.getEditor()
-            if resultEd == 'ESC':
-                self.writeImage()
-                self.writeEditor()
-                return False
+            # if resultEd == 'ESC':
+            #     self.writeImage()
+            #     self.writeEditor()
+            #     return False
 
-            elif resultEd == 'UNDO':
+            if resultEd == 'UNDO':
                 if self.hist.next:
                     self.hist = self.hist.next
                     self.ImageRoot = tn.TNode(self.hist.child)
@@ -575,3 +606,95 @@ class WindowManager(fo.FuncObject):
 
 
         return self
+
+    def cmdWinDown(self):
+        try:
+            return self.updateList(
+                ('winTree', self.winTree.curNext()),
+                ('winCmd', False))
+        except ValueError: return self
+
+    def cmdWinUp(self):
+        try:
+            return self.updateList(
+                ('winTree', self.winTree.curPrev()),
+                ('winCmd', False))
+        except ValueError: return self
+
+    def cmdWinDel(self):
+        if self.winTree.length() > 1:
+            return self.updateList(
+                ('winTree', self.winTree.deleteAtCursor()),
+                ('winCmd', False))
+
+    def cmdWinSplit(self):
+        curWin = self.winTree.getCurrent()
+        newEd = curWin.getEditor().clone()
+        newWin = curWin.addEditor(newEd)
+        return self.addWindow(newWin)
+
+    # Does this even work?
+    def cmdWinUndo(self):
+        if self.hist.next:
+            return self.updateList(
+                ('ImageRoot', self.hist.next),
+                ('hist', self.hist.next))
+
+    def cmdWinNext(self):
+        return self.updateList(
+            ('winTree', self.winTree.curCycle()),
+            ('winCmd', False))
+
+    def cmdRunProg(self):
+        self.winCmd = False
+        return self.addWindow(self.curWin().cmdRunProg())
+
+    def cmdOpenWinOnCursor(self):
+        self.winCmd = False
+        return self.addWindow(self.curWin().cmdNewEditorOnCursor())
+
+    def cmdOpenWinInspectProc(self):
+        self.winCmd = False
+        try:
+            return self.addWindow(self.curWin().cmdInspectProcedureCall())
+        except ex.UnappliedProcedureException:
+            return self
+
+    # elif key.code() == iop.KEY_F5:
+    #     self.winCmd = False
+    #     #return self.replaceWindow(curWin.cmdRunProg())
+    #     return self.addWindow(curWin.cmdInspectProcedureCall(["abc"]))
+
+    def cmdExitWinMode(self):
+        return self.update('winCmd', False)
+
+    def cmdToggleFullscreen(self):
+        iop.toggleFullScreen()
+        return self.update('winCmd', False)
+
+    def cmdSave(self):
+        self.writeImage()
+        self.writeEditor()
+        print "saving"
+        return self.update('message', "Saving Image")
+
+    def cmdStartWinMode(self):
+        return self.updateList(
+            ('message', 'Window Mode'),
+            ('winCmd', True)
+        )
+
+    def cmdStartCmdBar(self):
+        return self.update('cmdBar', CmdBar())
+
+    def cmdScreenEditor(self):
+        print "changing to screen mode"
+        return self.replaceWindow(self.curWin().cmdNewScreenEditor())
+
+    def cmdFileEditor(self):
+        print "changing to file edit mode"
+        return self.replaceWindow(self.curWin().cmdNewFileEditor())
+
+    def cmdTextPager(self):
+        print "changing to text paging mode"
+        return self.replaceWindow(self.curWin().cmdNewPager())

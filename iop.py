@@ -41,11 +41,24 @@ class Key():
     def __init__(self, keyObj):
         self.keyObj = keyObj
 
+    vkCharMap = {
+            KEY_ENTER: 13,
+            KEY_ESCAPE: 27,
+            KEY_BACKSPACE: 8,
+            KEY_SPACE: 32,
+            KEY_TAB: 9
+        }
+
+    shiftedKeys = '!"$%^&*()_+{}:@~|<>?'
+
     @classmethod
     def vk(cls, vk, lctrl=False, lalt=False, shift=False):
         newKey = libtcod.Key()
         newKey.vk = vk
-        newKey.c = 0
+        if vk in Key.vkCharMap:
+            newKey.c = Key.vkCharMap[vk]
+        else:
+            newKey.c = 0
         newKey.lctrl = lctrl
         newKey.lalt = lalt
         newKey.shift = shift
@@ -60,7 +73,7 @@ class Key():
         newKey.lalt = lalt
         if shift is not None:
             newKey.shift = shift
-        elif c.isupper():
+        elif c.isupper() or c in Key.shiftedKeys:
             newKey.shift = True
         else:
             newKey.shift = False

@@ -27,19 +27,19 @@ while not iop.isWindowClosed():
     iop.screenFlush()
     newKey, newMouse = iop.getInput()
 
-    if newKey.keyObj.vk != 0:
-        print "raw value ", newKey.code()
-        print "c value ", newKey.keyObj.c
-        #print newKey.__eq__
-        print newKey._key()
-
-        #testKey = iop.Key.vk(iop.KEY_CHAR)
-        testKey = iop.Key.c('L')
-        print "test key value ", testKey.code()
-        print "test c value ", testKey.keyObj.c
-        print testKey._key()
-
-        print testKey == newKey
+    # if newKey.keyObj.vk != 0:
+    #     print "raw value ", newKey.code()
+    #     print "c value ", newKey.keyObj.c
+    #     #print newKey.__eq__
+    #     print newKey._key()
+    #
+    #     #testKey = iop.Key.vk(iop.KEY_CHAR)
+    #     testKey = iop.Key.c('L')
+    #     print "test key value ", testKey.code()
+    #     print "test c value ", testKey.keyObj.c
+    #     print testKey._key()
+    #
+    #     print testKey == newKey
 
     result = wm.handleKeys(newKey, newMouse)
     if result:
