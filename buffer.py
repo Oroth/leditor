@@ -41,6 +41,9 @@ class SimpleBuffer(fo.FuncObject):
     def getCurrent(self):
         return self.cursor.child
 
+    def toPyExp(self):
+        return self.root.childToPyExp()
+
     def cursorToPyExp(self):
         return self.cursor.childToPyExp()
 

@@ -1,14 +1,17 @@
 __author__ = 'chephren'
+import operator
+
+import buffer
+import eval
+import funobj as fo
 import iop
+import misc
 import printsexp
 import reader
-import tn
-import buffer
-import funobj as fo
-import operator
 import screen
-import misc
+import tn
 from reader import Symbol
+
 
 class View(object):
     def __init__(self, address):
@@ -111,7 +114,6 @@ class CellEditor(object):
             self.content.insert(self.index, key.char())
             self.index += 1
 
-
 class ColourScheme(fo.FuncObject):
     def __init__(self,
                  bgCol, symbolCol, identifierCol,
@@ -193,7 +195,6 @@ class TreeEditor(DisplayEditor):
     def __init__(self, root, rootCursorAdd=[0], cursorAdd=[0], zippedNodes={}):
         super(TreeEditor, self).__init__(root, rootCursorAdd, cursorAdd)
 
-
         self.editing = False
         self.changeMode = False
         self.cellEditor = None
@@ -212,7 +213,6 @@ class TreeEditor(DisplayEditor):
     def nodeIsRevealed(self, node):
         return node in self.revealedNodes and self.revealedNodes[node]
 
-
     def syncWithImage(self, newImageRoot):
         if newImageRoot != self.buffer.root:
             return self.update('buffer', self.buffer.syncToNewRoot(newImageRoot))
@@ -223,9 +223,39 @@ class TreeEditor(DisplayEditor):
         self.statusBar.updateStatus([self.statusDescription, self.buffer.viewAdd, self.buffer.cursorAdd,
                              Symbol('nodeID'), self.buffer.cursor.nodeID])
 
+    def test(self):
+        print 'test'
+        return 'tested'
+
+    def evalCmdBarResult(self, cmdBuffer):
+
+        # Maybe should get done in the actual cmdbar
+        cmd = cmdBuffer.toPyExp()
+        print cmd
+
+        env = eval.Env(('write', 'test'), (self.test, self.test), eval.global_env)
+        result = eval.eval(buffer.BufferSexp(cmdBuffer.root), env)
+
+        print result
+
+        if cmd[0] == 'paste':
+            if self.yankBuffer:
+                toInsert = tn.createTNodeExpFromPyExp(self.yankBuffer)
+                return self.updateList(
+                    ('buffer', self.buffer.appendAtCursor(toInsert)),
+                    ('updateUndo', True),
+                    ('cmdBar', None))
+
+        else:
+            self.statusBar.updateMessage(result)
+            return self.updateList(
+                ('cmdBar', None),
+                ('statusBar', self.statusBar.refreshBuffer()))
+
     def handleKeys(self, key, mouse):
         return self.handleKeysInitial(key, mouse)
 
+    # split out for flexibility when inheriting
     def handleKeysInitial(self, key, mouse):
         if self.cmdBar:
             cmdResult = self.cmdBar.handleKeys(key, mouse)
@@ -233,12 +263,8 @@ class TreeEditor(DisplayEditor):
                 return self.update('cmdBar', None)
 
             elif cmdResult.returnState == 'PRINT':
-                cmd = cmdResult.buffer.root.childToPyExp()
-                self.statusBar.updateMessage(cmd)
-                return self.updateList(
-                    ('cmdBar', None)
-                    ,('statusBar', self.statusBar.refreshBuffer())
-                )
+                return self.evalCmdBarResult(cmdResult.buffer)
+
             else:
                 return self.update('cmdBar', cmdResult)
 
@@ -393,7 +419,6 @@ class TreeEditor(DisplayEditor):
             return self.update('changeMode', 'to')
 
         return self.update('changeMode', False)
-
 
     def handleKeysMain(self, key, mouse):
         self.updateUndo = False
@@ -595,10 +620,10 @@ class TreeEditor(DisplayEditor):
                     ('buffer', self.buffer.toggleStringAtCursor()),
                     ('updateUndo', True))
 
-            elif key.char() == ':':
-                self.cmdBar = CmdBar(tn.createTNodeExpFromPyExp([[Symbol('')]]), [0], [0, 0])
-                self.cmdBar.editing = True
-                self.cmdBar.cellEditor = CellEditor(Symbol(''))
+            # elif key.char() == ':':
+            #     self.cmdBar = CmdBar(tn.createTNodeExpFromPyExp([[Symbol('')]]), [0], [0, 0])
+            #     self.cmdBar.editing = True
+            #     self.cmdBar.cellEditor = CellEditor(Symbol(''))
 
             elif key.char() == '/':
                 if not self.buffer.onSubNode():
@@ -684,40 +709,15 @@ class TreeEditor(DisplayEditor):
 
         screen.overlayLinesOnImage(finalImage, 0, mainImage)
 
-        if self.cmdBar:
-            cmdImage = self.cmdBar.draw(maxx, 2, isActive=True)
-            screen.overlayLinesOnImage(finalImage, maxy - 2, cmdImage)
+        # if self.cmdBar:
+        #     cmdImage = self.cmdBar.draw(maxx, 2, isActive=True)
+        #     screen.overlayLinesOnImage(finalImage, maxy - 2, cmdImage)
 
         if self.statusBar:
             statusImage = self.statusBar.draw(maxx, 2, isActive=False)
             screen.overlayLinesOnImage(finalImage, maxy - 1, statusImage)
 
         return finalImage
-
-
-class CmdBar(TreeEditor):
-    def __init__(self, *args, **kwargs):
-        super(CmdBar, self).__init__(*args, **kwargs)
-        self.returnState = 'EDIT'
-
-    def draw(self, maxx, maxy, isActive):
-        return super(TreeEditor, self).draw(maxx, maxy, isActive)
-
-    def parseCommand(self):
-        return self.update('returnState', 'PRINT')
-
-
-    def handleKeys(self, key, mouse):
-        self.returnState = 'EDIT'
-
-        if key.code() == iop.KEY_ESCAPE:
-            return self.update('returnState' 'ESCAPE')
-
-        if key.code() == iop.KEY_ENTER:
-            return super(CmdBar, self).handleKeys(key, mouse).parseCommand()
-
-
-        return super(CmdBar, self).handleKeys(key, mouse)
 
 
 class StatusBar(DisplayEditor):
@@ -745,3 +745,5 @@ class StatusBar(DisplayEditor):
 
     def clearMessage(self):
         self.message = None
+
+

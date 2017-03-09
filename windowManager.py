@@ -6,6 +6,7 @@ import screen
 import CodeEditor
 import screenEditor
 import fileEditor
+from cmdBar import CmdBar
 import os.path
 import pager
 import iop
@@ -187,6 +188,7 @@ class Window(fo.FuncObject):
             print 'edit cmd'
             return self.update('editorCmd', True)
 
+
         else:
             relativePositionMouse = mouse.getMouseWithRelativePosition(self.posx, self.posy)
             newEditor = self.getEditor().handleKeys(key, relativePositionMouse)
@@ -236,6 +238,33 @@ class WindowManager(fo.FuncObject):
         self.imageFileName = imageFileName
         self.winCmd = False
 
+        self.cmdBar = None
+        self.message = ''
+
+    def test(self):
+        print 'test'
+        return 'tested'
+
+    def quitWithoutSave(self):
+        return False
+
+    def evalCmdBarResult(self, cmdBuffer):
+
+        # Maybe should get done in the actual cmdbar
+        cmd = cmdBuffer.toPyExp()
+        print cmd
+
+        env = eval.Env(('write', 'test'), (self.writeImage, self.test), eval.global_env)
+        result = eval.eval(buffer.BufferSexp(cmdBuffer.root), env)
+
+        print result
+
+        self.message = reader.to_string(result)
+
+        #self.statusBar.updateMessage(result)
+        return self.updateList(
+            ('cmdBar', None))
+
     def getWinCount(self):
         return self.winTree.length()
 
@@ -258,8 +287,8 @@ class WindowManager(fo.FuncObject):
         f.write(text)
         f.close()
 
-    # returns an editor with settings as per the EditorSettings file
     def createListEdFromEditorSettings(self, root):
+        "returns an editor with settings as per the EditorSettings file"
         if os.path.isfile("EditorSettings"):
             pyEditorLoad = reader.loadFile("EditorSettings")
             window = dict(pyEditorLoad[2][1:])
@@ -280,7 +309,7 @@ class WindowManager(fo.FuncObject):
         curY = 0
         wins = self.winTree.length()
 
-        screenForWins = iop.screenHeight() #- numberOfBorders
+        screenForWins = iop.screenHeight() - 1 #- numberOfBorders
         minYStep = screenForWins / wins
         leftover = screenForWins % wins
 
@@ -301,7 +330,7 @@ class WindowManager(fo.FuncObject):
         curY = 0
         wins = self.winTree.length()
 
-        screenForWins = iop.screenHeight()
+        screenForWins = iop.screenHeight() - 1  # leave space for cmd bar
         minYStep = screenForWins / wins
         leftover = screenForWins % wins
 
@@ -317,6 +346,16 @@ class WindowManager(fo.FuncObject):
                 window.draw(0, curY, maxX, curYStep, True)
             else: window.draw(0, curY, maxX, curYStep,False)
             curY += curYStep
+
+        cmdPosy = screenForWins
+        if self.cmdBar:
+            cmdImage = self.cmdBar.draw(maxX, 2, isActive=True)
+            screen.printToScreen(cmdImage, 0, cmdPosy)
+        else:
+            #blank = screen.createBlank(maxX, 2)
+            #screen.overlayLinesOnImage(blank, 0)
+            msg = screen.stringToImage(self.message, maxX, 2)
+            screen.printToScreen(msg, 0, cmdPosy)
 
 
     def matchWindowToClick(self, x, y):
@@ -362,13 +401,39 @@ class WindowManager(fo.FuncObject):
         newWinList = self.winTree.replaceAtCursor(newWindow)
         return self.integrateUpdatedWindowList(newWinList)
 
+    def handleCmdBarInput(self, key, mouse):
+        cmdResult = self.cmdBar.handleKeys(key, mouse)
+        if cmdResult.returnState == 'ESCAPE':
+            return self.update('cmdBar', None)
+
+        elif cmdResult.returnState == 'PRINT':
+            return self.evalCmdBarResult(cmdResult.buffer)
+
+        else:
+            return self.update('cmdBar', cmdResult)
+
     def handleKeys(self, key, mouse):
+
+        if self.cmdBar:
+            return self.handleCmdBarInput(key, mouse)
+
+        mouseResult = self
+
         if mouse.lbuttonPressed():
             windowClicked, windowAddress = self.matchWindowToClick(mouse.x(), mouse.y())
             if windowClicked != self.winTree.cursor:
-                new = self.winTree.newCursorAdd(windowAddress)
-                self.winTree = new # imperative at the moment to allow simultaenously switching and selecting
+                newWinTree = self.winTree.newCursorAdd(windowAddress)
+                mouseResult = self.update('winTree', newWinTree)
+                #self.winTree = new # imperative at the moment to allow simultaenously switching and selecting
                 # an expression
+
+        if key.isPrintable():
+            return mouseResult.handleKeysMain(key, mouse).update('message', '')
+        else:
+            return mouseResult.handleKeysMain(key, mouse)
+
+
+    def handleKeysMain(self, key, mouse):
 
         curWin = self.winTree.getCurrent()
         curEd = curWin.getEditor()
@@ -448,6 +513,9 @@ class WindowManager(fo.FuncObject):
             curEd.statusBar.updateMessage("Saving Image")
             print "saving"
             return self
+
+        elif key.char() ==':':
+            return self.update('cmdBar', CmdBar())
 
         elif key.code() == iop.KEY_F9 and key.lalt():
             print "changing to screen mode"
