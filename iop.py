@@ -21,6 +21,7 @@ KEY_LEFT = libtcod.KEY_LEFT
 KEY_RIGHT = libtcod.KEY_RIGHT
 KEY_UP = libtcod.KEY_UP
 KEY_DOWN = libtcod.KEY_DOWN
+KEY_CHAR = libtcod.KEY_CHAR
 
 black = libtcod.black
 white = libtcod.white
@@ -40,6 +41,43 @@ class Key():
     def __init__(self, keyObj):
         self.keyObj = keyObj
 
+    @classmethod
+    def vk(cls, vk, lctrl=False, lalt=False, shift=False):
+        newKey = libtcod.Key()
+        newKey.vk = vk
+        newKey.c = 0
+        newKey.lctrl = lctrl
+        newKey.lalt = lalt
+        newKey.shift = shift
+        return cls(newKey)
+
+    @classmethod
+    def c(cls, c, lctrl=False, lalt=False, shift=None):
+        newKey = libtcod.Key()
+        newKey.vk = libtcod.KEY_CHAR
+        newKey.c = ord(c)
+        newKey.lctrl = lctrl
+        newKey.lalt = lalt
+        if shift is not None:
+            newKey.shift = shift
+        elif c.isupper():
+            newKey.shift = True
+        else:
+            newKey.shift = False
+
+        return cls(newKey)
+
+
+    def __eq__(x, y):
+        return x._key() == y._key()
+
+    def __hash__(self):
+        return hash(self._key())
+
+    def _key(self):
+        k = self.keyObj
+        return (k.vk, k.c, k.lctrl, k.lalt, k.shift)
+
     def code(self):
         return self.keyObj.vk
 
@@ -51,7 +89,6 @@ class Key():
 
     def lalt(self):
         return self.keyObj.lalt
-        #return self.keyObj.vk == KEY_ALT
 
     def shift(self):
         return self.keyObj.shift

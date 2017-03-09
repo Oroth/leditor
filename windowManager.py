@@ -70,6 +70,7 @@ class Window(fo.FuncObject):
             ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
             ('editorCmd', False))
 
+    #def cmdNewEditor(self):
 
     def cmdNewEditorOnCursor(self):
         newEd = CodeEditor.CodeEditor(
@@ -248,22 +249,7 @@ class WindowManager(fo.FuncObject):
     def quitWithoutSave(self):
         return False
 
-    def evalCmdBarResult(self, cmdBuffer):
 
-        # Maybe should get done in the actual cmdbar
-        cmd = cmdBuffer.toPyExp()
-        print cmd
-
-        env = eval.Env(('write', 'test'), (self.writeImage, self.test), eval.global_env)
-        result = eval.eval(buffer.BufferSexp(cmdBuffer.root), env)
-
-        print result
-
-        self.message = reader.to_string(result)
-
-        #self.statusBar.updateMessage(result)
-        return self.updateList(
-            ('cmdBar', None))
 
     def getWinCount(self):
         return self.winTree.length()
@@ -272,6 +258,12 @@ class WindowManager(fo.FuncObject):
         curWin = self.winTree.getCurrent()
         curEd = curWin.getEditor()
         return curEd.getEditorSettings()
+
+    def cmdSave(self):
+        self.writeImage()
+        self.writeEditor()
+        print "saving"
+        return self.update('message', "Saving Image")
 
     def writeEditor(self):
         pyObj = self.getEditSexp()
@@ -392,7 +384,6 @@ class WindowManager(fo.FuncObject):
             ('editorList', syncedEditorList),
             ('winTree', syncWindowsToEditorList(newWinList, syncedEditorList)))
 
-
     def addWindow(self, newWindow):
         newWinList = self.winTree.appendAtCursor(newWindow).curNext()
         return self.integrateUpdatedWindowList(newWinList)
@@ -400,6 +391,35 @@ class WindowManager(fo.FuncObject):
     def replaceWindow(self, newWindow):
         newWinList = self.winTree.replaceAtCursor(newWindow)
         return self.integrateUpdatedWindowList(newWinList)
+
+
+    def cmdSplit(self):
+        curWin = self.winTree.getCurrent()
+        newEd = curWin.getEditor().clone()
+        newWin = curWin.addEditor(newEd)
+        return self.addWindow(newWin)
+
+
+    def evalCmdBarResult(self, cmdBuffer):
+
+        # Maybe should get done in the actual cmdbar
+        cmd = cmdBuffer.toPyExp()
+        print cmd
+
+        if cmd[0] in ('q', 'quit'):
+            return False
+
+        env = eval.Env(('write', 'test', 'split'), (self.cmdSave, self.test, self.cmdSplit), eval.global_env)
+        result = eval.eval(buffer.BufferSexp(cmdBuffer.root), env)
+        print result
+
+        if isinstance(result, WindowManager):
+            return result.update('cmdBar', None)
+
+        self.message = reader.to_string(result)
+
+        return self.updateList(
+            ('cmdBar', None))
 
     def handleCmdBarInput(self, key, mouse):
         cmdResult = self.cmdBar.handleKeys(key, mouse)

@@ -225,6 +225,31 @@ class TreeEditor(DisplayEditor):
 
     # split out for flexibility when inheriting
     def handleKeysInitial(self, key, mouse):
+        self.updateUndo = False
+        self.drawMode = 'uncursor'
+        self.updateStatusBar()
+
+        if key.code() != 0:
+            self.statusBar.clearMessage()
+        self.statusBar = self.statusBar.refreshBuffer()
+
+        mouseResult = self.handleMouse(mouse)
+        if mouseResult:
+            return mouseResult
+
+        if key.code() == 0:
+            return self
+
+        # Reset the screen to include the cursor if we aren't scrolling
+        if key.char() not in ('t', 'T'):
+            self.drawMode = 'cursor'
+
+        if self.editing:
+            return self.handleCellEditor(key)
+
+        elif self.changeMode:
+            return self.handleKeysChangeMode(key)
+
         return self.handleKeysMain(key, mouse)
 
     def handleMouse(self, mouse):
@@ -377,279 +402,256 @@ class TreeEditor(DisplayEditor):
         return self.update('changeMode', False)
 
     def handleKeysMain(self, key, mouse):
-        self.updateUndo = False
-        self.drawMode = 'uncursor'
-        self.updateStatusBar()
-
-        if key.code() != 0:
-            self.statusBar.clearMessage()
-        self.statusBar = self.statusBar.refreshBuffer()
-
-        mouseResult = self.handleMouse(mouse)
-        if mouseResult:
-            return mouseResult
-
-        if key.code() == 0:
-            return self
-
-        # Reset the screen to include the cursor if we aren't scrolling
-        if key.char() not in ('t', 'T'):
-            self.drawMode = 'cursor'
-
-        if self.editing:
-            return self.handleCellEditor(key)
-
-        elif self.changeMode:
-            return self.handleKeysChangeMode(key)
 
 
-        else:
 
-            if key.code() == iop.KEY_ESCAPE:                                        # exit Editor
-                return 'ESC'
+        #else:
 
-            # Trial: blit an image to screen
-            # elif key.char() == 'x':
-            #     image = io.image_load('fonts\\arial10x10.png')
-            #     io.image_blit(image, 0, 10, 10, io.BKGND_DEFAULT, 2, 2, 0)
-            #     io.console_flush()
-            #     time.sleep(2)
+        if key.code() == iop.KEY_ESCAPE:                                        # exit Editor
+            return 'ESC'
 
-
-            elif key.char() == 'i' and key.lctrl():     # Go back to the first expression in the list
-                return self.update('buffer', self.buffer.curFirst())
-
-            elif key.char() == 'd':
-                if self.buffer.cursor != self.buffer.root:
-                    return self.updateList(
-                        ('buffer', self.buffer.deleteAtCursor()),
-                        ('yankBuffer', self.buffer.cursorToPyExp()),
-                        ('updateUndo', True))
-
-            elif key.char() == 'c':
-                if not self.buffer.onSubNode():
-                    print 'changeMode on'
-                    return self.update('changeMode', True)
-
-            elif key.char() == 'a':
-                if self.buffer.cursor != self.buffer.view:
-                    newBuff = self.buffer.appendAtCursor('').curNext()
-                    return self.updateList(
-                        ('buffer', newBuff),
-                        ('cellEditor', CellEditor(Symbol(''))),
-                        ('editing', True))
-
-            elif key.char() == 'i':
-                if self.buffer.cursor != self.buffer.view:    # maybe the correct behaviour is to sub and ins
-                    newBuff = self.buffer.insertAtCursor('').curPrev()
-                    return self.updateList(
-                        ('buffer', newBuff),
-                        ('cellEditor', CellEditor(Symbol(''))),
-                        ('editing', True))
-
-            elif key.char() == 'e':
-                return self.update('buffer', self.buffer.curLast())
-
-            elif key.char() == 'G':
-                lookupAddress = self.buffer.cursor.childToPyExp()
-                newBuff = buffer.BufferSexp(self.buffer.root, lookupAddress)
-                return self.update('buffer', newBuff)
+        # Trial: blit an image to screen
+        # elif key.char() == 'x':
+        #     image = io.image_load('fonts\\arial10x10.png')
+        #     io.image_blit(image, 0, 10, 10, io.BKGND_DEFAULT, 2, 2, 0)
+        #     io.console_flush()
+        #     time.sleep(2)
 
 
-            elif key.char() == '(':
+        elif key.char() == 'i' and key.lctrl():     # Go back to the first expression in the list
+            return self.update('buffer', self.buffer.curFirst())
+
+        elif key.char() == 'd':
+            if self.buffer.cursor != self.buffer.root:
                 return self.updateList(
-                    ('buffer', self.buffer.nestCursor()),
+                    ('buffer', self.buffer.deleteAtCursor()),
+                    ('yankBuffer', self.buffer.cursorToPyExp()),
                     ('updateUndo', True))
 
-            elif key.char() == ')':
-                if self.buffer.onSubNode() and self.buffer.cursor != self.buffer.root:
-                    return self.updateList(
-                        ('buffer', self.buffer.denestCursor()),
-                        ('updateUndo', True))
+        elif key.char() == 'c':
+            if not self.buffer.onSubNode():
+                print 'changeMode on'
+                return self.update('changeMode', True)
 
-            elif key.char() == 'o' and not key.lctrl():
-                if self.buffer.cursor != self.buffer.view:
-                    newBuff = self.buffer.appendAtCursor(['']).curNext().curChild()
-                    return self.updateList(
-                        ('buffer', newBuff),
-                        ('cellEditor', CellEditor(Symbol(''))),
-                        ('editing', True))
-
-            elif key.char() == 'O':
-                if self.buffer.cursor != self.buffer.view:
-                    newBuff = self.buffer.insertAtCursor(['']).curPrev().curChild()
-                    return self.updateList(
-                        ('buffer', newBuff),
-                        ('cellEditor', CellEditor(Symbol(''))),
-                        ('editing', True))
-
-            elif key.char() == 'm':
-                newPrintingMode = misc.cycleThroughList(self.printingMode, self.printingModeOptions)
-                self.statusBar.updateMessage("DisplayMode: " + newPrintingMode)
-
-                return self.update('printingMode', newPrintingMode)
-
-
-            elif key.char() == 'N':
-                newBuff = buffer.BufferSexp(self.buffer.root, [0], [0, 0]).curLast()
-                newBuff = newBuff.appendAtCursor([reader.Symbol('newNode')]).curNext()
-                newBuff = newBuff.viewToCursor().curChild()
-                self.topLine = 0
-                return self.update('buffer', newBuff)
-
-            elif key.char() == 'p':
-                if self.yankBuffer:
-                    toInsert = tn.createTNodeExpFromPyExp(self.yankBuffer)
-                    return self.updateList(
-                        ('buffer', self.buffer.appendAtCursor(toInsert)),
-                        ('updateUndo', True))
-
-            elif key.char() == 'P':
-                if self.yankBuffer:
-                    toInsert = tn.createTNodeExpFromPyExp(self.yankBuffer)
-                    return self.updateList(
-                        ('buffer', self.buffer.insertAtCursor(toInsert)),
-                        ('updateUndo', True))
-
-            elif key.char() == 'R':
-                return self.update('buffer', self.buffer.viewToRoot())
-
-            elif key.char() == 's':
+        elif key.char() == 'a':
+            if self.buffer.cursor != self.buffer.view:
+                newBuff = self.buffer.appendAtCursor('').curNext()
                 return self.updateList(
+                    ('buffer', newBuff),
                     ('cellEditor', CellEditor(Symbol(''))),
                     ('editing', True))
 
-            elif key.char() == 't':
-                self.topLine += 1
-
-            elif key.char() == 'T':
-                if self.topLine > 0:
-                    self.topLine -= 1
-
-            elif key.char() == 'u':
-                return "UNDO"
-
-            elif key.char() == 'y':
-                self.yankBuffer = self.buffer.cursorToPyExp()
-                print self.yankBuffer
-
-            elif key.char() == 'z':
-                if self.buffer.cursor.nodeID in self.zippedNodes:
-                    self.zippedNodes[self.buffer.cursor.nodeID] = not(self.zippedNodes[self.buffer.cursor.nodeID])
-                else:
-                    self.zippedNodes[self.buffer.cursor.nodeID] = True
-
-            elif key.char() == "'":
-                newBuff = self.buffer.quoteAtCursor()
-                return self.update('buffer', newBuff)
-
-            elif key.char() == '.':
-                if self.buffer.cursor.next and not self.buffer.cursor.next.isSubNode():
-                    newBuff = self.buffer.methodChainAtCursor()
-                    return self.update('buffer', newBuff)
-
-            elif key.char() == '>':
-                if self.buffer.onSubNode() or self.buffer.cursor.child is None:
-                    newBuff = self.buffer.slurpAtCursor()
-                    return self.update('buffer', newBuff)
-
-            elif key.char() == '<':
-                if self.buffer.onSubNode() and self.buffer.cursor.child:
-                    newBuff = self.buffer.barfAtCursor()
-                    return self.update('buffer', newBuff)
-
-            elif key.char() == '+':
-                numList = self.buffer.cursorToPyExp()
-                try:
-                    result = reduce(operator.add, numList)
-                except TypeError:
-                    newBuff = self.buffer
-                else:
-                    newBuff = self.buffer.replaceAtCursor(result)
-
+        elif key.char() == 'i':
+            if self.buffer.cursor != self.buffer.view:    # maybe the correct behaviour is to sub and ins
+                newBuff = self.buffer.insertAtCursor('').curPrev()
                 return self.updateList(
                     ('buffer', newBuff),
-                    ('updateUndo', True))
+                    ('cellEditor', CellEditor(Symbol(''))),
+                    ('editing', True))
 
-            elif key.char() == '"':
+        elif key.char() == 'e':
+            return self.update('buffer', self.buffer.curLast())
+
+        elif key.char() == 'G':
+            lookupAddress = self.buffer.cursor.childToPyExp()
+            newBuff = buffer.BufferSexp(self.buffer.root, lookupAddress)
+            return self.update('buffer', newBuff)
+
+
+        elif key.char() == '(':
+            return self.updateList(
+                ('buffer', self.buffer.nestCursor()),
+                ('updateUndo', True))
+
+        elif key.char() == ')':
+            if self.buffer.onSubNode() and self.buffer.cursor != self.buffer.root:
                 return self.updateList(
-                    ('buffer', self.buffer.toggleStringAtCursor()),
+                    ('buffer', self.buffer.denestCursor()),
                     ('updateUndo', True))
 
-            elif key.char() == '/':
-                if not self.buffer.onSubNode():
-                    try:
-                        return self.update('buffer', self.buffer.search(self.buffer.getCurrent()))
-                    except ValueError: pass
+        elif key.char() == 'o' and not key.lctrl():
+            if self.buffer.cursor != self.buffer.view:
+                newBuff = self.buffer.appendAtCursor(['']).curNext().curChild()
+                return self.updateList(
+                    ('buffer', newBuff),
+                    ('cellEditor', CellEditor(Symbol(''))),
+                    ('editing', True))
 
-            elif key.char() == '=':
-                if self.buffer.cursor in self.revealedNodes:
-                    self.revealedNodes[self.buffer.cursor] = not(self.revealedNodes[self.buffer.cursor])
-                else:
-                    self.revealedNodes[self.buffer.cursor] = True
+        elif key.char() == 'O':
+            if self.buffer.cursor != self.buffer.view:
+                newBuff = self.buffer.insertAtCursor(['']).curPrev().curChild()
+                return self.updateList(
+                    ('buffer', newBuff),
+                    ('cellEditor', CellEditor(Symbol(''))),
+                    ('editing', True))
+
+        elif key.char() == 'm':
+            newPrintingMode = misc.cycleThroughList(self.printingMode, self.printingModeOptions)
+            self.statusBar.updateMessage("DisplayMode: " + newPrintingMode)
+
+            return self.update('printingMode', newPrintingMode)
 
 
+        elif key.char() == 'N':
+            newBuff = buffer.BufferSexp(self.buffer.root, [0], [0, 0]).curLast()
+            newBuff = newBuff.appendAtCursor([reader.Symbol('newNode')]).curNext()
+            newBuff = newBuff.viewToCursor().curChild()
+            self.topLine = 0
+            return self.update('buffer', newBuff)
+
+        elif key.char() == 'p':
+            if self.yankBuffer:
+                toInsert = tn.createTNodeExpFromPyExp(self.yankBuffer)
+                return self.updateList(
+                    ('buffer', self.buffer.appendAtCursor(toInsert)),
+                    ('updateUndo', True))
+
+        elif key.char() == 'P':
+            if self.yankBuffer:
+                toInsert = tn.createTNodeExpFromPyExp(self.yankBuffer)
+                return self.updateList(
+                    ('buffer', self.buffer.insertAtCursor(toInsert)),
+                    ('updateUndo', True))
+
+        elif key.char() == 'R':
+            return self.update('buffer', self.buffer.viewToRoot())
+
+        elif key.char() == 's':
+            return self.updateList(
+                ('cellEditor', CellEditor(Symbol(''))),
+                ('editing', True))
+
+        elif key.char() == 't':
+            self.topLine += 1
+
+        elif key.char() == 'T':
+            if self.topLine > 0:
+                self.topLine -= 1
+
+        elif key.char() == 'u':
+            return "UNDO"
+
+        elif key.char() == 'y':
+            self.yankBuffer = self.buffer.cursorToPyExp()
+            print self.yankBuffer
+
+        elif key.char() == 'z':
+            if self.buffer.cursor.nodeID in self.zippedNodes:
+                self.zippedNodes[self.buffer.cursor.nodeID] = not(self.zippedNodes[self.buffer.cursor.nodeID])
             else:
+                self.zippedNodes[self.buffer.cursor.nodeID] = True
+
+        elif key.char() == "'":
+            newBuff = self.buffer.quoteAtCursor()
+            return self.update('buffer', newBuff)
+
+        elif key.char() == '.':
+            if self.buffer.cursor.next and not self.buffer.cursor.next.isSubNode():
+                newBuff = self.buffer.methodChainAtCursor()
+                return self.update('buffer', newBuff)
+
+        elif key.char() == '>':
+            if self.buffer.onSubNode() or self.buffer.cursor.child is None:
+                newBuff = self.buffer.slurpAtCursor()
+                return self.update('buffer', newBuff)
+
+        elif key.char() == '<':
+            if self.buffer.onSubNode() and self.buffer.cursor.child:
+                newBuff = self.buffer.barfAtCursor()
+                return self.update('buffer', newBuff)
+
+        elif key.char() == '+':
+            numList = self.buffer.cursorToPyExp()
+            try:
+                result = reduce(operator.add, numList)
+            except TypeError:
+                newBuff = self.buffer
+            else:
+                newBuff = self.buffer.replaceAtCursor(result)
+
+            return self.updateList(
+                ('buffer', newBuff),
+                ('updateUndo', True))
+
+        elif key.char() == '"':
+            return self.updateList(
+                ('buffer', self.buffer.toggleStringAtCursor()),
+                ('updateUndo', True))
+
+        elif key.char() == '/':
+            if not self.buffer.onSubNode():
                 try:
-                    if key.char() == 'J':
-                        newBuff = self.buffer.viewToCursor()
-                        newHist = self.viewHistory.insertAtCursor(View(newBuff.viewAdd)).curPrev()
-                        newHist2 = newHist.rootToCursor()
-                        return self.updateList(
-                            ('buffer', newBuff),
-                            ('viewHistory', newHist2))
+                    return self.update('buffer', self.buffer.search(self.buffer.getCurrent()))
+                except ValueError: pass
 
-                    elif key.char() == 'o' and key.lctrl():
-                        newHist = self.viewHistory.curNext()
-                        newBuff = self.buffer.newViewAdd(newHist.cursor.child.address)
-                        return self.updateList(
-                            ('viewHistory', newHist),
-                            ('buffer', newBuff))
+        elif key.char() == '=':
+            if self.buffer.cursor in self.revealedNodes:
+                self.revealedNodes[self.buffer.cursor] = not(self.revealedNodes[self.buffer.cursor])
+            else:
+                self.revealedNodes[self.buffer.cursor] = True
 
-                    elif key.char() == 'h' and key.lctrl():
-                        newHist = self.viewHistory.curPrev()
-                        newBuff = self.buffer.newViewAdd(newHist.cursor.child.address)
-                        return self.updateList(
-                            ('viewHistory', newHist),
-                            ('buffer', newBuff))
 
-                    elif key.char() == 'K':
-                        return self.update('buffer', self.buffer.viewUp())
+        else:
+            try:
+                if key.char() == 'J':
+                    newBuff = self.buffer.viewToCursor()
+                    newHist = self.viewHistory.insertAtCursor(View(newBuff.viewAdd)).curPrev()
+                    newHist2 = newHist.rootToCursor()
+                    return self.updateList(
+                        ('buffer', newBuff),
+                        ('viewHistory', newHist2))
 
-                    elif key.char() == 'H':
-                        return self.update('buffer', self.buffer.viewPrev())
+                elif key.char() == 'o' and key.lctrl():
+                    newHist = self.viewHistory.curNext()
+                    newBuff = self.buffer.newViewAdd(newHist.cursor.child.address)
+                    return self.updateList(
+                        ('viewHistory', newHist),
+                        ('buffer', newBuff))
 
-                    elif key.char() == 'L' and key.lctrl():
-                        return self.update('buffer', self.buffer.viewNext())
+                elif key.char() == 'h' and key.lctrl():
+                    newHist = self.viewHistory.curPrev()
+                    newBuff = self.buffer.newViewAdd(newHist.cursor.child.address)
+                    return self.updateList(
+                        ('viewHistory', newHist),
+                        ('buffer', newBuff))
 
-                    elif key.char() == 'L':
-                        return self.update('buffer', self.buffer.curNextChild())
+                elif key.char() == 'K':
+                    return self.update('buffer', self.buffer.viewUp())
 
-                    elif key.char() == 'w':
-                        return self.update('buffer', self.buffer.curNextUnzippedSymbol(self.nodeIsZipped))
+                elif key.char() == 'H':
+                    return self.update('buffer', self.buffer.viewPrev())
 
-                    elif key.char() == 'b':
-                        return self.update('buffer', self.buffer.curPrevUnzippedSymbol(self.nodeIsZipped))
+                elif key.char() == 'L' and key.lctrl():
+                    return self.update('buffer', self.buffer.viewNext())
 
-                    elif key.code() == iop.KEY_LEFT or key.char() == 'h':
-                        return self.update('buffer', self.buffer.curPrevUpAlong())
+                elif key.char() == 'L':
+                    return self.update('buffer', self.buffer.curNextChild())
 
-                    elif key.code() == iop.KEY_RIGHT or key.char() == 'l':
-                        if self.cursorIsZipped(self.buffer):
-                            newBuff = self.buffer.curUp().curNextUpAlong()
-                        else:
-                            newBuff = self.buffer.curNextUpAlong()
-                        return self.update('buffer', newBuff)
+                elif key.char() == 'w':
+                    return self.update('buffer', self.buffer.curNextUnzippedSymbol(self.nodeIsZipped))
 
-                    elif key.code() == iop.KEY_DOWN or key.char() == 'j':
-                        if self.cursorIsZipped(self.buffer):
-                            raise ValueError
-                        return self.update('buffer', self.buffer.curChild())
+                elif key.char() == 'b':
+                    return self.update('buffer', self.buffer.curPrevUnzippedSymbol(self.nodeIsZipped))
 
-                    elif key.code() == iop.KEY_UP or key.char() == 'k':
-                        return self.update('buffer', self.buffer.curUp())
+                elif key.code() == iop.KEY_LEFT or key.char() == 'h':
+                    return self.update('buffer', self.buffer.curPrevUpAlong())
 
-                except ValueError:pass
+                elif key.code() == iop.KEY_RIGHT or key.char() == 'l':
+                    if self.cursorIsZipped(self.buffer):
+                        newBuff = self.buffer.curUp().curNextUpAlong()
+                    else:
+                        newBuff = self.buffer.curNextUpAlong()
+                    return self.update('buffer', newBuff)
+
+                elif key.code() == iop.KEY_DOWN or key.char() == 'j':
+                    if self.cursorIsZipped(self.buffer):
+                        raise ValueError
+                    return self.update('buffer', self.buffer.curChild())
+
+                elif key.code() == iop.KEY_UP or key.char() == 'k':
+                    return self.update('buffer', self.buffer.curUp())
+
+            except ValueError:pass
 
         return self
 

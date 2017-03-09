@@ -16,6 +16,10 @@ class FuncObject(object):
             setattr(newSelf, prop, val)
         return newSelf
 
+    def clone(self):
+        newSelf = copy.copy(self)
+        return newSelf
+
     def reset(self, *lst):
         args = zip(lst, [False]*len(lst))
         return wrapper(self.updateList, args)
