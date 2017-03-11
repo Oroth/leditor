@@ -25,6 +25,18 @@ class Window(fo.FuncObject):
         self.editorList = editorList
         self.editorCmd = False
 
+        self.editModeCL = cmdList.CmdList([
+            (Key.c('l'), 'cmdEditorNext'),
+            (Key.c('h'), 'cmdEditorPrev'),
+            (Key.c('d'), 'cmdEditorDel'),
+            (Key.c('>'), 'cmdInspectProcedureCall'),
+            (Key.c('?'), 'cmdEditorDisplayHelp'),
+            (Key.vk(iop.KEY_SPACE), 'cmdEditorRunProg'),
+            (Key.vk(iop.KEY_ENTER), 'cmdNewEditorOnCursor')
+        ])
+
+        self.message = None
+
     def setPosition(self, newPosx, newPosy, newMaxx, newMaxy):
         self.posx, self.posy = newPosx, newPosy
         self.maxx, self.maxy = newMaxx, newMaxy
@@ -32,171 +44,6 @@ class Window(fo.FuncObject):
     def draw(self, posx, posy, maxx, maxy, isActive):
         image = self.getEditor().draw(maxx, maxy, isActive)
         screen.printToScreen(image, posx, posy)
-
-    def cmdNewScreenEditor(self):
-        newEd = screenEditor.ScreenEditor(self.maxx, self.maxy)
-
-        return self.updateList(
-            ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
-            ('editorCmd', False))
-
-    def cmdNewFileEditor(self):
-        path = './'
-        fileList = fileEditor.dirToList(path)
-        # fileList =  \
-        #     [
-        #         [reader.Symbol('file1'),
-        #          [reader.Symbol('file2'), reader.Symbol('file3')],
-        #          reader.Symbol('file4')
-        #          ]]
-        #fileList = [map(reader.Symbol, listdir(path))]
-        fileRoot = tn.createTNodeExpFromPyExp([fileList])
-        newEd = fileEditor.FileEditor(fileRoot)
-
-        return self.updateList(
-            ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
-            ('editorCmd', False))
-
-    def cmdNewPager(self):
-        text = "some example text - awawy awyay"
-        file, pathList = self.editorList.getCurrent().buffer.getNVSListAtCursor()
-        print pathList
-        pathText = '.\\' + '\\'.join(pathList)
-        print pathText
-        f = open(pathText, 'r')
-        flist = f.readlines()
-        newEd = pager.Pager(flist)
-        f.close()
-
-        return self.updateList(
-            ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
-            ('editorCmd', False))
-
-    #def cmdNewEditor(self):
-
-    def cmdNewEditorOnCursor(self):
-        newEd = CodeEditor.CodeEditor(
-            root = self.getEditor().buffer.root,
-            rootCursorAdd = self.getEditor().buffer.rootToCursorAdd(),
-            zippedNodes = self.getEditor().zippedNodes)
-
-        return self.updateList(
-            ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
-            ('editorCmd', False))
-
-    def cmdInspectProcedureCall(self, args=None):
-        return self.cmdInspectProcedureCall2(self.getEditor().buffer.cursor, args)
-
-    def cmdInspectProcedureCall2(self, procedure, args=None):
-        curEd = self.getEditor()
-        if args is None:
-            procValue = curEd.getNodeValue(procedure.child)
-        else:
-            procValue = curEd.getNodeValue(procedure)
-
-        if procedure.isSubNode() and hasattr(procValue, 'inspect'):
-            if args is None:
-                args2 = [curEd.getNodeValue(node) for node in procedure.child][1:]
-            else:
-                args2 = args
-            newTree, env = procValue.inspect(*args2)
-            newEd = CodeEditor.InspectionEditor(newTree.root, newTree.rootToCursorAdd(),
-                                          zippedNodes=curEd.zippedNodes)
-            newEd.env = env
-
-            return self.updateList(
-                ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
-                ('editorCmd', False))
-
-        else:
-            raise ex.UnappliedProcedureException(procValue)
-
-
-    def cmdDisplayHelp(self):
-        curEd = self.getEditor()
-
-        rootObj = curEd.getNodeValue(curEd.buffer.root)
-        helpResult = rootObj.call(reader.Symbol('help')).call("all")
-        newBuff = rootObj.updateVarSource('evalBuffer', helpResult)
-        newEd = CodeEditor.CodeEditor(newBuff.root, newBuff.cursorAdd)
-        newEd.printingMode = 'vertical'
-        newEd.evalCursorMode = 'disabled'
-
-        return self.updateList(
-            ('editorList', self.editorList.appendAtCursor(newEd).curNext()),
-            ('editorCmd', False))
-
-    def cmdRunProg(self):
-        curEd = self.getEditor()
-        imageRoot = curEd.buffer.root
-        evalBuffer = buffer.BufferSexp(imageRoot, curEd.buffer.rootToCursorAdd())
-
-        #procedure = self.getEditor().buffer.cursor
-        #procValue = curEd.getNodeValue(procedure.child)
-        #newTree, env = procValue.inspect(*args2)
-        #newEd = CodeEditor.InspectionEditor(newTree.root, newTree.rootToCursorAdd())
-
-
-        prog = CodeEditor.evalIOHandler(evalBuffer)
-        newEditorList =  self.editorList.appendAtCursor(prog).curNext()
-
-        return self.updateList(
-            ('editorList', newEditorList),
-            ('editorCmd', False))
-
-
-    def handleKeys(self, key, mouse):
-        curEd = self.getEditor()
-        if self.editorCmd:
-            if key.code() == iop.KEY_ENTER:
-                return self.cmdNewEditorOnCursor()
-
-            # change the current window to the next editor:
-            elif key.char() == 'l':
-                return self.updateList(
-                    ('editorList', self.editorList.curCycle()),
-                    ('editorCmd', False))
-
-            elif key.char() == 'h':
-                return self.updateList(
-                    ('editorList', self.editorList.curCyclePrev()),
-                    ('editorCmd', False))
-
-            elif key.char() == 'd':
-                if self.editorList.length() > 1:
-                    return self.updateList(
-                        ('editorList', self.editorList.deleteAtCursor()),
-                        ('editorCmd', False))
-
-            elif key.char() == '>':
-                try:
-                    return self.cmdInspectProcedureCall()
-                except ex.UnappliedProcedureException:
-                    return self.update('editorCmd', False)
-
-            elif key.char() == '?':
-                return self.cmdDisplayHelp()
-
-            elif key.code() == iop.KEY_SPACE:
-                return self.cmdRunProg()
-
-
-            if key.isPrintable():
-                return self.update('editorCmd', False)
-            else:
-                return self
-
-        elif key.char() == 'b' and key.lctrl():
-            curEd.statusBar.updateMessage("Editor List Command")
-            print 'edit cmd'
-            return self.update('editorCmd', True)
-
-
-        else:
-            relativePositionMouse = mouse.getMouseWithRelativePosition(self.posx, self.posy)
-            newEditor = self.getEditor().handleKeys(key, relativePositionMouse)
-            return self.updateList(
-                ('editorList', self.editorList.replaceAtCursor(newEditor)))
 
     def getEditor(self):
         return self.editorList.cursor.child
@@ -213,6 +60,152 @@ class Window(fo.FuncObject):
             return self.update('editorList', self.editorList.syncToNewRoot(newEditorList.root))
         else:
             return self
+
+    def handleKeys(self, key, mouse):
+        if self.editorCmd:
+            result = self.editModeCL.process(key, self)
+            if result:
+                return result.updateList(
+                    ('editorCmd', False),
+                    ('message', None))
+
+            if key.isPrintable():
+                return self.updateList(
+                    ('editorCmd', False),
+                    ('message', None))
+            else:
+                return self
+
+        elif key.char() == 'b' and key.ctrl():
+            return self.updateList(
+                ('editorCmd', True),
+                ('message', "--Buffer Command--"))
+
+        else:
+            relativePositionMouse = mouse.getMouseWithRelativePosition(self.posx, self.posy)
+            newEditor = self.getEditor().handleKeys(key, relativePositionMouse)
+            return self.updateList(
+                ('editorList', self.editorList.replaceAtCursor(newEditor)))
+
+
+
+    def cmdNewScreenEditor(self):
+        newEd = screenEditor.ScreenEditor(self.maxx, self.maxy)
+        return self.update('editorList', self.editorList.appendAtCursor(newEd).curNext())
+
+
+    def cmdNewFileEditor(self):
+        path = './'
+        fileList = fileEditor.dirToList(path)
+        # fileList =  \
+        #     [
+        #         [reader.Symbol('file1'),
+        #          [reader.Symbol('file2'), reader.Symbol('file3')],
+        #          reader.Symbol('file4')
+        #          ]]
+        #fileList = [map(reader.Symbol, listdir(path))]
+        fileRoot = tn.createTNodeExpFromPyExp([fileList])
+        newEd = fileEditor.FileEditor(fileRoot)
+
+        return self.update('editorList', self.editorList.appendAtCursor(newEd).curNext())
+
+
+    def cmdNewPager(self):
+        text = "some example text - awawy awyay"
+        file, pathList = self.editorList.getCurrent().buffer.getNVSListAtCursor()
+        print pathList
+        pathText = '.\\' + '\\'.join(pathList)
+        print pathText
+        f = open(pathText, 'r')
+        flist = f.readlines()
+        newEd = pager.Pager(flist)
+        f.close()
+
+        return self.update('editorList', self.editorList.appendAtCursor(newEd).curNext())
+
+
+    def cmdNewEditorOnCursor(self):
+        newEd = CodeEditor.CodeEditor(
+            root = self.getEditor().buffer.root,
+            rootCursorAdd = self.getEditor().buffer.rootToCursorAdd(),
+            zippedNodes = self.getEditor().zippedNodes)
+
+        return self.update('editorList', self.editorList.appendAtCursor(newEd).curNext())
+
+    def cmdInspectProcedureCall(self):
+        try:
+            return self.cmdInspectProcedureCall2()
+        except ex.UnappliedProcedureException:
+            return self
+
+
+    def cmdInspectProcedureCall2(self, proc=None, args=None):
+        curEd = self.getEditor()
+        procedure = self.getEditor().buffer.cursor if proc is None else proc
+
+        if args is None:
+            procValue = curEd.getNodeValue(procedure.child)
+        else:
+            procValue = curEd.getNodeValue(procedure)
+
+        if procedure.isSubNode() and hasattr(procValue, 'inspect'):
+            if args is None:
+                args2 = [curEd.getNodeValue(node) for node in procedure.child][1:]
+            else:
+                args2 = args
+            newTree, env = procValue.inspect(*args2)
+            newEd = CodeEditor.InspectionEditor(newTree.root, newTree.rootToCursorAdd(),
+                                          zippedNodes=curEd.zippedNodes)
+            newEd.env = env
+
+            return self.update('editorList', self.editorList.appendAtCursor(newEd).curNext())
+
+        else:
+            raise ex.UnappliedProcedureException(procValue)
+
+
+    def cmdEditorDisplayHelp(self):
+        curEd = self.getEditor()
+
+        rootObj = curEd.getNodeValue(curEd.buffer.root)
+        helpResult = rootObj.call(reader.Symbol('help')).call("all")
+        newBuff = rootObj.updateVarSource('evalBuffer', helpResult)
+        newEd = CodeEditor.CodeEditor(newBuff.root, newBuff.cursorAdd)
+        newEd.printingMode = 'vertical'
+        newEd.evalCursorMode = 'disabled'
+
+        return self.update('editorList', self.editorList.appendAtCursor(newEd).curNext())
+
+    def cmdEditorRunProg(self):
+        curEd = self.getEditor()
+        imageRoot = curEd.buffer.root
+        evalBuffer = buffer.BufferSexp(imageRoot, curEd.buffer.rootToCursorAdd())
+
+        #procedure = self.getEditor().buffer.cursor
+        #procValue = curEd.getNodeValue(procedure.child)
+        #newTree, env = procValue.inspect(*args2)
+        #newEd = CodeEditor.InspectionEditor(newTree.root, newTree.rootToCursorAdd())
+
+        prog = CodeEditor.evalIOHandler(evalBuffer)
+        newEditorList =  self.editorList.appendAtCursor(prog).curNext()
+
+        return self.update('editorList', newEditorList)
+
+
+    def cmdEditorNext(self):
+        return self.update('editorList', self.editorList.curCycle())
+
+
+    def cmdEditorPrev(self):
+        return self.update('editorList', self.editorList.curCyclePrev())
+
+
+    def cmdEditorDel(self):
+        if self.editorList.length() > 1:
+            return self.update('editorList', self.editorList.deleteAtCursor())
+        else:
+            return self
+
 
 
 def syncWindowsToEditorList(winTree, newEditorList):
@@ -242,29 +235,29 @@ class WindowManager(fo.FuncObject):
         self.winCmd = False
 
         self.cmdBar = None
-        self.message = ''
+        self.message = None
 
-        self.wincl = cmdList.CmdList(
-            [(Key.c('j'), 'cmdWinDown'),
-             (Key.c('k'), 'cmdWinUp'),
-             (Key.c('d'), 'cmdWinDel'),
-             (Key.c('u'), 'cmdWinUndo'),
-             (Key.c('w'), 'cmdWinNext'),
-             (Key.c('>'), 'cmdOpenWinInspectProc'),
-             (Key.vk(iop.KEY_SPACE), 'cmdRunProg'),
-             (Key.vk(iop.KEY_ENTER), 'cmdOpenWinOnCursor'),
-             #(Key.vk(iop.KEY_F5), 'cmdWinUp'),
-             (Key.vk(iop.KEY_F10), 'cmdToggleFullScreen'),
-             (Key.vk(iop.KEY_ESCAPE), 'cmdExitWinMode')
-             ])
+        self.wincl = cmdList.CmdList([
+            (Key.c('j'), 'cmdWinDown'),
+            (Key.c('k'), 'cmdWinUp'),
+            (Key.c('d'), 'cmdWinDel'),
+            (Key.c('u'), 'cmdWinUndo'),
+            (Key.c('w'), 'cmdWinNext'),
+            (Key.c('>'), 'cmdOpenWinInspectProc'),
+            (Key.vk(iop.KEY_SPACE), 'cmdRunProg'),
+            (Key.vk(iop.KEY_ENTER), 'cmdOpenWinOnCursor'),
+            #(Key.vk(iop.KEY_F5), 'cmdWinUp'),
+            (Key.vk(iop.KEY_F10), 'cmdToggleFullScreen'),
+            (Key.vk(iop.KEY_ESCAPE), 'cmdExitWinMode')
+        ])
 
         self.mainCl = cmdList.CmdList([
-            (Key.c('w', lctrl=True), 'cmdStartWinMode'),
-            (Key.c('s', lctrl=True), 'cmdSave'),
+            (Key.c('w', ctrl=True), 'cmdStartWinMode'),
+            (Key.c('s', ctrl=True), 'cmdSave'),
             (Key.c(':'), 'cmdStartCmdBar'),
-            (Key.vk(iop.KEY_F9, lalt=True), 'cmdScreenEditor'),
-            (Key.vk(iop.KEY_F10, lalt=True), 'cmdFileEditor'),
-            (Key.vk(iop.KEY_F11, lalt=True), 'cmdTextPager'),
+            (Key.vk(iop.KEY_F9, alt=True), 'cmdScreenEditor'),
+            (Key.vk(iop.KEY_F10, alt=True), 'cmdFileEditor'),
+            (Key.vk(iop.KEY_F11, alt=True), 'cmdTextPager'),
 
         ])
 
@@ -340,6 +333,14 @@ class WindowManager(fo.FuncObject):
             winNode.child.setPosition(0, curY, maxX, curYStep)
             curY += curYStep
 
+    def calculateMsg(self):
+        if self.message:
+            return self.message
+        elif self.curWin().message:
+            return self.curWin().message
+        else:
+            return ''
+
 
     def draw(self):
         self.calculateWindowPositions()
@@ -369,9 +370,7 @@ class WindowManager(fo.FuncObject):
             cmdImage = self.cmdBar.draw(maxX, 2, isActive=True)
             screen.printToScreen(cmdImage, 0, cmdPosy)
         else:
-            #blank = screen.createBlank(maxX, 2)
-            #screen.overlayLinesOnImage(blank, 0)
-            msg = screen.stringToImage(self.message, maxX, 2)
+            msg = screen.stringToImage(self.calculateMsg(), maxX, 2)
             screen.printToScreen(msg, 0, cmdPosy)
 
 
@@ -418,8 +417,6 @@ class WindowManager(fo.FuncObject):
         return self.integrateUpdatedWindowList(newWinList)
 
 
-
-
     def evalCmdBarResult(self, cmdBuffer):
 
         # Maybe should get done in the actual cmdbar
@@ -464,11 +461,9 @@ class WindowManager(fo.FuncObject):
             if windowClicked != self.winTree.cursor:
                 newWinTree = self.winTree.newCursorAdd(windowAddress)
                 mouseResult = self.update('winTree', newWinTree)
-                #self.winTree = new # imperative at the moment to allow simultaenously switching and selecting
-                # an expression
 
         if key.isPrintable():
-            return mouseResult.handleKeysMain(key, mouse).update('message', '')
+            return mouseResult.handleKeysMain(key, mouse).update('message', None)
         else:
             return mouseResult.handleKeysMain(key, mouse)
 
@@ -483,7 +478,6 @@ class WindowManager(fo.FuncObject):
             return result if result else self
 
         mainResult = self.mainCl.process(key, self)
-
         if mainResult:
             return mainResult
 
@@ -550,7 +544,7 @@ class WindowManager(fo.FuncObject):
 
     def cmdRunProg(self):
         self.winCmd = False
-        return self.addWindow(self.curWin().cmdRunProg())
+        return self.addWindow(self.curWin().cmdEditorRunProg())
 
     def cmdOpenWinOnCursor(self):
         self.winCmd = False
@@ -559,7 +553,7 @@ class WindowManager(fo.FuncObject):
     def cmdOpenWinInspectProc(self):
         self.winCmd = False
         try:
-            return self.addWindow(self.curWin().cmdInspectProcedureCall())
+            return self.addWindow(self.curWin().cmdInspectProcedureCall2())
         except ex.UnappliedProcedureException:
             return self
 

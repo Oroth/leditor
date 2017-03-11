@@ -52,25 +52,25 @@ class Key():
     shiftedKeys = '!"$%^&*()_+{}:@~|<>?'
 
     @classmethod
-    def vk(cls, vk, lctrl=False, lalt=False, shift=False):
+    def vk(cls, vk, ctrl=False, alt=False, shift=False):
         newKey = libtcod.Key()
         newKey.vk = vk
         if vk in Key.vkCharMap:
             newKey.c = Key.vkCharMap[vk]
         else:
             newKey.c = 0
-        newKey.lctrl = lctrl
-        newKey.lalt = lalt
+        newKey.lctrl = ctrl
+        newKey.lalt = alt
         newKey.shift = shift
         return cls(newKey)
 
     @classmethod
-    def c(cls, c, lctrl=False, lalt=False, shift=None):
+    def c(cls, c, ctrl=False, alt=False, shift=None):
         newKey = libtcod.Key()
         newKey.vk = libtcod.KEY_CHAR
         newKey.c = ord(c)
-        newKey.lctrl = lctrl
-        newKey.lalt = lalt
+        newKey.lctrl = ctrl
+        newKey.lalt = alt
         if shift is not None:
             newKey.shift = shift
         elif c.isupper() or c in Key.shiftedKeys:
@@ -89,13 +89,19 @@ class Key():
 
     def _key(self):
         k = self.keyObj
-        return (k.vk, k.c, k.lctrl, k.lalt, k.shift)
+        return (k.vk, k.c, k.lctrl or k.rctrl, k.lalt or k.ralt, k.shift)
 
     def code(self):
         return self.keyObj.vk
 
     def char(self):
         return chr(self.keyObj.c)
+
+    def ctrl(self):
+        return self.keyObj.lctrl or self.keyObj.rctrl
+
+    def alt(self):
+        return self.keyObj.lalt or self.keyObj.ralt
 
     def lctrl(self):
         return self.keyObj.lctrl
