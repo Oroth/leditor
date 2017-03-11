@@ -97,6 +97,12 @@ class Key():
     def char(self):
         return chr(self.keyObj.c)
 
+    def off(self):
+        return self.keyObj.vk == 0
+
+    def on(self):
+        return self.keyObj.vk != 0
+
     def ctrl(self):
         return self.keyObj.lctrl or self.keyObj.rctrl
 

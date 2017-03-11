@@ -470,20 +470,17 @@ class WindowManager(fo.FuncObject):
 
     def handleKeysMain(self, key, mouse):
 
-        curWin = self.winTree.getCurrent()
-        curEd = curWin.getEditor()
-
-        if self.winCmd:
+        if self.winCmd and key.on():
             result = self.wincl.process(key, self)
-            return result if result else self
+            ret = result if result else self
+            return ret.update('winCmd', False)
 
         mainResult = self.mainCl.process(key, self)
         if mainResult:
             return mainResult
 
         else:
-            resultWin = curWin.handleKeys(key, mouse)
-
+            resultWin = self.curWin().handleKeys(key, mouse)
             resultEd = resultWin.getEditor()
 
             if resultEd == 'UNDO':
@@ -491,38 +488,37 @@ class WindowManager(fo.FuncObject):
                     self.hist = self.hist.next
                     self.ImageRoot = tn.TNode(self.hist.child)
 
-
                     syncedEditorList = syncEditorsToImage(self.editorList, self.ImageRoot)
 
                     return self.updateList(
                         ('editorList', syncedEditorList),
                         ('winTree', syncWindowsToEditorList(self.winTree, syncedEditorList)))
+                else:
+                    return self
 
             else:
                 return self.replaceWindow(resultWin)
 
 
-        return self
-
     def cmdWinDown(self):
         try:
-            return self.updateList(
-                ('winTree', self.winTree.curNext()),
-                ('winCmd', False))
-        except ValueError: return self
+            return self.update('winTree', self.winTree.curNext())
+        except ValueError:
+            return self
 
     def cmdWinUp(self):
         try:
-            return self.updateList(
-                ('winTree', self.winTree.curPrev()),
-                ('winCmd', False))
-        except ValueError: return self
+            return self.update('winTree', self.winTree.curPrev())
+        except ValueError:
+
+            return self
 
     def cmdWinDel(self):
         if self.winTree.length() > 1:
-            return self.updateList(
-                ('winTree', self.winTree.deleteAtCursor()),
-                ('winCmd', False))
+            return self.update('winTree', self.winTree.deleteAtCursor())
+        else:
+            return self
+
 
     def cmdWinSplit(self):
         curWin = self.winTree.getCurrent()
@@ -543,15 +539,12 @@ class WindowManager(fo.FuncObject):
             ('winCmd', False))
 
     def cmdRunProg(self):
-        self.winCmd = False
         return self.addWindow(self.curWin().cmdEditorRunProg())
 
     def cmdOpenWinOnCursor(self):
-        self.winCmd = False
         return self.addWindow(self.curWin().cmdNewEditorOnCursor())
 
     def cmdOpenWinInspectProc(self):
-        self.winCmd = False
         try:
             return self.addWindow(self.curWin().cmdInspectProcedureCall2())
         except ex.UnappliedProcedureException:
@@ -578,8 +571,7 @@ class WindowManager(fo.FuncObject):
     def cmdStartWinMode(self):
         return self.updateList(
             ('message', 'Window Mode'),
-            ('winCmd', True)
-        )
+            ('winCmd', True))
 
     def cmdStartCmdBar(self):
         return self.update('cmdBar', CmdBar())
