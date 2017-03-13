@@ -106,7 +106,8 @@ class Window(fo.FuncObject):
         #          ]]
         #fileList = [map(reader.Symbol, listdir(path))]
         fileRoot = tn.createTNodeExpFromPyExp([fileList])
-        newEd = fileEditor.FileEditor(fileRoot)
+        fileBuffer = buffer.BufferSexp(fileRoot)
+        newEd = fileEditor.FileEditor(fileBuffer)
 
         return self.update('editorList', self.editorList.appendAtCursor(newEd).curNext())
 
@@ -126,12 +127,10 @@ class Window(fo.FuncObject):
 
 
     def cmdNewEditorOnCursor(self):
-        newEd = CodeEditor.CodeEditor(
-            root = self.getEditor().buffer.root,
-            rootCursorAdd = self.getEditor().buffer.rootToCursorAdd(),
-            zippedNodes = self.getEditor().zippedNodes)
+        newEd = self.getEditor().clone()
+        newEd2 = newEd.update('buffer', newEd.buffer.viewToCursor())
 
-        return self.update('editorList', self.editorList.appendAtCursor(newEd).curNext())
+        return self.update('editorList', self.editorList.appendAtCursor(newEd2).curNext())
 
     def cmdInspectProcedureCall(self):
         try:
@@ -155,7 +154,7 @@ class Window(fo.FuncObject):
             else:
                 args2 = args
             newTree, env = procValue.inspect(*args2)
-            newEd = CodeEditor.InspectionEditor(newTree.root, newTree.rootToCursorAdd(),
+            newEd = CodeEditor.InspectionEditor(newTree.viewToCursor(),
                                           zippedNodes=curEd.zippedNodes)
             newEd.env = env
 
@@ -171,7 +170,7 @@ class Window(fo.FuncObject):
         rootObj = curEd.getNodeValue(curEd.buffer.root)
         helpResult = rootObj.call(reader.Symbol('help')).call("all")
         newBuff = rootObj.updateVarSource('evalBuffer', helpResult)
-        newEd = CodeEditor.CodeEditor(newBuff.root, newBuff.cursorAdd)
+        newEd = CodeEditor.CodeEditor(newBuff.viewToCursor())
         newEd.printingMode = 'vertical'
         newEd.evalCursorMode = 'disabled'
 
@@ -327,11 +326,14 @@ class WindowManager(fo.FuncObject):
             window = dict(pyEditorLoad[2][1:])
             edZipNode = dict(zip(window['zippedNodes'], [True]*len(window['zippedNodes'])))
 
-            listEd = CodeEditor.CodeEditor(root, window['address'], window['cursor'], edZipNode)
+            newBuffer = buffer.BufferSexp(root, window['address'], window['cursor'])
+
+            listEd =  CodeEditor.CodeEditor(newBuffer, edZipNode)
             listEd.printingMode = window['printingMode']
             listEd.id = window['id']
         else:
-            listEd =CodeEditor.CodeEditor(root)
+            newBuffer = buffer.BufferSexp(root)
+            listEd = CodeEditor.CodeEditor(newBuffer)
 
         return listEd
 
@@ -449,7 +451,6 @@ class WindowManager(fo.FuncObject):
         if cmd[0] in ('q', 'quit'):
             return False
 
-        #env = eval.Env(('write', 'test', 'split'), (self.cmdSave, self.test, self.cmdWinSplit), eval.global_env)
         result = eval.eval(buffer.BufferSexp(cmdBuffer.root), self.cmdBarEnv)
         print result
 

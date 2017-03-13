@@ -10,8 +10,8 @@ from reader import Symbol
 
 
 class CodeEditor(Editors.TreeEditor):
-    def __init__(self, *args, **kwargs):
-        super(CodeEditor, self).__init__(*args, **kwargs)
+    def __init__(self, aBuffer, zippedNodes={}):
+        super(CodeEditor, self).__init__(aBuffer, zippedNodes)
         self.statusDescription = reader.Symbol('CodeEditor')
         self.env = eval.global_env
         self.vars = None
@@ -22,6 +22,12 @@ class CodeEditor(Editors.TreeEditor):
         self.evalCursorMode = 'active'
         self.evalCursorModeOptions = ['active', 'disabled']
         self.nodeValues = {}
+
+    @classmethod
+    def fromBufferParts(cls, root, viewAdd=[0], cursorAdd=[0], zippedNodes={}):
+        newBuffer = buffer.BufferSexp(root, viewAdd, cursorAdd)
+        return cls(newBuffer, zippedNodes)
+
 
     def storeNodeValue(self, node, val, env=None):
         self.nodeValues[node] = (val, env)
@@ -144,8 +150,8 @@ class ProgInspectionEditor(InspectionEditor):
 
 
 class evalIOHandler(CodeEditor):
-    def __init__(self, buffer):
-        super(evalIOHandler, self).__init__(buffer.root, buffer.viewAdd, buffer.cursorAdd)
+    def __init__(self, aBuffer):
+        super(evalIOHandler, self).__init__(aBuffer)
         self.keyHistory = []
         self.lastKey = 0
         self.output = ''

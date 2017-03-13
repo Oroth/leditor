@@ -132,9 +132,13 @@ class ColourScheme(fo.FuncObject):
 class DisplayEditor(fo.FuncObject):
     editors = 0
 
-    def __init__(self, root, rootCursorAdd=[0], cursorAdd=[0]):
+    def __init__(self, aBuffer=None):
+        if aBuffer is None:
+            # push to buffer constructor
+            self.buffer = buffer.BufferSexp(tn.TNode([[Symbol('')]]), [0], [0, 0])
+        else:
+            self.buffer = aBuffer
         self._isRootImageEditor = True
-        self.buffer = buffer.BufferSexp(root, rootCursorAdd, cursorAdd)
         self.printingMode = 'horizontal'
         self.printingModeOptions = ['horizontal', 'vertical']
         self.topLine = 0
@@ -155,6 +159,7 @@ class DisplayEditor(fo.FuncObject):
         self.zippedNodes = {}
         self.editing = False
         self.drawMode = 'notCursor'
+
 
     def isRootImageEditor(self):
         return self._isRootImageEditor
@@ -191,8 +196,8 @@ class DisplayEditor(fo.FuncObject):
 
 
 class TreeEditor(DisplayEditor):
-    def __init__(self, root, rootCursorAdd=[0], cursorAdd=[0], zippedNodes={}):
-        super(TreeEditor, self).__init__(root, rootCursorAdd, cursorAdd)
+    def __init__(self, aBuffer=None, zippedNodes={}):
+        super(TreeEditor, self).__init__(aBuffer)
 
         self.editing = False
         self.changeMode = False
@@ -202,7 +207,7 @@ class TreeEditor(DisplayEditor):
         self.updateUndo = False
         self.revealedNodes = {}
         self.zippedNodes = dict(zippedNodes)
-        initialViewHistoryNode = tn.TNode(tn.TNode(View(rootCursorAdd)))
+        initialViewHistoryNode = tn.TNode(tn.TNode(View(self.buffer.viewAdd)))
         self.viewHistory = buffer.SimpleBuffer(initialViewHistoryNode, [0, 0])
         self.drawMode = 'cursor'
         self.statusBar = StatusBar()
@@ -672,7 +677,8 @@ class TreeEditor(DisplayEditor):
 class StatusBar(DisplayEditor):
     def __init__(self, *args, **kwargs):
         self.status = [reader.Symbol('Editor')]
-        super(StatusBar, self).__init__(tn.createTNodeExpFromPyExp(self.status))
+        newBuffer = buffer.BufferSexp(tn.createTNodeExpFromPyExp(self.status))
+        super(StatusBar, self).__init__(newBuffer)
         self.message = None
         self.colourScheme = ColourScheme(
             bgCol=iop.white, symbolCol=iop.black,

@@ -5,10 +5,10 @@ import tn
 
 class CmdBar(TreeEditor):
     def __init__(self, *args, **kwargs):
-        if args:
-            super(CmdBar, self).__init__(*args, **kwargs)
-        else:
-            super(CmdBar, self).__init__(tn.TNode([[Symbol('')]]), [0], [0, 0])
+        #if args:
+        super(CmdBar, self).__init__(*args, **kwargs)
+        # else:
+        #     super(CmdBar, self).__init__(tn.TNode([[Symbol('')]]), [0], [0, 0])
         self.returnState = 'EDIT'
         self.editing = True
         self.cellEditor = CellEditor(Symbol(''))
