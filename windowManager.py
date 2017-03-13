@@ -16,6 +16,7 @@ import eval
 import leditor_exceptions as ex
 from tn import cons
 import cmdList
+from datetime import datetime
 
 
 class Window(fo.FuncObject):
@@ -226,7 +227,7 @@ class WindowManager(fo.FuncObject):
 
         self.ImageRoot = imageRoot
         self.hist = imageRoot
-        startEditor = self.createListEdFromEditorSettings(imageRoot)
+        startEditor = self.createListEdFromEditorSettings(imageRoot, "EditorSettings")
         self.editorList = buffer.SimpleBuffer.fromPyExp(startEditor, [0, 0])
 
         startWindow = Window(self.editorList, 0, 0, iop.screenWidth(), iop.screenHeight())
@@ -236,6 +237,8 @@ class WindowManager(fo.FuncObject):
 
         self.cmdBar = None
         self.message = None
+
+        self.persist = ['editorList']
 
         self.wincl = cmdList.CmdList([
             (Key.c('j'), 'cmdWinDown'),
@@ -258,8 +261,17 @@ class WindowManager(fo.FuncObject):
             (Key.vk(iop.KEY_F9, alt=True), 'cmdScreenEditor'),
             (Key.vk(iop.KEY_F10, alt=True), 'cmdFileEditor'),
             (Key.vk(iop.KEY_F11, alt=True), 'cmdTextPager'),
-
         ])
+
+        self.cmdBarEnv = \
+            eval.Env.fromList([
+                ('screenEditor', self.cmdScreenEditor),
+                ('fileEditor', self.cmdFileEditor),
+                ('save', self.cmdSave),
+                ('winNext', self.cmdWinNext),
+                ('split', self.cmdWinSplit),
+                ('we', self.cmdWriteEditorSettingsTS)
+            ], eval.global_env)
 
     def test(self):
         print 'test'
@@ -273,6 +285,16 @@ class WindowManager(fo.FuncObject):
     def getWinCount(self):
         return self.winTree.length()
 
+    def getWMSettings(self):
+
+        editorList = [e.getEditorSettings() for e in self.editorList.toPyExp()]
+
+        return [reader.Symbol('WindowManager'),
+                [reader.Symbol('EditorList'),
+                 [reader.Symbol('cursor'), self.editorList.cursorAdd],
+                 [reader.Symbol('root'), editorList]]]
+
+
     def getEditSexp(self):
         curWin = self.winTree.getCurrent()
         curEd = curWin.getEditor()
@@ -284,6 +306,7 @@ class WindowManager(fo.FuncObject):
 
 
     def writeEditor(self):
+        print self.getWMSettings()
         pyObj = self.getEditSexp()
         text = reader.to_string(pyObj)
         f = open('EditorSettings', 'w')
@@ -297,10 +320,10 @@ class WindowManager(fo.FuncObject):
         f.write(text)
         f.close()
 
-    def createListEdFromEditorSettings(self, root):
+    def createListEdFromEditorSettings(self, root, filename):
         "returns an editor with settings as per the EditorSettings file"
-        if os.path.isfile("EditorSettings"):
-            pyEditorLoad = reader.loadFile("EditorSettings")
+        if os.path.isfile(filename):
+            pyEditorLoad = reader.loadFile(filename)
             window = dict(pyEditorLoad[2][1:])
             edZipNode = dict(zip(window['zippedNodes'], [True]*len(window['zippedNodes'])))
 
@@ -426,8 +449,8 @@ class WindowManager(fo.FuncObject):
         if cmd[0] in ('q', 'quit'):
             return False
 
-        env = eval.Env(('write', 'test', 'split'), (self.cmdSave, self.test, self.cmdWinSplit), eval.global_env)
-        result = eval.eval(buffer.BufferSexp(cmdBuffer.root), env)
+        #env = eval.Env(('write', 'test', 'split'), (self.cmdSave, self.test, self.cmdWinSplit), eval.global_env)
+        result = eval.eval(buffer.BufferSexp(cmdBuffer.root), self.cmdBarEnv)
         print result
 
         if isinstance(result, WindowManager):
@@ -463,7 +486,7 @@ class WindowManager(fo.FuncObject):
                 mouseResult = self.update('winTree', newWinTree)
 
         if key.isPrintable():
-            return mouseResult.handleKeysMain(key, mouse).update('message', None)
+            return mouseResult.update('message', None).handleKeysMain(key, mouse)
         else:
             return mouseResult.handleKeysMain(key, mouse)
 
@@ -568,10 +591,23 @@ class WindowManager(fo.FuncObject):
         print "saving"
         return self.update('message', "Saving Image")
 
+
+
     def cmdStartWinMode(self):
         return self.updateList(
             ('message', 'Window Mode'),
             ('winCmd', True))
+
+    def cmdWriteEditorSettingsTS(self):
+        pyObj = self.getWMSettings()
+        print pyObj
+        text = reader.to_string(pyObj)
+        path = 'filefs/'
+        fileName = datetime.now().strftime('EditorSettings_%y%m%d_%H%M%S')
+        f = open(path+fileName, 'w')
+        f.write(text)
+        f.close()
+        return self.update('message', "Saving Editor settings")
 
     def cmdStartCmdBar(self):
         return self.update('cmdBar', CmdBar())
@@ -587,3 +623,11 @@ class WindowManager(fo.FuncObject):
     def cmdTextPager(self):
         print "changing to text paging mode"
         return self.replaceWindow(self.curWin().cmdNewPager())
+
+    def cmdLoadEditorSettings(self):
+        path = 'filefs/'
+        fileList = sorted(fileEditor.dirToList(path))
+        latestFile = fileList[0]
+        print 'loading ', latestFile
+        pyEditorLoad = reader.loadFile(latestFile)
+        newEditor = self.createListEdFromEditorSettings(self.ImageRoot, latestFile)

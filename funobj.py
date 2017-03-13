@@ -1,6 +1,9 @@
 import copy
 
 class FuncObject(object):
+    def __init__(self):
+        self.persist = None
+
     def update(self, prop, val):
         newSelf = copy.copy(self)
         if not hasattr(newSelf, prop):
@@ -33,6 +36,19 @@ class FuncObject(object):
 
     def __str__(self):
         return '<' + type(self).__name__ + '>'
+
+
+    #def toPyExp(self):
+    def serialise(self):
+        props = []
+        for i in self.persist:
+            attr = getattr(self, i)
+            if hasattr(attr, 'serialise'):
+                props.append([i, attr.serialise()])
+            else:
+                props.append([i, attr])
+
+        return props
 
 def wrapper(func, args):
     return func(*args)

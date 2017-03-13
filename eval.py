@@ -34,6 +34,12 @@ class Env(dict):
     def __init__(self, parms=(), args=(), outer=None):
         self.update(zip(parms,args))
         self.outer = outer
+
+    @classmethod
+    def fromList(cls, lst, outer=None):
+        (parms, args) = zip(*lst)
+        return cls(parms, args, outer)
+
     def find(self, var):
         "Find the innermost Env where var appears."
         if var in self:
