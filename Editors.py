@@ -160,6 +160,8 @@ class DisplayEditor(fo.FuncObject):
         self.editing = False
         self.drawMode = 'notCursor'
 
+        self.persist = ['printingMode', 'topLine', 'buffer']
+
 
     def isRootImageEditor(self):
         return self._isRootImageEditor

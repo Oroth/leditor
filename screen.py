@@ -17,13 +17,16 @@ def createBlank(maxx, maxy, bgColour=iop.defaultBG(), fgColour=iop.defaultFG()):
 
 
 def putNodeOnImage(image, x, y, text, lineItemNodeRef, bgcol, fgcol):
+    maxx = len(image[0])
+    maxy = len(image)
     for cdx, c in enumerate(text):
-        (image[y][x]).character = c
-        (image[y][x]).characterReference = cdx
-        (image[y][x]).lineItemNodeReference = lineItemNodeRef
-        (image[y][x]).bgColour = bgcol
-        (image[y][x]).fgColour = fgcol
-        x += 1
+        if x < maxx:
+            (image[y][x]).character = c
+            (image[y][x]).characterReference = cdx
+            (image[y][x]).lineItemNodeReference = lineItemNodeRef
+            (image[y][x]).bgColour = bgcol
+            (image[y][x]).fgColour = fgcol
+            x += 1
 
 def setCellColour(image, x, y, bgcol, fgcol):
     (image[y][x]).bgColour = bgcol

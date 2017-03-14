@@ -299,6 +299,7 @@ class TNode(fo.FuncObject):
         self.child = self.parseValue(val)
         self.quoted = quoted
         self.methodChain = methodChain
+        self.persist = ['child', 'next']
 
         if not id:
             self.nodeID = TNode.__nodes__
@@ -365,6 +366,17 @@ class TNode(fo.FuncObject):
                 ret.append(pyExp)
             else:
                 ret.append(pyExp)
+
+        return ret
+
+    def serialise(self):
+        ret = [reader.Symbol('list')]
+        for i in self:
+            if hasattr(i.child, 'serialise'):
+                pyExp = i.child.serialise()
+            else: pyExp = i.child
+
+            ret.append(pyExp)
 
         return ret
 

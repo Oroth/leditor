@@ -6,6 +6,7 @@ import funobj as fo
 import tn
 import leditor_exceptions as ex
 
+
 wm = None
 isa = isinstance
 
@@ -96,7 +97,9 @@ def add_globals(env):
          'screen-height':lambda :iop.screenHeight(),
          'make-vector':lambda size,t:list(t) * size,
          'make-string':lambda size,c:str(c) * size,
-         'count-wins':lambda :wm().getWinCount()
+         'count-wins':lambda :wm().getWinCount(),
+         #'class':pythonClasses.deserialiseClass
+         'class':lambda mod_name, cls_name, lst :wm().deserialiseClass(mod_name, cls_name, lst)
          #,'^':lambda *vars,*body: (lambda *args: eval(body, Env(vars, args, global_env)))
         })
     return env

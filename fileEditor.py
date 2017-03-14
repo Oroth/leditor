@@ -8,7 +8,7 @@ def dirToList(path):
 
     for item in os.listdir(path):
         fullname = join(path, item)
-        if isdir(fullname) and 'git' not in item:
+        if isdir(fullname) and not any(x in item for x in ['git', 'swp']):
             newDir = [reader.Symbol(item)]
             newDir.append(dirToList(fullname))
             f.append(newDir)

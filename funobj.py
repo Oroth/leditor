@@ -1,4 +1,6 @@
 import copy
+from reader import Symbol
+
 
 class FuncObject(object):
     def __init__(self):
@@ -16,6 +18,17 @@ class FuncObject(object):
         for (prop, val) in propValueList:
             if not hasattr(newSelf, prop):
                 raise AttributeError
+            setattr(newSelf, prop, val)
+        return newSelf
+
+    def updateRecList(self, *propValueList):
+        newSelf = copy.copy(self)
+        for (prop, val) in propValueList:
+            if not hasattr(newSelf, prop):
+                raise AttributeError
+
+            if isinstance(val, (list, tuple)):
+                pass
             setattr(newSelf, prop, val)
         return newSelf
 
@@ -38,17 +51,25 @@ class FuncObject(object):
         return '<' + type(self).__name__ + '>'
 
 
-    #def toPyExp(self):
+    # not very happy with this
     def serialise(self):
-        props = []
+        tag = [Symbol('class'), self.__class__.__module__, self.__class__.__name__]
+        props = [Symbol('list')]
         for i in self.persist:
             attr = getattr(self, i)
             if hasattr(attr, 'serialise'):
-                props.append([i, attr.serialise()])
+                props.append([Symbol('list'), i, attr.serialise()])
+            elif isinstance(attr, list):
+                newattr = [Symbol('list')]
+                newattr.extend(attr)
+                props.append([Symbol('list'), i, newattr])
             else:
-                props.append([i, attr])
+                props.append([Symbol('list'), i, attr])
 
-        return props
+        tag.append(props)
+        return tag
+
+
 
 def wrapper(func, args):
     return func(*args)

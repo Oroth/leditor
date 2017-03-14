@@ -10,7 +10,7 @@ from reader import Symbol
 
 
 class CodeEditor(Editors.TreeEditor):
-    def __init__(self, aBuffer, zippedNodes={}):
+    def __init__(self, aBuffer=None, zippedNodes={}):
         super(CodeEditor, self).__init__(aBuffer, zippedNodes)
         self.statusDescription = reader.Symbol('CodeEditor')
         self.env = eval.global_env

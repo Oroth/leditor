@@ -5,7 +5,7 @@ import os.path
 
 # Size is in cells
 SCREEN_WIDTH = 120
-SCREEN_HEIGHT = 50
+SCREEN_HEIGHT = 70
 LIMIT_FPS = 20
 
 iop.setUp(SCREEN_WIDTH, SCREEN_HEIGHT, LIMIT_FPS)
