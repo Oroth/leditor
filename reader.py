@@ -104,7 +104,8 @@ def to_string(x):
     elif x is False: return "#f"
     elif isa(x, Symbol): return str(x)
     elif isa(x, str): return '"%s"' % x.encode('string_escape').replace('"',r'\"')
-    elif isa(x, list): return '('+' '.join(map(to_string, x))+')'
+    elif isa(x, (list, tuple)): return '('+' '.join(map(to_string, x))+')'
     elif isa(x, complex): return str(x).replace('j', 'i')
+    elif isa(x, dict): return '(dict (quote ('+' '.join(map(to_string, x.items()))+')))'
     elif x is None: return '()'
     else: return str(x)

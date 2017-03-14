@@ -307,6 +307,10 @@ class TNode(fo.FuncObject):
         else:
             self.nodeID = id
 
+    @classmethod
+    def fromFile(cls, lst):
+        return cls(*lst)
+
     def __iter__(self):
         return TNodeIterator(self)
 
@@ -370,16 +374,32 @@ class TNode(fo.FuncObject):
         return ret
 
     def serialise(self):
+        tag = [reader.Symbol('class'), self.__class__.__module__, self.__class__.__name__]
         ret = [reader.Symbol('list')]
         for i in self:
-            if hasattr(i.child, 'serialise'):
+            if isinstance(i.child, TNode):
+                pyExp = i.child.serialise2()
+            elif hasattr(i.child, 'serialise'):
+                pyExp = i.child.serialise()
+            else: pyExp = i.child
+
+            ret.append(pyExp)
+
+        tag.append(ret)
+        return tag
+
+    def serialise2(self):
+        ret = [reader.Symbol('list')]
+        for i in self:
+            if isinstance(i.child, TNode):
+                pyExp = i.child.serialise2()
+            elif hasattr(i.child, 'serialise'):
                 pyExp = i.child.serialise()
             else: pyExp = i.child
 
             ret.append(pyExp)
 
         return ret
-
 
     def childToPyExp(self):
         if self.isSubNode():

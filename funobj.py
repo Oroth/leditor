@@ -6,6 +6,10 @@ class FuncObject(object):
     def __init__(self):
         self.persist = None
 
+    @classmethod
+    def fromFile(cls, lst):
+        return cls().updateList(*lst)
+
     def update(self, prop, val):
         newSelf = copy.copy(self)
         if not hasattr(newSelf, prop):

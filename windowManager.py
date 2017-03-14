@@ -274,7 +274,9 @@ class WindowManager(fo.FuncObject):
             ('winNext', self.cmdWinNext),
             ('split', self.cmdWinSplit),
             ('we', self.cmdWriteEditorSettingsTS),
-            ('le', self.cmdLoadEditorSettings)
+            ('le', self.cmdLoadEditorSettings),
+            ('wi', self.cmdWriteImageTS),
+            ('wl', self.cmdLoadLatestImage)
         ], eval.global_env)
 
     def test(self):
@@ -609,15 +611,14 @@ class WindowManager(fo.FuncObject):
         return self.update('message', "Saving Image")
 
     def cmdWriteImageTS(self):
-        pyObj = self.serialise()
-        print pyObj
+        pyObj = self.ImageRoot.child.toPyNumberedExp()
         text = reader.to_string(pyObj)
-        path = 'filefs/'
-        fileName = datetime.now().strftime('EditorSettings_%y%m%d_%H%M%S')
+        path = 'imagefs/'
+        fileName = datetime.now().strftime('image_%y%m%d_%H%M%S')
         f = open(path+fileName, 'w')
         f.write(text)
         f.close()
-        return self.update('message', "Saving Editor settings")
+        return self.update('message', "Saving Latest Image")
 
     def cmdStartWinMode(self):
         return self.updateList(
@@ -651,12 +652,23 @@ class WindowManager(fo.FuncObject):
         return self.replaceWindow(self.curWin().cmdNewPager())
 
     def deserialiseClass(self, module_name, cls_name, lst):
-        #return 'abc'
         cls = getattr(sys.modules[module_name], cls_name)
-        return cls().updateList(*lst)
-        #return globals()[cls_name] #.updateList(lst)
+        return cls.fromFile(lst)
 
-    #def evalFile
+    def cmdLoadLatestImage(self):
+        path = 'imagefs/'
+        fileList = sorted(fileEditor.dirToList(path), reverse=True)
+        latestFile = fileList[0]
+        print 'loading ', latestFile
+
+        pyImageLoad = reader.loadFile(path+latestFile)
+
+        pyImage = [0]
+        pyImage.append(pyImageLoad)
+        imageRoot = tn.createTNodeExpFromPyNumberedExp(pyImage)
+
+        return self.loadNewImage(imageRoot)
+
 
     def cmdLoadEditorSettings(self):
         path = 'filefs/'
@@ -666,10 +678,13 @@ class WindowManager(fo.FuncObject):
         pyEditorLoad = reader.loadFile(path+latestFile)
         root = tn.TNode(tn.createTNodeExpFromPyExp(pyEditorLoad))
         newBuff = buffer.BufferSexp(root)
-        newEditor = CodeEditor.CodeEditor(newBuff).update('_isRootImageEditor', False)
-        #newEditor = Editors.TreeEditor(newBuff)
 
-        newWin = self.curWin().addEditor(newEditor)
-        return self.addWindow(newWin)
+        newWM = eval.eval(newBuff)
+        newWM2 = newWM.loadNewImage(self.ImageRoot)
+        return newWM2
+
+        #newEditor = CodeEditor.CodeEditor(newBuff).update('_isRootImageEditor', False)
+        #newWin = self.curWin().addEditor(newEditor)
+        #return self.addWindow(newWin)
 
         #newEditor = self.createListEdFromEditorSettings(self.ImageRoot, latestFile)

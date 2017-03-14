@@ -243,7 +243,7 @@ class ViewBuffer(SimpleBuffer):
 class BufferSexp(ViewBuffer):
     def __init__(self, root=None, viewAdd=[0], cursorAdd=[0]):
         super(BufferSexp, self).__init__(root, viewAdd, cursorAdd)
-        self.persist = ['cursorAdd']
+        self.persist = ['viewAdd', 'cursorAdd']
 
     def syncToNewRoot(self, newRoot):
         newView, newViewAdd = tn.tnodeSyncAddress(newRoot, self.root, self.viewAdd)

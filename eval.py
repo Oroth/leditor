@@ -85,6 +85,7 @@ def add_globals(env):
          'equal?':op.eq, 'eq?':op.is_, 'length':len, 'cons':lambda x,y:[x]+y,
          'car':carPrimitive,'cdr':cdrPrimitive, 'append':op.add,
          'list':lambda *x:list(x),
+         'dict':lambda x:dict(x),
          'list?': lambda x:isa(x,list),
          'null?':lambda x:x==[],
          'symbol?':lambda x: isa(x, reader.Symbol),
@@ -98,7 +99,6 @@ def add_globals(env):
          'make-vector':lambda size,t:list(t) * size,
          'make-string':lambda size,c:str(c) * size,
          'count-wins':lambda :wm().getWinCount(),
-         #'class':pythonClasses.deserialiseClass
          'class':lambda mod_name, cls_name, lst :wm().deserialiseClass(mod_name, cls_name, lst)
          #,'^':lambda *vars,*body: (lambda *args: eval(body, Env(vars, args, global_env)))
         })

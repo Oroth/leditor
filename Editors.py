@@ -160,7 +160,7 @@ class DisplayEditor(fo.FuncObject):
         self.editing = False
         self.drawMode = 'notCursor'
 
-        self.persist = ['printingMode', 'topLine', 'buffer']
+        self.persist = ['printingMode', 'topLine', 'buffer', 'zippedNodes']
 
 
     def isRootImageEditor(self):
