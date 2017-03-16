@@ -25,20 +25,29 @@ class ScreenEditor(fo.FuncObject):
         screen.setCellColour(self.image, self.x, self.y, iop.black, iop.white)
 
         if mouse.lbuttonPressed():
-            self.x = mouse.x()
-            self.y = mouse.y()
+            postMouse = self.updateList(
+                ('x', mouse.x()),
+                ('y', mouse.y())
+            )
+        else:
+            postMouse = self
+
+        return postMouse.handleKeysMain(key)
+
+
+    def handleKeysMain(self, key):
 
         if key.code() == iop.KEY_RIGHT and self.x < self.maxx:
-            self.x += 1
+            return self.update('x', self.x + 1)
 
         elif key.code() == iop.KEY_LEFT and self.x > 0:
-            self.x -= 1
+            return self.update('x', self.x - 1)
 
         elif key.code() == iop.KEY_DOWN and self.y < self.maxy:
-            self.y += 1
+            return self.update('y', self.y + 1)
 
         elif key.code() == iop.KEY_UP and self.y > 0:
-            self.y -= 1
+            return self.update('y', self.y - 1)
 
         elif key.code() == iop.KEY_DELETE:
             screen.putNodeOnImage(self.image, self.x, self.y, ' ', None, iop.black, iop.white)

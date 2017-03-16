@@ -373,33 +373,35 @@ class TNode(fo.FuncObject):
 
         return ret
 
-    def serialise(self):
+    def serialise(self, topLevel=True):
         ret = [reader.Symbol('list')]
         for i in self:
             if isinstance(i.child, TNode):
-                pyExp = i.child.serialise2()
+                pyExp = i.child.serialise(False)
             elif hasattr(i.child, 'serialise'):
                 pyExp = i.child.serialise()
             else: pyExp = i.child
 
             ret.append(pyExp)
 
-        tag = [reader.Symbol('class'), self.__class__.__module__, self.__class__.__name__]
-        #tag.append(ret)
-        return tag + [ret]
+        if topLevel:
+            tag = [reader.Symbol('class'), self.__class__.__module__, self.__class__.__name__]
+            return tag + [ret]
+        else:
+            return ret
 
-    def serialise2(self):
-        ret = [reader.Symbol('list')]
-        for i in self:
-            if isinstance(i.child, TNode):
-                pyExp = i.child.serialise2()
-            elif hasattr(i.child, 'serialise'):
-                pyExp = i.child.serialise()
-            else: pyExp = i.child
-
-            ret.append(pyExp)
-
-        return ret
+    # def serialise2(self):
+    #     ret = [reader.Symbol('list')]
+    #     for i in self:
+    #         if isinstance(i.child, TNode):
+    #             pyExp = i.child.serialise2()
+    #         elif hasattr(i.child, 'serialise'):
+    #             pyExp = i.child.serialise()
+    #         else: pyExp = i.child
+    #
+    #         ret.append(pyExp)
+    #
+    #     return ret
 
     def childToPyExp(self):
         if self.isSubNode():

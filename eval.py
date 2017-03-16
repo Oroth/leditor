@@ -12,7 +12,9 @@ isa = isinstance
 
 def evalString(str):
     ps = reader.parse(str)
-    buf = buffer.BufferSexp(tn.TNode(tn.TNode(ps)))
+    buf = buffer.BufferSexp(tn.TNode(ps))
+    print buf.toPyExp()
+    return eval(buf)
 
 
 class EvalException(ex.GeneralException): pass
@@ -130,20 +132,25 @@ class Closure(fo.FuncObject):
 class Obj(Closure):
     def __init__(self, vars, varExps, vals, valExps, parentEnv=None):
         self.vars = vars
-        #self.vars.append('self')
         self.varExps = varExps
         self.vals = vals
-        #self.vals.appends(self)
         self.valExps = valExps
-        #self.valExps.append(None)
-        self.valExpEnv = dict(zip(vars, valExps))
-        self.env = Env(vars, vals, parentEnv)
+        #selfEnv = Env(['self'], [self], parentEnv)
+
+        if vars:
+            self.valExpEnv = dict(zip(vars, valExps))
+            self.env = Env(vars, vals, parentEnv)
+        else:
+            self.env = None
 
     def inspect(self):
         pass
 
     def inspectVar(self, var):
         return self.valExpEnv[var]
+
+    def updateVar(self, var, val):
+        self.env.update()
 
     def updateVarSource(self, var, newExp):
         varSource = self.valExpEnv[var]
@@ -313,9 +320,10 @@ def specialFormObj(expBuf, env, memoize):
             else:
                 vars.append(var.child)
 
-        #vars.append('self')
-        closure = Env(vars, [None]*len(vars), env)
+        selfObj = Obj(None, None, None, None)
+        selfClosure = Env(['self'], [selfObj], env)
 
+        closure = Env(vars, [None]*len(vars), selfClosure)
 
         pair = mapping
 
@@ -347,8 +355,15 @@ def specialFormObj(expBuf, env, memoize):
 
         #ret = Obj
 
-        ret = Obj(vars, varExps, valResults, valExps)
-        #closure.find('self')['self'] = ret
+        selfObj.vars = vars
+        selfObj.varExps = varExps
+        selfObj.vals = valResults
+        selfObj.valExps = valExps
+        selfObj.valExpEnv = dict(zip(vars, valExps))
+        selfObj.env = closure
+        return selfObj
+        #ret = Obj(vars, varExps, valResults, valExps)
+
 
     return ret
 
