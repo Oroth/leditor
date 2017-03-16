@@ -374,7 +374,6 @@ class TNode(fo.FuncObject):
         return ret
 
     def serialise(self):
-        tag = [reader.Symbol('class'), self.__class__.__module__, self.__class__.__name__]
         ret = [reader.Symbol('list')]
         for i in self:
             if isinstance(i.child, TNode):
@@ -385,8 +384,9 @@ class TNode(fo.FuncObject):
 
             ret.append(pyExp)
 
-        tag.append(ret)
-        return tag
+        tag = [reader.Symbol('class'), self.__class__.__module__, self.__class__.__name__]
+        #tag.append(ret)
+        return tag + [ret]
 
     def serialise2(self):
         ret = [reader.Symbol('list')]

@@ -50,7 +50,12 @@ class CodeEditor(Editors.TreeEditor):
 
     def syncWithImage(self, newImageRoot):
         if newImageRoot != self.buffer.root:
-            newSelf = self.update('buffer', self.buffer.syncToNewRoot(newImageRoot))
+            # special case when we have a newly created buffer
+            if self.buffer.emptyBuffer():
+                newBuffer = self.buffer.indexNewRoot(newImageRoot)
+            else:
+                newBuffer =  self.buffer.syncToNewRoot(newImageRoot)
+            newSelf = self.update('buffer', newBuffer)
             newSelf.evalBuffer()
             return newSelf
         else:

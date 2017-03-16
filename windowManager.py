@@ -22,7 +22,7 @@ from datetime import datetime
 
 
 class Window(fo.FuncObject):
-    def __init__(self, editorList, x=0, y=0, width=iop.screenWidth(), height=iop.screenHeight()):
+    def __init__(self, editorList=None, x=0, y=0, width=iop.screenWidth(), height=iop.screenHeight()):
         self.posx, self.posy = x, y
         self.maxx, self.maxy = width, height
         self.editorList = editorList
@@ -39,6 +39,8 @@ class Window(fo.FuncObject):
         ])
 
         self.message = None
+
+        self.persist = ['editorList']
 
     def setPosition(self, newPosx, newPosy, newMaxx, newMaxy):
         self.posx, self.posy = newPosx, newPosy
@@ -217,6 +219,10 @@ def syncEditorsToImage(editorList, newImage):
     return editorList.mapRoot(lambda node: node.syncWithImage(newImage))
 
 
+# class WinEditorList(buffer.SimpleBuffer):
+#     def __init__(self, *args, **kargs):
+#         super(WinEditorList, self).__init__(*args, **kargs)
+#         self.persist = ['cursorAdd']
 
 
 class WindowManager(fo.FuncObject):
@@ -231,6 +237,7 @@ class WindowManager(fo.FuncObject):
         startEditor = self.createListEdFromEditorSettings(imageRoot, "EditorSettings")
         self.editorList = buffer.SimpleBuffer.fromPyExp(startEditor, [0, 0])
 
+        #winEditorList = WinEditorList.fromPyExp(startEditor, [0, 0])
         startWindow = Window(self.editorList, 0, 0, iop.screenWidth(), iop.screenHeight())
         self.winTree = buffer.SimpleBuffer.fromPyExp(startWindow, [0, 0])
         self.imageFileName = imageFileName
@@ -239,7 +246,7 @@ class WindowManager(fo.FuncObject):
         self.cmdBar = None
         self.message = None
 
-        self.persist = ['editorList']
+        self.persist = ['editorList', 'winTree']
 
         self.wincl = cmdList.CmdList([
             (Key.c('j'), 'cmdWinDown'),
@@ -626,6 +633,10 @@ class WindowManager(fo.FuncObject):
             ('winCmd', True))
 
     def cmdWriteEditorSettingsTS(self):
+        # bit of a hack, but basically change the persistence definition at save time as currently difficult to
+        # retain with the way objects are set up.
+        self.editorList.persist.append('root')
+        self.winTree.persist.append('root')
         pyObj = self.serialise()
         print pyObj
         text = reader.to_string(pyObj)
@@ -680,11 +691,13 @@ class WindowManager(fo.FuncObject):
         newBuff = buffer.BufferSexp(root)
 
         newWM = eval.eval(newBuff)
+        print newWM.editorList.cursorAdd
         newWM2 = newWM.loadNewImage(self.ImageRoot)
+        print newWM2.editorList.cursorAdd
         return newWM2
 
-        #newEditor = CodeEditor.CodeEditor(newBuff).update('_isRootImageEditor', False)
-        #newWin = self.curWin().addEditor(newEditor)
-        #return self.addWindow(newWin)
+        # newEditor = CodeEditor.CodeEditor(newBuff).update('_isRootImageEditor', False)
+        # newWin = self.curWin().addEditor(newEditor)
+        # return self.addWindow(newWin)
 
         #newEditor = self.createListEdFromEditorSettings(self.ImageRoot, latestFile)

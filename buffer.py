@@ -11,7 +11,7 @@ class SimpleBuffer(fo.FuncObject):
         else:
             self.root = root
         self.cursor, self.cursorAdd = tn.tnodeAddress(self.root, cursorAdd)
-        self.persist = ['cursorAdd', 'root']
+        self.persist = ['cursorAdd']
 
     @classmethod
     def new(cls, *args, **kwargs):
@@ -178,6 +178,9 @@ class ViewBuffer(SimpleBuffer):
         self.cursor, self.cursorAdd = tn.tnodeAddress(self.view, cursorAdd)
         self.persist = ['cursorAdd', 'root']
 
+    def emptyBuffer(self):
+        return self.root.child.child.child == ''
+
     def newCursorAdd(self, newCursorAdd):
         cursor, cursorAdd = tn.tnodeAddress(self.view, newCursorAdd)
         return self.updateList(('cursor', cursor), ('cursorAdd', cursorAdd))
@@ -244,6 +247,9 @@ class BufferSexp(ViewBuffer):
     def __init__(self, root=None, viewAdd=[0], cursorAdd=[0]):
         super(BufferSexp, self).__init__(root, viewAdd, cursorAdd)
         self.persist = ['viewAdd', 'cursorAdd']
+
+    def indexNewRoot(self, newRoot):
+        return self.new(newRoot, self.viewAdd, self.cursorAdd)
 
     def syncToNewRoot(self, newRoot):
         newView, newViewAdd = tn.tnodeSyncAddress(newRoot, self.root, self.viewAdd)

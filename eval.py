@@ -10,6 +10,10 @@ import leditor_exceptions as ex
 wm = None
 isa = isinstance
 
+def evalString(str):
+    ps = reader.parse(str)
+    buf = buffer.BufferSexp(tn.TNode(tn.TNode(ps)))
+
 
 class EvalException(ex.GeneralException): pass
 
@@ -126,9 +130,12 @@ class Closure(fo.FuncObject):
 class Obj(Closure):
     def __init__(self, vars, varExps, vals, valExps, parentEnv=None):
         self.vars = vars
+        #self.vars.append('self')
         self.varExps = varExps
         self.vals = vals
+        #self.vals.appends(self)
         self.valExps = valExps
+        #self.valExps.append(None)
         self.valExpEnv = dict(zip(vars, valExps))
         self.env = Env(vars, vals, parentEnv)
 
@@ -306,7 +313,9 @@ def specialFormObj(expBuf, env, memoize):
             else:
                 vars.append(var.child)
 
+        #vars.append('self')
         closure = Env(vars, [None]*len(vars), env)
+
 
         pair = mapping
 
@@ -339,6 +348,7 @@ def specialFormObj(expBuf, env, memoize):
         #ret = Obj
 
         ret = Obj(vars, varExps, valResults, valExps)
+        #closure.find('self')['self'] = ret
 
     return ret
 

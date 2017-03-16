@@ -414,8 +414,8 @@ class TreeEditor(DisplayEditor):
 
         #else:
 
-        if key.code() == iop.KEY_ESCAPE:                                        # exit Editor
-            return 'ESC'
+        #if key.code() == iop.KEY_ESCAPE:                                        # exit Editor
+        #    return 'ESC'
 
         # Trial: blit an image to screen
         # elif key.char() == 'x':
@@ -425,7 +425,7 @@ class TreeEditor(DisplayEditor):
         #     time.sleep(2)
 
 
-        elif key.char() == 'i' and key.lctrl():     # Go back to the first expression in the list
+        if key.char() == 'i' and key.lctrl():     # Go back to the first expression in the list
             return self.update('buffer', self.buffer.curFirst())
 
         elif key.char() == 'd':

@@ -1,17 +1,13 @@
 from __future__ import division
 import re
+import StringIO
 __author__ = 'chephren'
 
-def readFile(fname):
-    f = open(fname, 'r')
-    ret = read(f.read())
-    f.close()
-    return ret
-
-#def read(s):
-#    "Read a Scheme expression from a string."
-#    return read_from(tokenize(s))
-
+def parse(inport):
+    "Parse a program: read and expand/error-check it."
+    # Backwards compatibility: given a str, convert it to an InPort
+    if isinstance(inport, str): inport = InPort(StringIO.StringIO(inport))
+    return read(inport)
 
 
 def loadFile(filename):
@@ -44,7 +40,8 @@ class InPort(object):
     "An input port. Retains a line of chars."
     tokenizer = r'''\s*(,@|[('`,)]|"(?:[\\].|[^\\"])*"|;.*|[^\s('"`,;)]*)(.*)'''
     def __init__(self, file):
-        self.file = file; self.line = ''
+        self.file = file
+        self.line = ''
     def next_token(self):
         "Return the next token, reading new text into line buffer if needed."
         while True:
