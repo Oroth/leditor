@@ -143,6 +143,7 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive, indentWidth
     hlcol = colScheme.activeHiCol if isActive else colScheme.idleHiCol
     prevLine = None
     y = 0
+    curx, cury = 0, 0
 
 
     for line in lineList[:winHeight]:
@@ -158,6 +159,12 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive, indentWidth
                 drawSymbolSpace(item, prevItem, colScheme, hlcol, image, x, y)
                 x += 1
 
+            # cursor tracking
+            if item.isCursor:
+                if not prevItem or not prevItem.isCursor:
+                    curx = x
+                cury = y
+
             drawItem(item, prevItem, colScheme, hlcol, image, x, y, winWidth, winHeight)
             x += len(item.nodeToString())
 
@@ -165,7 +172,7 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive, indentWidth
 
         y += 1
 
-    return image
+    return image, curx, cury
 
 
 def makeLineIndentList(editor, winWidth, winHeight):

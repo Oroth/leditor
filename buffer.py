@@ -160,6 +160,8 @@ class SimpleBuffer(fo.FuncObject):
         else:
             raise ValueError
 
+
+
     def mapRoot(self, func):
         newTree = [func(node.child) for node in self.root.child]
         return self.fromPyExp(newTree, self.cursorAdd)
@@ -287,17 +289,35 @@ class BufferSexp(ViewBuffer):
                 return self
         return cur.curNext()
 
+    def curDownAlong(self, nodeIsZipped):
+        cur = self
+        while not cur.onSubNode() or nodeIsZipped(cur.cursor):
+            if nodeIsZipped(cur.cursor):
+                cur = cur.curUp().curNextUpAlong()
+            else:
+                cur = cur.curNextUpAlong()
+        return cur.curChild()
+
     def curNextSymbol(self):
         return self.curNextUpAlong().curBottom()
 
     def curNextUnzippedSymbol(self, nodeIsZipped):
-        return self.curNextUpAlong().curUnzippedBottom(nodeIsZipped)
+        if nodeIsZipped(self.cursor):
+            return self.curUp().curNextUpAlong().curUnzippedBottom(nodeIsZipped)
+        else:
+            return self.curNextUpAlong().curUnzippedBottom(nodeIsZipped)
 
     def curPrevSymbol(self):
         return self.curPrevUpAlong().curBottomLast()
 
     def curPrevUnzippedSymbol(self, nodeIsZipped):
         return self.curPrevUpAlong().curUnzippedBottomLast(nodeIsZipped)
+
+    def curUnzippedLast(self, nodeIsZipped):
+        cur = self
+        while cur.cursor.next and not nodeIsZipped(cur.cursor):
+            cur = cur.curNext()
+        return cur
 
     def curBottom(self):
         cur = self
@@ -320,7 +340,7 @@ class BufferSexp(ViewBuffer):
 
     def curUnzippedBottomLast(self, nodeIsZipped):
         if self.cursor.isSubNode() and not nodeIsZipped(self.cursor):
-            last = self.curChild().curLast()
+            last = self.curChild().curUnzippedLast(nodeIsZipped)
             return last.curUnzippedBottomLast(nodeIsZipped)
         else:
             return self

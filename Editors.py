@@ -144,6 +144,8 @@ class DisplayEditor(fo.FuncObject):
         self.topLine = 0
         self.image = None
         self.indentWidth = 2
+        self.cursorx = 0
+        self.cursory = 0
 
         self.statusDescription = reader.Symbol(self.__class__.__name__)
         self.id = DisplayEditor.editors
@@ -192,7 +194,10 @@ class DisplayEditor(fo.FuncObject):
     def draw(self, maxx, maxy, isActive):
         lineList, self.topLine = printsexp.makeLineIndentList(self, maxx, maxy)
         toppedLineList = lineList[self.topLine:]
-        self.image = printsexp.drawLineList(toppedLineList, maxx, maxy, self.colourScheme, isActive, self.indentWidth)
+        self.image, self.cursorx, self.cursory = \
+            printsexp.drawLineList(
+                toppedLineList, maxx, maxy, self.colourScheme, isActive, self.indentWidth)
+
         return self.image
 
 
@@ -425,10 +430,7 @@ class TreeEditor(DisplayEditor):
         #     time.sleep(2)
 
 
-        if key.char() == 'i' and key.lctrl():     # Go back to the first expression in the list
-            return self.update('buffer', self.buffer.curFirst())
-
-        elif key.char() == 'd':
+        if key.char() == 'd':
             if self.buffer.cursor != self.buffer.root:
                 return self.updateList(
                     ('buffer', self.buffer.deleteAtCursor()),
@@ -456,8 +458,7 @@ class TreeEditor(DisplayEditor):
                     ('cellEditor', CellEditor(Symbol(''))),
                     ('editing', True))
 
-        elif key.char() == 'e':
-            return self.update('buffer', self.buffer.curLast())
+
 
         elif key.char() == 'G':
             lookupAddress = self.buffer.cursor.childToPyExp()
@@ -600,7 +601,7 @@ class TreeEditor(DisplayEditor):
 
         else:
             try:
-                if key.char() == 'J':
+                if key.char() == 'J' and key.lctrl():
                     newBuff = self.buffer.viewToCursor()
                     newHist = self.viewHistory.insertAtCursor(View(newBuff.viewAdd)).curPrev()
                     newHist2 = newHist.rootToCursor()
@@ -622,43 +623,75 @@ class TreeEditor(DisplayEditor):
                         ('viewHistory', newHist),
                         ('buffer', newBuff))
 
-                elif key.char() == 'K':
+                elif key.char() == 'K' and key.lctrl():
                     return self.update('buffer', self.buffer.viewUp())
 
-                elif key.char() == 'H':
+                elif key.char() == 'H' and key.lctrl():
                     return self.update('buffer', self.buffer.viewPrev())
 
                 elif key.char() == 'L' and key.lctrl():
                     return self.update('buffer', self.buffer.viewNext())
 
-                elif key.char() == 'L':
-                    return self.update('buffer', self.buffer.curNextChild())
 
-                elif key.char() == 'w':
-                    return self.update('buffer', self.buffer.curNextUnzippedSymbol(self.nodeIsZipped))
+                elif key.char() == 'J':
+                    if self.cursorIsZipped(self.buffer):
+                        raise ValueError
+                    return self.update('buffer', self.buffer.curDownAlong(self.nodeIsZipped))
 
-                elif key.char() == 'b':
-                    return self.update('buffer', self.buffer.curPrevUnzippedSymbol(self.nodeIsZipped))
-
-                elif key.code() == iop.KEY_LEFT or key.char() == 'h':
+                elif key.char() == 'H':
                     return self.update('buffer', self.buffer.curPrevUpAlong())
 
-                elif key.code() == iop.KEY_RIGHT or key.char() == 'l':
+                elif key.char() == 'K':
+                    return self.update('buffer', self.buffer.curUp())
+
+                elif key.char() == 'L':
                     if self.cursorIsZipped(self.buffer):
                         newBuff = self.buffer.curUp().curNextUpAlong()
                     else:
                         newBuff = self.buffer.curNextUpAlong()
                     return self.update('buffer', newBuff)
 
+
+                elif key.char() == 'e': # and key.ctrl():
+                    return self.update('buffer', self.buffer.curUnzippedLast(self.nodeIsZipped))
+                #
+                #elif key.char() == 'H':     # Go back to the first expression in the list
+                #     return self.update('buffer', self.buffer.curFirst())
+
+
+
+                elif key.code() == iop.KEY_RIGHT or key.char() == 'l':
+                    return self.update('buffer', self.buffer.curNextUnzippedSymbol(self.nodeIsZipped))
+
+                elif key.code() == iop.KEY_LEFT or key.char() == 'h':
+                    return self.update('buffer', self.buffer.curPrevUnzippedSymbol(self.nodeIsZipped))
+
                 elif key.code() == iop.KEY_DOWN or key.char() == 'j':
-                    if self.cursorIsZipped(self.buffer):
-                        raise ValueError
-                    return self.update('buffer', self.buffer.curChild())
+                    return self.cursorToScreenPos(self.cursorx, self.cursory + 1)
 
                 elif key.code() == iop.KEY_UP or key.char() == 'k':
-                    return self.update('buffer', self.buffer.curUp())
+                    return self.cursorToScreenPos(self.cursorx, self.cursory - 1)
+
 
             except ValueError:pass
+
+        return self
+
+    def cursorToScreenPos(self, newx, newy):
+        cell = self.image[newy][newx]
+
+        if cell.lineItemNodeReference is None or cell.character == ')':
+            lastSymbolPos = lineLastSymbolPos(self.image[newy], newx)
+            finalCell = self.image[newy][lastSymbolPos]
+        else:
+            finalCell = cell
+
+        if finalCell.lineItemNodeReference and finalCell.character != ')':
+            newBuff = self.buffer.newCursorAdd(finalCell.lineItemNodeReference.nodeAddress)
+            if self.cursorIsZipped(newBuff):
+                return self.update('buffer', newBuff)
+            else:
+                return self.update('buffer', newBuff.curBottom())
 
         return self
 
@@ -674,6 +707,16 @@ class TreeEditor(DisplayEditor):
             screen.overlayLinesOnImage(finalImage, maxy - 1, statusImage)
 
         return finalImage
+
+def lineLastSymbolPos(line, maxx=None):
+    if not maxx: maxx = len(line)
+    lastSymbolPos = 0
+    for x, cell in enumerate(line):
+        if cell.lineItemNodeReference and x != maxx:
+            if cell.character != ')':
+                lastSymbolPos = x
+        else:
+            return lastSymbolPos
 
 
 class StatusBar(DisplayEditor):
