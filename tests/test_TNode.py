@@ -1,8 +1,15 @@
+import unittest
 from unittest import TestCase, main
+import os, sys
+#import sys
 
 import tn
 from tn import createTNodeExpFromPyExp
-from unused import unusedListFuncs
+import test_eval
+
+
+#import eval
+#from unused import unusedListFuncs
 
 __author__ = 'chephren'
 
@@ -95,33 +102,37 @@ class TestCreateTreeFromSexp(TestCase):
 
 class TestTNodeFunctions(TestCase):
     def test_tnodeList(self):
-        tree = tn.createTNodeExpFromPyExp2([11, 15, 17, 19])
+        tree = tn.createTNodeExpFromPyExp([11, 15, 17, 19])
         self.assertEqual(tree.toPyExp(), [11, 15, 17, 19])
 
     def test_tnodeExpFromPyExp(self):
-        tree = tn.createTNodeExpFromPyExp2([22, [33, 44]])
+        tree = tn.createTNodeExpFromPyExp([22, [33, 44]])
         self.assertEqual(tree.toPyExp(), [22, [33, 44]])
 
     def test_tnodeExpFromPyExp2(self):
-        tree = tn.createTNodeExpFromPyExp2([22, [11, 10, [9]], [33, 44], 17])
+        tree = tn.createTNodeExpFromPyExp([22, [11, 10, [9]], [33, 44], 17])
         self.assertEqual(tree.toPyExp(), [22, [11, 10, [9]], [33, 44], 17])
 
-class TestMiscTNode(TestCase):
-    def test_list1(self):
-        tree = unusedListFuncs.foldrpy(unusedListFuncs.cons, [1, 5, "string", 41])
-        self.assertEqual(tree.toPyExp(), [1, 5, "string", 41])
 
-    def test_list2(self):
-        tree = unusedListFuncs.foldrtpy(unusedListFuncs.cons, [[1, 33], 5, ["string", 7], 41])
-        self.assertEqual(tree.toPyExp(), [[1, 33], 5, ["string", 7], 41])
 
-    def test_list3(self):
-        tree = unusedListFuncs.parseNumberedExp(['#', 1, [['#', 2, "string"]]])
-        self.assertEqual(tree.toPyExp(), ["string"])
 
-    def test_list4(self):
-        tree = unusedListFuncs.parseNumberedExp(['#', 1, [['#', 2, 106], ['#', 3, 'notstring'], ['#', 4, 207], ['#', 5, 'gime']]])
-        self.assertEqual(tree.toPyExp(), [106, "notstring", 207, 'gime'])
+
+# class TestMiscTNode(TestCase):
+#     def test_list1(self):
+#         tree = unusedListFuncs.foldrpy(unusedListFuncs.cons, [1, 5, "string", 41])
+#         self.assertEqual(tree.toPyExp(), [1, 5, "string", 41])
+#
+#     def test_list2(self):
+#         tree = unusedListFuncs.foldrtpy(unusedListFuncs.cons, [[1, 33], 5, ["string", 7], 41])
+#         self.assertEqual(tree.toPyExp(), [[1, 33], 5, ["string", 7], 41])
+#
+#     def test_list3(self):
+#         tree = unusedListFuncs.parseNumberedExp(['#', 1, [['#', 2, "string"]]])
+#         self.assertEqual(tree.toPyExp(), ["string"])
+#
+#     def test_list4(self):
+#         tree = unusedListFuncs.parseNumberedExp(['#', 1, [['#', 2, 106], ['#', 3, 'notstring'], ['#', 4, 207], ['#', 5, 'gime']]])
+#         self.assertEqual(tree.toPyExp(), [106, "notstring", 207, 'gime'])
 
 
 # class TestCopyTNode(TestCase):
@@ -343,4 +354,20 @@ class TestMiscTNode(TestCase):
 
 
 if __name__ == '__main__':
-    main()
+
+    # unit_dir='.'
+    # test_modules=[filename.replace('.py','') for filename in os.listdir(unit_dir)
+    #               if filename.endswith('.py') and filename.startswith('test_')]
+    # map(__import__,test_modules)
+    #
+    # suite = unittest.TestSuite()
+    # for mod in [sys.modules[modname] for modname in test_modules]:
+    #     suite.addTest(unittest.TestLoader().loadTestsFromModule(mod))
+    # unittest.TextTestRunner(verbosity=2).run(suite)
+
+
+    #
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.TestLoader().loadTestsFromModule(test_eval))
+    unittest.TextTestRunner(verbosity=2).run(suite)
+    # main()

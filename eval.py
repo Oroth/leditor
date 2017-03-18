@@ -1,6 +1,6 @@
 __author__ = 'chephren'
 import reader
-import iop
+#import iop
 import buffer
 import funobj as fo
 import tn
@@ -13,7 +13,6 @@ isa = isinstance
 def evalString(str):
     ps = reader.parse(str)
     buf = buffer.BufferSexp(tn.TNode(ps))
-    print buf.toPyExp()
     return eval(buf)
 
 
@@ -34,6 +33,25 @@ class LambdaSyntaxException(EvalException): pass
 class NonProcException(EvalException): pass
 
 class TypeException(EvalException): pass
+
+
+class fnEnv(fo.FuncObject):
+    def __init__(self, lst, outer=None):
+        self.dict = dict(lst)
+        self.outer = outer
+
+    def find(self, var):
+        if var in self.dict:
+            return self.dict
+        elif self.outer:
+            return self.outer.find(var)
+        else:
+            raise LookUpException(var)
+
+    def updateDict(self, var, val):
+        newDict = dict(self.dict)
+        newDict[var] = val
+        return self.update('dict', newDict)
 
 
 class Env(dict):
@@ -100,8 +118,8 @@ def add_globals(env):
          'string-ref':lambda str,ref:str[ref],
          'string-from':lambda str,ref:str[ref:],
          'string-left':lambda str, ref:str[:ref],
-         'screen-width':lambda :iop.screenWidth(),
-         'screen-height':lambda :iop.screenHeight(),
+         #'screen-width':lambda :iop.screenWidth(),
+         #'screen-height':lambda :iop.screenHeight(),
          'make-vector':lambda size,t:list(t) * size,
          'make-string':lambda size,c:str(c) * size,
          'count-wins':lambda :wm().getWinCount(),
@@ -131,15 +149,15 @@ class Closure(fo.FuncObject):
 
 class Obj(Closure):
     def __init__(self, vars, varExps, vals, valExps, parentEnv=None):
-        self.vars = vars
-        self.varExps = varExps
-        self.vals = vals
-        self.valExps = valExps
+        #self.vars = vars
+        #self.varExps = varExps
+        #self.vals = vals
+        #self.valExps = valExps
         #selfEnv = Env(['self'], [self], parentEnv)
 
         if vars:
             self.valExpEnv = dict(zip(vars, valExps))
-            self.env = Env(vars, vals, parentEnv)
+            self.env = fnEnv(zip(vars, vals), parentEnv)
         else:
             self.env = None
 
@@ -150,21 +168,33 @@ class Obj(Closure):
         return self.valExpEnv[var]
 
     def updateVar(self, var, val):
-        self.env.update()
+        newValExpEnv = dict(self.valExpEnv)
+        newValExpEnv[var] = buffer.BufferSexp(tn.TNode(val))
+        newEnv = self.env.updateDict(var, val)
+        return self.updateList(
+            ('env', newEnv),
+            ('valExpEnv', newValExpEnv))
+
 
     def updateVarSource(self, var, newExp):
         varSource = self.valExpEnv[var]
         return varSource.replaceAtCursor(newExp)
 
-
-    def toExp(self):
-        mappingExp = zip(self.varExps, self.valExps)
-        pyExp = [reader.Symbol('Obj'), mappingExp]
-        return tn.createTNodeExpFromPyExp(pyExp)
+    #
+    # def toExp(self):
+    #     mappingExp = zip(self.varExps, self.valExps)
+    #     pyExp = [reader.Symbol('Obj'), mappingExp]
+    #     return tn.createTNodeExpFromPyExp(pyExp)
 
     def call(self, methodName):
         try:
-            ret = self.env.find(methodName)[methodName]
+            if methodName == 'update':
+                return self.updateVar
+
+            # should potentially change it to only re-evaluate if it is a method.
+            #ret = self.env.find(methodName)[methodName]
+            valExp = self.valExpEnv[methodName]
+            ret = eval(valExp, self.env)
         except LookUpException:
             ret = LookUpException(methodName)
         return ret
@@ -321,9 +351,10 @@ def specialFormObj(expBuf, env, memoize):
                 vars.append(var.child)
 
         selfObj = Obj(None, None, None, None)
-        selfClosure = Env(['self'], [selfObj], env)
+        selfClosure = Env(['self', 'update'], [selfObj, selfObj.updateVar], env)
 
-        closure = Env(vars, [None]*len(vars), selfClosure)
+        #closure = Env(vars, [None]*len(vars), selfClosure)
+        closure = fnEnv(zip(vars, [None]*len(vars)), selfClosure)
 
         pair = mapping
 
