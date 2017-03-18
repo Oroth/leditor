@@ -5,6 +5,7 @@ import buffer
 import funobj as fo
 import tn
 import leditor_exceptions as ex
+import sys
 
 
 wm = None
@@ -14,6 +15,11 @@ def evalString(str):
     ps = reader.parse(str)
     buf = buffer.BufferSexp(tn.TNode(ps))
     return eval(buf)
+
+# file io
+def deserialiseClass(module_name, cls_name, lst):
+    cls = getattr(sys.modules[module_name], cls_name)
+    return cls.fromFile(lst)
 
 
 class EvalException(ex.GeneralException): pass
@@ -123,7 +129,8 @@ def add_globals(env):
          'make-vector':lambda size,t:list(t) * size,
          'make-string':lambda size,c:str(c) * size,
          'count-wins':lambda :wm().getWinCount(),
-         'class':lambda mod_name, cls_name, lst :wm().deserialiseClass(mod_name, cls_name, lst)
+         #'class':lambda mod_name, cls_name, lst :wm().deserialiseClass(mod_name, cls_name, lst)
+         'class':deserialiseClass
          #,'^':lambda *vars,*body: (lambda *args: eval(body, Env(vars, args, global_env)))
         })
     return env

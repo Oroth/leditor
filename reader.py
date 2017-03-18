@@ -1,6 +1,8 @@
 from __future__ import division
 import re
+import os
 import StringIO
+from datetime import datetime
 __author__ = 'chephren'
 
 def parse(inport):
@@ -11,11 +13,27 @@ def parse(inport):
 
 
 def loadFile(filename):
-    "Eval every expression from a file."
-    inport = InPort(open(filename))
-    return read(inport)
-#        except Exception as e:
-#            print '%s: %s' % (type(e).__name__, e)
+    f = open(filename, 'r')
+    try:
+        ret = read(InPort(f))
+    finally:
+        f.close()
+
+    return ret
+
+def readLatestFile(path):
+    dirList = [f for f in os.listdir(path) if not any(x in f for x in ['git', 'swp'])]
+    fileList = sorted(dirList, reverse=True)
+    latestFile = fileList[0]
+    print 'reading ', latestFile
+    return loadFile(path+latestFile)
+
+def writeLatestFile(path, filePrefix, text):
+    fileName = datetime.now().strftime(filePrefix+'_%y%m%d_%H%M%S')
+    f = open(path+fileName, 'w')
+    f.write(text)
+    f.close()
+
 
 isa = isinstance
 

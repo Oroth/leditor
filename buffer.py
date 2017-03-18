@@ -181,7 +181,11 @@ class ViewBuffer(SimpleBuffer):
         self.persist = ['cursorAdd', 'root']
 
     def emptyBuffer(self):
-        return self.root.child.child.child == ''
+        firstNode = self.root.child
+        if firstNode.isSubNode():
+            return firstNode.child.child == ''
+        else:
+            return firstNode.child == ''
 
     def newCursorAdd(self, newCursorAdd):
         cursor, cursorAdd = tn.tnodeAddress(self.view, newCursorAdd)
