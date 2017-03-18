@@ -202,7 +202,7 @@ class Obj(Closure):
             #ret = self.env.find(methodName)[methodName]
             valExp = self.valExpEnv[methodName]
             ret = eval(valExp, self.env)
-        except LookUpException:
+        except (LookUpException, KeyError):
             ret = LookUpException(methodName)
         return ret
 
