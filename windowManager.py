@@ -6,6 +6,7 @@ import screen
 import CodeEditor
 import screenEditor
 import fileEditor
+import lispObjEditor
 from cmdBar import CmdBar
 import os.path
 import pager
@@ -31,6 +32,7 @@ class Window(fo.FuncObject):
             (Key.c('d'), 'cmdEditorDel'),
             (Key.c('>'), 'cmdInspectProcedureCall'),
             (Key.c('?'), 'cmdEditorDisplayHelp'),
+            (Key.c('r'), 'cmdRunEditorObj'),
             (Key.vk(iop.KEY_SPACE), 'cmdEditorRunProg'),
             (Key.vk(iop.KEY_ENTER), 'cmdNewEditorOnCursor')
         ])
@@ -189,7 +191,7 @@ class Window(fo.FuncObject):
         curEd = self.getEditor()
         imageRoot = curEd.buffer.root
         evalBuffer = buffer.BufferSexp(imageRoot, curEd.buffer.rootToCursorAdd())
-        prog = eval.eval(evalBuffer)
+        prog = lispObjEditor.LispObjEditor(eval.eval(evalBuffer))
 
         newEditorList =  self.editorList.appendAtCursor(prog).curNext()
 
