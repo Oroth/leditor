@@ -189,14 +189,8 @@ def parseNumberedNode(car, cdr):
     elif isQuotedExp(car):
         val = car.next.child
         newNode = TNode(val, quoted=True)
-        newNode.quoted = True
         return join(newNode, cdr)
 
-    elif isMethodCallExp(car):
-        methodNameNode = TNode(car.next.child)
-        objExpNode = TNode(car.child, next=methodNameNode)
-        newNode = TNode(objExpNode, methodChain=True)
-        return join(newNode, cdr)
     else:
         return cons(car, cdr)
 

@@ -1,5 +1,6 @@
 __author__ = 'chephren'
 import buffer
+import tn
 import funobj as fo
 import reader
 from screen import createBlank, putNodeOnImage
@@ -288,17 +289,12 @@ def makeLineIndentList(editor, winWidth, winHeight):
 
 
         elif ps.onSubNode():
-            if ps.cursor.methodChain:
+            if tn.isMethodCallExp(ps.cursor.child):
                 methodChainps = ps.curChild().reset('newline', 'reindent').set('isMethodChain')
-                if ps.cursor.child and ps.cursor.child.next:
-                    ret = []
-                else:
-                    ret = [TokenNode(ps, '#')]
-                ret.extend(makeLineTokenStream(methodChainps))
-                #ret = makeLineTokenStream(methodChainps)
+                ret = makeLineTokenStream(methodChainps)
             else:
                 ret = [TokenNode(ps, '(')]
-                ret.extend(makeLineTokenStream(ps.curChild().reset('newline', 'reindent')))
+                ret.extend(makeLineTokenStream(ps.curChild().reset('newline', 'reindent', 'isMethodChain')))
                 ret.append(TokenNode(ps, ')'))
 
         elif ps.cursor.child is None:
@@ -307,7 +303,7 @@ def makeLineIndentList(editor, winWidth, winHeight):
         else:
             ret = [TokenNode(ps)]
 
-        if ps.cursor.quoted:
+        if ps.cursor.quoted and not ps.isMethodChain:
             ret.insert(0, TokenNode(ps, "'"))
 
         if ps.isMethodChain and ps.cursor.next:
