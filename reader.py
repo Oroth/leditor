@@ -8,8 +8,12 @@ __author__ = 'chephren'
 def parse(inport):
     "Parse a program: read and expand/error-check it."
     # Backwards compatibility: given a str, convert it to an InPort
-    if isinstance(inport, str): inport = InPort(StringIO.StringIO(inport))
-    return read(inport)
+    if isinstance(inport, str):
+        newInport = InPort(StringIO.StringIO(inport))
+    else:
+        newInport = inport
+
+    return read(newInport)
 
 
 def loadFile(filename):
