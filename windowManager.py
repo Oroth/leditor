@@ -185,6 +185,16 @@ class Window(fo.FuncObject):
 
         return self.update('editorList', newEditorList)
 
+    def cmdRunEditorObj(self):
+        curEd = self.getEditor()
+        imageRoot = curEd.buffer.root
+        evalBuffer = buffer.BufferSexp(imageRoot, curEd.buffer.rootToCursorAdd())
+        prog = eval.eval(evalBuffer)
+
+        newEditorList =  self.editorList.appendAtCursor(prog).curNext()
+
+        return self.update('editorList', newEditorList)
+
 
     def cmdEditorNext(self):
         return self.update('editorList', self.editorList.curCycle())

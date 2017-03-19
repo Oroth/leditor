@@ -15,6 +15,18 @@ class Cell(fo.FuncObject):
 def createBlank(maxx, maxy, bgColour=iop.defaultBG(), fgColour=iop.defaultFG()):
     return [[Cell(bgColour=bgColour, fgColour=fgColour) for x in range(0, maxx)] for x in range(0, maxy)]
 
+def fnPutNodeOnImage(image, x, y, text):
+    newImage = [list(line) for line in image]
+    for cdx, c in enumerate(text):
+        #if x < maxx:
+        (newImage[y][x+cdx]).character = c
+        #(image[y][x]).characterReference = cdx
+        #(image[y][x]).lineItemNodeReference = lineItemNodeRef
+        #(image[y][x]).bgColour = bgcol
+        #(image[y][x]).fgColour = fgcol
+        #x += 1
+
+    return newImage
 
 def putNodeOnImage(image, x, y, text, lineItemNodeRef, bgcol, fgcol):
     maxx = len(image[0])

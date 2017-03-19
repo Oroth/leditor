@@ -57,8 +57,20 @@ class ScreenEditor(fo.FuncObject):
             screen.putNodeOnImage(self.image, self.x, self.y, ' ', None, iop.black, iop.white)
 
         elif key.isPrintable():
-            screen.putNodeOnImage(self.image, self.x, self.y, key.char(), None, iop.black, iop.white)
+            newImage = screen.fnPutNodeOnImage(self.image, self.x, self.y, key.char())
             if self.x != self.maxx:
-                self.x += 1
+                newx = self.x + 1
+            else:
+                newx = self.x
+
+
+            return self.updateList(
+                ('image', newImage),
+                ('x', newx))
+
+
+            #screen.putNodeOnImage(self.image, self.x, self.y, key.char(), None, iop.black, iop.white)
+            #if self.x != self.maxx:
+            #    self.x += 1
 
         return self

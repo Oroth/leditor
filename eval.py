@@ -289,7 +289,12 @@ def callProcedure(expBuf, env, memoize):
 
 def specialFormLambda(expBuf, env, memoize):
     try:
-        vars = expBuf.cursor.next.child.toPyExp()
+        varExp = expBuf.curNext()
+        if varExp.onSubNode():
+            vars = varExp.cursor.child.toPyExp()
+            #vars = expBuf.cursor.next.child.toPyExp()
+        else:
+            vars = []
         #if not isList(vars):
         #    raise LambdaSyntaxException("Bad Vars Arg")
         bodyExp = expBuf.curNext().curNext()
