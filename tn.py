@@ -170,7 +170,10 @@ def isQuotedExp(val):
         return False
 
 def isMethodCallExp(val):
-    if isinstance(val, TNode) and val.next and val.next.quoted and not val.next.isSubNode():
+    " [<TNode> '<sym>]"
+    if isinstance(val, TNode) and val.next \
+            and val.next.quoted and not val.next.isSubNode()\
+            and not val.next.next:
         return True
     else:
         return False
@@ -240,7 +243,7 @@ def deleteAdd(node, add):
     return opAtAdd(node, add, lambda addNode: addNode.next)
 
 def replaceAdd(node, add, value):
-    return opAtAdd(node, add, lambda addNode: TNode(value, addNode.nodeID, addNode.next))
+    return opAtAdd(node, add, lambda addNode: TNode(value, addNode.nodeID, addNode.next, addNode.quoted))
 
 def copyToAdd(node, add):
     return opAtAdd(node, add, lambda addNode: TNode(addNode.child))

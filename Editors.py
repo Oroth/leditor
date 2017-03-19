@@ -91,6 +91,12 @@ class CellEditor(object):
             if self.content and self.index != len(self.content):
                 del self.content[self.index]
 
+        elif not self.isString and key.char()  == "'":
+            return 'QUOTE'
+
+        elif not self.isString and key.char() == ".":
+            return 'DOT'
+
         elif not self.isString and key.char() == '(':
             return 'NEST'
 
@@ -109,7 +115,7 @@ class CellEditor(object):
             if len(self.content) > 0:
                 return 'SPACE'
 
-        elif key.isPrintable():
+        elif key.isPrintable() and (self.isString or key.char() not in ':;\\|,#~[]{}%&*'):
             self.content.insert(self.index, key.char())
             self.index += 1
 
@@ -360,6 +366,27 @@ class TreeEditor(DisplayEditor):
 
             return self.updateList(
                 ('buffer', newBuff3),
+                ('cellEditor', CellEditor(Symbol(''))))
+
+        elif finished == 'QUOTE':
+            if self.cellEditor.content:
+                newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent())
+                newBuff2 = newBuff.appendAtCursor('').curNext().quoteAtCursor()
+            else:
+                newBuff2 = self.buffer.replaceAtCursor('').quoteAtCursor()
+            return self.updateList(
+                ('buffer', newBuff2),
+                ('cellEditor', CellEditor(Symbol(''))))
+
+        elif finished == 'DOT':
+            if self.cellEditor.content:
+                newBuff = self.buffer.replaceAtCursor([self.cellEditor.getContent()]).curChild()
+                newBuff2 = newBuff.appendAtCursor('').curNext().quoteAtCursor()
+            else:
+                return self
+                #newBuff2 = self.buffer.replaceAtCursor('').quoteAtCursor()
+            return self.updateList(
+                ('buffer', newBuff2),
                 ('cellEditor', CellEditor(Symbol(''))))
 
         else:
