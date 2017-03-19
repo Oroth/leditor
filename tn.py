@@ -95,11 +95,6 @@ def tnodeGetNVSFromAdd(exp, add, acc=[]):
         accNVS.append(cur.child)
         return cur, accNVS
 
-    # if add[1:] and cur.isSubNode():
-    #     return tnodeGetNVSFromAdd(cur.child, add[1:], accNVS)
-    # else:
-    #     return cur, accNVS
-
 def tnodeNVS(exp, nvs, acc=[]):
     cur, curPos = tnodeFindChild(exp, nvs[0])
     accInd = list(acc)
@@ -292,7 +287,6 @@ class TNode(fo.FuncObject):
         self.next = next
         self.child = self.parseValue(val)
         self.quoted = quoted
-        self.methodChain = methodChain
         self.persist = ['child', 'next']
 
         if not id:
@@ -339,9 +333,6 @@ class TNode(fo.FuncObject):
 
             if i.quoted:
                 newNode.append([reader.Symbol('quote'), pyExp])
-            elif i.methodChain:
-                pyExp[1] = [reader.Symbol('quote'), pyExp[1]]
-                newNode.append(pyExp)
             else:
                 newNode.append(pyExp)
 
@@ -359,9 +350,6 @@ class TNode(fo.FuncObject):
 
             if i.quoted:
                 ret.append(['quote', pyExp])
-            elif i.methodChain:
-                pyExp[1] = ['quote', pyExp[1]]
-                ret.append(pyExp)
             else:
                 ret.append(pyExp)
 
@@ -383,19 +371,6 @@ class TNode(fo.FuncObject):
             return tag + [ret]
         else:
             return ret
-
-    # def serialise2(self):
-    #     ret = [reader.Symbol('list')]
-    #     for i in self:
-    #         if isinstance(i.child, TNode):
-    #             pyExp = i.child.serialise2()
-    #         elif hasattr(i.child, 'serialise'):
-    #             pyExp = i.child.serialise()
-    #         else: pyExp = i.child
-    #
-    #         ret.append(pyExp)
-    #
-    #     return ret
 
     def childToPyExp(self):
         if self.isSubNode():
