@@ -37,20 +37,34 @@ def get_data_files(base_dir, target_dir, list=[]):
 
 # The directory of assets to include.
 #my_files = get_data_files(sys.path[0] + '\\', assets_dir)
-my_files = ['EditorSettings', 'testIDImage', 'fonts/terminal8x14_gs_ro.png']
+my_files = [('filefs', ['build-settings/EditorSettings']),
+            ('imagefs', ['build-settings/image']),
+            ('fonts', ['fonts/terminal8x14_gs_ro.png']),
+            ('.', ['libtcod-mingw.dll', 'SDL.dll'])]
+
+
 
 # Build a dictionary of the options we want.
-opts = { 'py2exe': {
-                    #'ascii':'True',
-                    #'excludes':['_ssl','_hashlib'],
-                    #'includes' : ['libtcod'],
-                    'bundle_files':'3',
-                    'packages': ['ctypes', '_ctypes'],
-                    'compressed':'True'}}
+opts = {
+    'py2exe': {
+        'ascii':'True',      # exclude unicode encodings
+        'excludes':
+            ['_ssl','_hashlib', 'doctest', 'pdb', 'unittest', 'difflib', 'optparse',
+             'subprocess', 'threading', 'pickle', 'random', 'collections',
+             'gettext', 'heapq'],
+        'includes' : ['encodings', 'encodings.string_escape'],
+        'bundle_files':'3',
+        'dll_excludes': ['w9xpopen.exe'],       # only needed for win95/98
+        #'optimize': 2,
+        #'bundle_files': 2,
+        'compressed':'True'
+}}
 
 # Run the setup utility.
-setup(console=[target_file],
-      data_files=my_files,
-      #zipfile=None,
-      options=opts)
+setup(
+    #console=[target_file],
+    windows=[target_file],
+    data_files=my_files,
+    zipfile=None,
+    options=opts)
 

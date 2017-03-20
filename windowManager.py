@@ -268,7 +268,7 @@ class WindowManager(fo.FuncObject):
             (Key.vk(iop.KEY_SPACE), 'cmdRunProg'),
             (Key.vk(iop.KEY_ENTER), 'cmdOpenWinOnCursor'),
             #(Key.vk(iop.KEY_F5), 'cmdWinUp'),
-            (Key.vk(iop.KEY_F10), 'cmdToggleFullScreen'),
+            (Key.vk(iop.KEY_F10), 'cmdToggleFullscreen'),
             (Key.vk(iop.KEY_ESCAPE), 'cmdExitWinMode')
         ])
 
@@ -618,6 +618,7 @@ class WindowManager(fo.FuncObject):
         return self.update('winCmd', False)
 
     def cmdToggleFullscreen(self):
+        print 'fullscreen'
         iop.toggleFullScreen()
         return self.update('winCmd', False)
 
