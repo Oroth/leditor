@@ -1,11 +1,11 @@
 import unittest
 from unittest import TestCase, main
 import os, sys
-#import sys
 
+#sys.path.append("..")
 import tn
 from tn import createTNodeExpFromPyExp
-import test_eval
+#import test_eval
 
 
 #import eval
@@ -366,8 +366,8 @@ if __name__ == '__main__':
     # unittest.TextTestRunner(verbosity=2).run(suite)
 
 
-    #
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromModule(test_eval))
-    unittest.TextTestRunner(verbosity=2).run(suite)
-    # main()
+
+    #suite = unittest.TestSuite()
+    #suite.addTest(unittest.TestLoader().loadTestsFromModule(test_eval))
+    #unittest.TextTestRunner(verbosity=2).run(suite)
+    main()

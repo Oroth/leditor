@@ -40,7 +40,7 @@ def get_data_files(base_dir, target_dir, list=[]):
 my_files = [('filefs', ['build-settings/EditorSettings']),
             ('imagefs', ['build-settings/image']),
             ('fonts', ['fonts/terminal8x14_gs_ro.png']),
-            ('.', ['libtcod-mingw.dll', 'SDL.dll'])]
+            ('.', ['lib/libtcod-mingw.dll', 'lib/SDL.dll'])]
 
 
 
@@ -62,8 +62,8 @@ opts = {
 
 # Run the setup utility.
 setup(
-    #console=[target_file],
-    windows=[target_file],
+    console=[target_file],
+    #windows=[target_file],
     data_files=my_files,
     zipfile=None,
     options=opts)
