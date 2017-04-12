@@ -504,7 +504,7 @@ class TreeEditor(DisplayEditor):
                     ('buffer', self.buffer.denestCursor()),
                     ('updateUndo', True))
 
-        elif key.char() == 'o' and not key.lctrl():
+        elif key.char() == 'o' and not key.ctrl():
             if self.buffer.cursor != self.buffer.view:
                 newBuff = self.buffer.appendAtCursor(['']).curNext().curChild()
                 return self.updateList(
@@ -628,7 +628,7 @@ class TreeEditor(DisplayEditor):
 
         else:
             try:
-                if key.char() == 'J' and key.lctrl():
+                if key.char() == 'J' and key.ctrl():
                     newBuff = self.buffer.viewToCursor()
                     newHist = self.viewHistory.insertAtCursor(View(newBuff.viewAdd)).curPrev()
                     newHist2 = newHist.rootToCursor()
@@ -636,27 +636,27 @@ class TreeEditor(DisplayEditor):
                         ('buffer', newBuff),
                         ('viewHistory', newHist2))
 
-                elif key.char() == 'o' and key.lctrl():
+                elif key.char() == 'o' and key.ctrl():
                     newHist = self.viewHistory.curNext()
                     newBuff = self.buffer.newViewAdd(newHist.cursor.child.address)
                     return self.updateList(
                         ('viewHistory', newHist),
                         ('buffer', newBuff))
 
-                elif key.char() == 'h' and key.lctrl():
+                elif key.char() == 'h' and key.ctrl():
                     newHist = self.viewHistory.curPrev()
                     newBuff = self.buffer.newViewAdd(newHist.cursor.child.address)
                     return self.updateList(
                         ('viewHistory', newHist),
                         ('buffer', newBuff))
 
-                elif key.char() == 'K' and key.lctrl():
+                elif key.char() == 'K' and key.ctrl():
                     return self.update('buffer', self.buffer.viewUp())
 
-                elif key.char() == 'H' and key.lctrl():
+                elif key.char() == 'H' and key.ctrl():
                     return self.update('buffer', self.buffer.viewPrev())
 
-                elif key.char() == 'L' and key.lctrl():
+                elif key.char() == 'L' and key.ctrl():
                     return self.update('buffer', self.buffer.viewNext())
 
 

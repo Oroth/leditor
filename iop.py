@@ -109,12 +109,6 @@ class Key():
     def alt(self):
         return self.keyObj.lalt or self.keyObj.ralt
 
-    def lctrl(self):
-        return self.keyObj.lctrl
-
-    def lalt(self):
-        return self.keyObj.lalt
-
     def shift(self):
         return self.keyObj.shift
 
