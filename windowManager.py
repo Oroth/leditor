@@ -65,6 +65,9 @@ class Window(fo.FuncObject):
         else:
             return self
 
+    def handleMouse(self, mouse):
+        pass
+
     def handleKeys(self, key, mouse):
         if self.editorCmd:
             result = self.editModeCL.process(key, self)
