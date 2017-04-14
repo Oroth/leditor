@@ -7,8 +7,10 @@ import iop
 import windowManager
 import eval
 import os.path
+import time
 
-
+import cProfile
+import pstats
 
 # Size is in cells
 SCREEN_WIDTH = 120
@@ -23,28 +25,47 @@ else:
     imageFileName = "Image"
 
 #wm = windowManager.WindowManager(imageFileName)
-wm = windowManager.WindowManager().cmdLoadLatestAll()
-wm.draw()
-iop.screenFlush()
+# wm = windowManager.WindowManager().cmdLoadLatestAll()
+# wm.draw()
+# iop.screenFlush()
 
 # Make definitions in the window manager available to the base environment in eval, so that they can be called
 # as part of our programs
-eval.wm = lambda: wm
+#eval.wm = lambda: wm
 
-while not iop.isWindowClosed():
+def main():
 
-    newKey, newMouse = iop.getInput()
+    wm = windowManager.WindowManager().cmdLoadLatestAll()
+    wm.draw()
+    iop.screenFlush()
+    #
+    # eval.wm = lambda: wm
 
-    if newMouse.on():
-        result = wm.handleMouse(newMouse)
-    elif newKey.on():
-        result = wm.handleKeys(newKey)
-    else:
-        result = 'NO-INPUT'
 
-    if result == 'QUIT-WM':
-        break
-    elif result != 'NO-INPUT':
-        wm = result
-        wm.draw()
-        iop.screenFlush()
+    while not iop.isWindowClosed():
+
+        time.sleep(0.01)
+        newKey, newMouse = iop.getInput()
+
+        if newMouse.on():
+            result = wm.handleMouse(newMouse)
+        elif newKey.on():
+            result = wm.handleKeys(newKey)
+        else:
+            result = 'NO-INPUT'
+
+        if result == 'QUIT-WM':
+            break
+        elif result != 'NO-INPUT':
+            wm = result
+            wm.draw()
+            iop.screenFlush()
+
+cProfile.run('main()', 'profstats.txt')
+#main()
+
+
+stream = open('pstats.txt', 'w')
+stats = pstats.Stats('profstats', stream=stream)
+stats.strip_dirs().sort_stats('cumulative').print_stats()
+stream.close()
