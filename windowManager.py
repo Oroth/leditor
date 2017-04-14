@@ -545,17 +545,7 @@ class WindowManager(fo.FuncObject):
             resultEd = resultWin.getEditor()
 
             if resultEd == 'UNDO':
-                if self.hist.next:
-                    self.hist = self.hist.next
-                    self.ImageRoot = tn.TNode(self.hist.child)
-
-                    syncedEditorList = syncEditorsToImage(self.editorList, self.ImageRoot)
-
-                    return self.updateList(
-                        ('editorList', syncedEditorList),
-                        ('winTree', syncWindowsToEditorList(self.winTree, syncedEditorList)))
-                else:
-                    return self
+                return self.cmdUndo()
 
             else:
                 return self.replaceWindow(resultWin)
@@ -587,12 +577,16 @@ class WindowManager(fo.FuncObject):
         newWin = curWin.addEditor(newEd)
         return self.addWindow(newWin)
 
-    # Does this even work?
-    def cmdWinUndo(self):
+    def cmdUndo(self):
         if self.hist.next:
+            self.hist = self.hist.next
+            self.ImageRoot = tn.TNode(self.hist.child)
+
+            syncedEditorList = syncEditorsToImage(self.editorList, self.ImageRoot)
+
             return self.updateList(
-                ('ImageRoot', self.hist.next),
-                ('hist', self.hist.next))
+                ('editorList', syncedEditorList),
+                ('winTree', syncWindowsToEditorList(self.winTree, syncedEditorList)))
 
     def cmdWinNext(self):
         return self.updateList(
