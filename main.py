@@ -24,14 +24,15 @@ else:
 
 #wm = windowManager.WindowManager(imageFileName)
 wm = windowManager.WindowManager().cmdLoadLatestAll()
+wm.draw()
+iop.screenFlush()
 
 # Make definitions in the window manager available to the base environment in eval, so that they can be called
 # as part of our programs
 eval.wm = lambda: wm
 
 while not iop.isWindowClosed():
-    wm.draw()
-    iop.screenFlush()
+
     newKey, newMouse = iop.getInput()
 
     if newMouse.on():
@@ -45,3 +46,5 @@ while not iop.isWindowClosed():
         break
     elif result != 'NO-INPUT':
         wm = result
+        wm.draw()
+        iop.screenFlush()

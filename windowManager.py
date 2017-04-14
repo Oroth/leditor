@@ -445,17 +445,14 @@ class WindowManager(fo.FuncObject):
         newWin = newWinList.cursor.child
         newEditorList = newWin.editorList
         newEditor = newEditorList.cursor.child
+        newImage = newEditor.buffer.root
 
-        if newEditor.isRootImageEditor():
-            newImage = newEditor.buffer.root
-
-            if newEditor.syncWithRoot and self.ImageRoot != newImage:
-                self.ImageRoot = newImage
-                if newEditor.updateUndo:
-                    self.hist = cons(self.ImageRoot.child, self.hist)
+        if newEditor.isRootImageEditor() and self.ImageRoot != newImage:
+            self.ImageRoot = newImage
+            if newEditor.updateUndo:
+                self.hist = cons(self.ImageRoot.child, self.hist)
 
             syncedEditorList = syncEditorsToImage(newEditorList, newImage)
-
         else:
             syncedEditorList = newEditorList
 

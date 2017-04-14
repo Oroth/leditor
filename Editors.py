@@ -216,7 +216,7 @@ class TreeEditor(DisplayEditor):
         self.changeMode = False
         self.cellEditor = None
         self.yankBuffer = None
-        self.syncWithRoot = True
+        #self.syncWithRoot = True
         self.updateUndo = False
         self.revealedNodes = {}
         self.zippedNodes = dict(zippedNodes)

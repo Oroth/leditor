@@ -46,6 +46,7 @@ class CodeEditor(Editors.TreeEditor):
             return env
 
     def evalBuffer(self):
+        print 'eval'
         eval.eval(buffer.BufferSexp(self.buffer.root), self.env, self.storeNodeValue)
 
     def syncWithImage(self, newImageRoot):
@@ -122,7 +123,7 @@ class CodeEditor(Editors.TreeEditor):
         else:
             result = super(CodeEditor, self).handleKeysMain(key)
 
-        self.evalBuffer()   # updating imperatively?
+        #self.evalBuffer()   # updating imperatively?
         return result
 
 
