@@ -116,7 +116,7 @@ class Key():
         return chr(self.keyObj.c) in printable
 
 class Mouse():
-    def __init__(self, mouseObj):
+    def __init__(self, mouseObj=libtcod.Mouse()):
         self.mouseObj = mouseObj
 
     def lbuttonPressed(self):
@@ -127,6 +127,10 @@ class Mouse():
 
     def wheelDown(self):
         return self.mouseObj.wheel_down
+
+    def on(self):
+        m = self.mouseObj
+        return m.lbutton_pressed or m.wheel_up or m.wheel_down
 
     def getPos(self):
         return self.mouseObj.cx, self.mouseObj.cy

@@ -251,9 +251,9 @@ class TreeEditor(DisplayEditor):
             self.statusBar.clearMessage()
         self.statusBar = self.statusBar.refreshBuffer()
 
-        mouseResult = self.handleMouse(mouse)
-        if mouseResult:
-            return mouseResult
+        # mouseResult = self.handleMouse(mouse)
+        # if mouseResult:
+        #     return mouseResult
 
         if key.code() == 0:
             return self
@@ -271,7 +271,9 @@ class TreeEditor(DisplayEditor):
         return self.handleKeysMain(key, mouse)
 
     def handleMouse(self, mouse):
+
         if mouse.lbuttonPressed():
+
             cell = self.image[mouse.y()][mouse.x()]
 
             if self.editing:
@@ -284,6 +286,9 @@ class TreeEditor(DisplayEditor):
             elif cell.lineItemNodeReference:
                 newBuff = self.buffer.newCursorAdd(cell.lineItemNodeReference.nodeAddress)
                 return self.update('buffer', newBuff)
+
+            else:
+                return self
         elif mouse.wheelDown():
             self.topLine += 3
         elif mouse.wheelUp():
@@ -292,8 +297,8 @@ class TreeEditor(DisplayEditor):
             else:
                 self.topLine = 0
 
-        else:
-            return None
+
+        return self
 
     def handleCellEditor(self, key):
         finished = self.cellEditor.handleKey(key)

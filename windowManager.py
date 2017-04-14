@@ -66,7 +66,11 @@ class Window(fo.FuncObject):
             return self
 
     def handleMouse(self, mouse):
-        pass
+        relativePositionMouse = mouse.getMouseWithRelativePosition(self.posx, self.posy)
+        newEditor = self.getEditor().handleMouse(relativePositionMouse)
+        return self.updateList(
+            ('editorList', self.editorList.replaceAtCursor(newEditor)))
+
 
     def handleKeys(self, key, mouse):
         if self.editorCmd:
@@ -512,6 +516,20 @@ class WindowManager(fo.FuncObject):
         else:
             return self.update('cmdBar', cmdResult)
 
+    def handleMouse(self, mouse):
+        #if mouse.lbuttonPressed():
+
+        windowClicked, windowAddress = self.matchWindowToClick(mouse.x(), mouse.y())
+        if windowClicked != self.winTree.cursor:
+            newWinTree = self.winTree.newCursorAdd(windowAddress)
+            mouseResult = self.update('winTree', newWinTree)
+            return mouseResult
+
+        else:
+            resultWin = self.curWin().handleMouse(mouse)
+            return self.replaceWindow(resultWin)
+
+
     def handleKeys(self, key, mouse):
 
         if self.cmdBar:
@@ -519,11 +537,11 @@ class WindowManager(fo.FuncObject):
 
         mouseResult = self
 
-        if mouse.lbuttonPressed():
-            windowClicked, windowAddress = self.matchWindowToClick(mouse.x(), mouse.y())
-            if windowClicked != self.winTree.cursor:
-                newWinTree = self.winTree.newCursorAdd(windowAddress)
-                mouseResult = self.update('winTree', newWinTree)
+        # if mouse.lbuttonPressed():
+        #     windowClicked, windowAddress = self.matchWindowToClick(mouse.x(), mouse.y())
+        #     if windowClicked != self.winTree.cursor:
+        #         newWinTree = self.winTree.newCursorAdd(windowAddress)
+        #         mouseResult = self.update('winTree', newWinTree)
 
         if key.isPrintable():
             return mouseResult.update('message', None).handleKeysMain(key, mouse)
