@@ -28,7 +28,6 @@ wm = windowManager.WindowManager().cmdLoadLatestAll()
 # Make definitions in the window manager available to the base environment in eval, so that they can be called
 # as part of our programs
 eval.wm = lambda: wm
-emptyMouse = iop.Mouse()
 
 while not iop.isWindowClosed():
     wm.draw()
@@ -37,14 +36,12 @@ while not iop.isWindowClosed():
 
     if newMouse.on():
         result = wm.handleMouse(newMouse)
-        print result
-
     elif newKey.on():
-        result = wm.handleKeys(newKey, emptyMouse)
+        result = wm.handleKeys(newKey)
     else:
-        result = wm
+        result = 'NO-INPUT'
 
-    if result:
-        wm = result
-    else:
+    if result == 'QUIT-WM':
         break
+    elif result != 'NO-INPUT':
+        wm = result

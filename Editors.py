@@ -238,11 +238,11 @@ class TreeEditor(DisplayEditor):
         self.statusBar.updateStatus([self.statusDescription, self.buffer.viewAdd, self.buffer.cursorAdd,
                              Symbol('nodeID'), self.buffer.cursor.nodeID])
 
-    def handleKeys(self, key, mouse):
-        return self.handleKeysInitial(key, mouse)
+    def handleKeys(self, key):
+        return self.handleKeysInitial(key)
 
     # split out for flexibility when inheriting
-    def handleKeysInitial(self, key, mouse):
+    def handleKeysInitial(self, key):
         self.updateUndo = False
         self.drawMode = 'uncursor'
         self.updateStatusBar()
@@ -251,12 +251,8 @@ class TreeEditor(DisplayEditor):
             self.statusBar.clearMessage()
         self.statusBar = self.statusBar.refreshBuffer()
 
-        # mouseResult = self.handleMouse(mouse)
-        # if mouseResult:
-        #     return mouseResult
-
-        if key.code() == 0:
-            return self
+        # if key.code() == 0:
+        #     return self
 
         # Reset the screen to include the cursor if we aren't scrolling
         if key.char() not in ('t', 'T'):
@@ -268,10 +264,9 @@ class TreeEditor(DisplayEditor):
         elif self.changeMode:
             return self.handleKeysChangeMode(key)
 
-        return self.handleKeysMain(key, mouse)
+        return self.handleKeysMain(key)
 
     def handleMouse(self, mouse):
-
         if mouse.lbuttonPressed():
 
             cell = self.image[mouse.y()][mouse.x()]
@@ -296,7 +291,6 @@ class TreeEditor(DisplayEditor):
                 self.topLine -= 3
             else:
                 self.topLine = 0
-
 
         return self
 
@@ -445,22 +439,7 @@ class TreeEditor(DisplayEditor):
 
         return self.update('changeMode', False)
 
-    def handleKeysMain(self, key, mouse):
-
-
-
-        #else:
-
-        #if key.code() == iop.KEY_ESCAPE:                                        # exit Editor
-        #    return 'ESC'
-
-        # Trial: blit an image to screen
-        # elif key.char() == 'x':
-        #     image = io.image_load('fonts\\arial10x10.png')
-        #     io.image_blit(image, 0, 10, 10, io.BKGND_DEFAULT, 2, 2, 0)
-        #     io.console_flush()
-        #     time.sleep(2)
-
+    def handleKeysMain(self, key):
 
         if key.char() == 'd':
             if self.buffer.cursor != self.buffer.root:
@@ -489,7 +468,6 @@ class TreeEditor(DisplayEditor):
                     ('buffer', newBuff),
                     ('cellEditor', CellEditor(Symbol(''))),
                     ('editing', True))
-
 
 
         elif key.char() == 'G':

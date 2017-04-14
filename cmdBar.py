@@ -17,11 +17,11 @@ class CmdBar(TreeEditor):
     def parseCommand(self):
         return self.update('returnState', 'PRINT')
 
-    def handleKeys(self, key, mouse):
+    def handleKeys(self, key):
         if key.code() == iop.KEY_ESCAPE:
             return self.update('returnState', 'ESCAPE')
 
         if key.code() == iop.KEY_ENTER:
-            return super(CmdBar, self).handleKeys(key, mouse).parseCommand()
+            return super(CmdBar, self).handleKeys(key).parseCommand()
 
-        return super(CmdBar, self).handleKeys(key, mouse)
+        return super(CmdBar, self).handleKeys(key)

@@ -68,11 +68,10 @@ class Window(fo.FuncObject):
     def handleMouse(self, mouse):
         relativePositionMouse = mouse.getMouseWithRelativePosition(self.posx, self.posy)
         newEditor = self.getEditor().handleMouse(relativePositionMouse)
-        return self.updateList(
-            ('editorList', self.editorList.replaceAtCursor(newEditor)))
+        return self.update('editorList', self.editorList.replaceAtCursor(newEditor))
 
 
-    def handleKeys(self, key, mouse):
+    def handleKeys(self, key):
         if self.editorCmd:
             result = self.editModeCL.process(key, self)
             if result:
@@ -93,8 +92,7 @@ class Window(fo.FuncObject):
                 ('message', "--Buffer Command--"))
 
         else:
-            relativePositionMouse = mouse.getMouseWithRelativePosition(self.posx, self.posy)
-            newEditor = self.getEditor().handleKeys(key, relativePositionMouse)
+            newEditor = self.getEditor().handleKeys(key)
             return self.updateList(
                 ('editorList', self.editorList.replaceAtCursor(newEditor)))
 
@@ -486,13 +484,12 @@ class WindowManager(fo.FuncObject):
 
 
     def evalCmdBarResult(self, cmdBuffer):
-
         # Maybe should get done in the actual cmdbar
         cmd = cmdBuffer.toPyExp()
         print cmd
 
         if cmd[0] in ('q', 'quit'):
-            return False
+            return 'QUIT-WM'
 
         result = eval.eval(buffer.BufferSexp(cmdBuffer.root), self.getCmdBarEnv())
         print result
@@ -505,8 +502,8 @@ class WindowManager(fo.FuncObject):
         return self.updateList(
             ('cmdBar', None))
 
-    def handleCmdBarInput(self, key, mouse):
-        cmdResult = self.cmdBar.handleKeys(key, mouse)
+    def handleCmdBarInput(self, key):
+        cmdResult = self.cmdBar.handleKeys(key)
         if cmdResult.returnState == 'ESCAPE':
             return self.update('cmdBar', None)
 
@@ -517,40 +514,24 @@ class WindowManager(fo.FuncObject):
             return self.update('cmdBar', cmdResult)
 
     def handleMouse(self, mouse):
-        #if mouse.lbuttonPressed():
-
         windowClicked, windowAddress = self.matchWindowToClick(mouse.x(), mouse.y())
         if windowClicked != self.winTree.cursor:
             newWinTree = self.winTree.newCursorAdd(windowAddress)
-            mouseResult = self.update('winTree', newWinTree)
-            return mouseResult
-
+            return self.update('winTree', newWinTree)
         else:
             resultWin = self.curWin().handleMouse(mouse)
             return self.replaceWindow(resultWin)
 
 
-    def handleKeys(self, key, mouse):
-
+    def handleKeys(self, key):
         if self.cmdBar:
-            return self.handleCmdBarInput(key, mouse)
+            return self.handleCmdBarInput(key)
 
-        mouseResult = self
+        return self.update('message', None).handleKeysMain(key)
 
-        # if mouse.lbuttonPressed():
-        #     windowClicked, windowAddress = self.matchWindowToClick(mouse.x(), mouse.y())
-        #     if windowClicked != self.winTree.cursor:
-        #         newWinTree = self.winTree.newCursorAdd(windowAddress)
-        #         mouseResult = self.update('winTree', newWinTree)
+    def handleKeysMain(self, key):
 
-        if key.isPrintable():
-            return mouseResult.update('message', None).handleKeysMain(key, mouse)
-        else:
-            return mouseResult.handleKeysMain(key, mouse)
-
-    def handleKeysMain(self, key, mouse):
-
-        if self.winCmd and key.on():
+        if self.winCmd:
             result = self.wincl.process(key, self)
             ret = result if result else self
             return ret.update('winCmd', False)
@@ -560,7 +541,7 @@ class WindowManager(fo.FuncObject):
             return mainResult
 
         else:
-            resultWin = self.curWin().handleKeys(key, mouse)
+            resultWin = self.curWin().handleKeys(key)
             resultEd = resultWin.getEditor()
 
             if resultEd == 'UNDO':
