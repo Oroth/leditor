@@ -514,10 +514,12 @@ class WindowManager(fo.FuncObject):
         windowClicked, windowAddress = self.matchWindowToClick(mouse.x(), mouse.y())
         if windowClicked != self.winTree.cursor:
             newWinTree = self.winTree.newCursorAdd(windowAddress)
-            return self.update('winTree', newWinTree)
         else:
-            resultWin = self.curWin().handleMouse(mouse)
-            return self.replaceWindow(resultWin)
+            newWinTree = self.winTree
+
+        resultWin = newWinTree.getCurrent().handleMouse(mouse)
+        newWinTree2 = newWinTree.replaceAtCursor(resultWin)
+        return self.update('winTree', newWinTree2)
 
 
     def handleKeys(self, key):
@@ -527,7 +529,6 @@ class WindowManager(fo.FuncObject):
         return self.update('message', None).handleKeysMain(key)
 
     def handleKeysMain(self, key):
-
         if self.winCmd:
             result = self.wincl.process(key, self)
             ret = result if result else self
