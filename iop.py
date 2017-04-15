@@ -176,24 +176,22 @@ def setUp(screenWidth, screenHeight, FPS):
     libtcod.console_set_background_flag(0, libtcod.BKGND_SET)
     libtcod.console_set_default_foreground(0, libtcod.white)
 
-def eventLoopSetup(handleKey, handleMouse, draw):
-    while not libtcod.console_is_window_closed():
+loopActive = True
 
+def closeWindow():
+    global loopActive
+    loopActive = False
+
+def eventLoopSetup(handleKey, handleMouse, draw):
+    while not libtcod.console_is_window_closed() and loopActive:
         time.sleep(0.01)
         newKey, newMouse = getInput()
-
         if newMouse.on():
             handleMouse(newMouse)
+            draw()
         elif newKey.on():
             handleKey(newKey)
-        else:
-            result = 'NO-INPUT'
-
-        if result == 'QUIT-WM':
-            break
-        elif result != 'NO-INPUT':
             draw()
-            libtcod.console_flush()
 
 def isWindowClosed():
     return libtcod.console_is_window_closed()

@@ -2,12 +2,10 @@
 Note that for compatability with libtcod this requires Python-32bit to run
 
 """
-
 import iop
 import windowManager
 import eval
 import os.path
-import time
 
 import cProfile
 import pstats
@@ -24,52 +22,34 @@ if os.path.isfile("testIDImage"):
 else:
     imageFileName = "Image"
 
-class Box(object):
-    def __init__(self, obj):
-        self.o = obj
 
 #wm = windowManager.WindowManager(imageFileName)
-wmi = windowManager.WindowManager().cmdLoadLatestAll()
-WM = Box(wmi)
+wm = windowManager.WindowManager().cmdLoadLatestAll()
 
 # Make definitions in the window manager available to the base environment in eval, so that they can be called
 # as part of our programs
-eval.wm = lambda: WM.o
+eval.wm = lambda: wm
 
 def handleKey(key):
-    result = WM.o.handleKeys(key)
-
+    global wm
+    result = wm.handleKeys(key)
     if result == 'QUIT-WM':
-        return False
-        #iop.closeWindow()
+        iop.closeWindow()
+    else:
+        wm = result
 
-    WM.o = result
+def handleMouse(mouse):
+    global wm
+    wm = wm.handleMouse(mouse)
 
-
-
-def main():
-    #wm = WM.o
-    WM.o.draw()
+def draw():
+    wm.draw()
     iop.screenFlush()
 
-    while not iop.isWindowClosed():
+def main():
+    draw()
+    iop.eventLoopSetup(handleKey, handleMouse, draw)
 
-        time.sleep(0.01)
-        newKey, newMouse = iop.getInput()
-
-        if newMouse.on():
-            result = WM.o.handleMouse(newMouse)
-        elif newKey.on():
-            result = WM.o.handleKeys(newKey)
-        else:
-            result = 'NO-INPUT'
-
-        if result == 'QUIT-WM':
-            break
-        elif result != 'NO-INPUT':
-            WM.o = result
-            WM.o.draw()
-            iop.screenFlush()
 
 def profile_main():
     cProfile.run('main()', 'profstats')
