@@ -24,23 +24,25 @@ if os.path.isfile("testIDImage"):
 else:
     imageFileName = "Image"
 
+class Box(object):
+    def __init__(self, obj):
+        self.o = obj
+
 #wm = windowManager.WindowManager(imageFileName)
-# wm = windowManager.WindowManager().cmdLoadLatestAll()
-# wm.draw()
-# iop.screenFlush()
+wmi = windowManager.WindowManager().cmdLoadLatestAll()
+WM = Box(wmi)
 
 # Make definitions in the window manager available to the base environment in eval, so that they can be called
 # as part of our programs
-#eval.wm = lambda: wm
+eval.wm = lambda: WM.o
 
 def main():
-
-    wm = windowManager.WindowManager().cmdLoadLatestAll()
+    wm = WM.o
+    #wm = windowManager.WindowManager().cmdLoadLatestAll()
     wm.draw()
     iop.screenFlush()
     #
     # eval.wm = lambda: wm
-
 
     while not iop.isWindowClosed():
 
@@ -61,11 +63,13 @@ def main():
             wm.draw()
             iop.screenFlush()
 
-cProfile.run('main()', 'profstats.txt')
-#main()
+def profile_main():
+    cProfile.run('main()', 'profstats')
+    stream = open('pstats.txt', 'w')
+    stats = pstats.Stats('profstats', stream=stream)
+    stats.strip_dirs().sort_stats('cumulative').print_stats()
+    stream.close()
+
+main()
 
 
-stream = open('pstats.txt', 'w')
-stats = pstats.Stats('profstats', stream=stream)
-stats.strip_dirs().sort_stats('cumulative').print_stats()
-stream.close()

@@ -186,6 +186,7 @@ def getInput():
     return Key(key), Mouse(mouse)
 
 def screenPrint(x, y, fmt, bgcolour=defaultBG(), fgcolour=defaultFG()):
-    libtcod.console_set_default_background(0, bgcolour)
-    libtcod.console_set_default_foreground(0, fgcolour)
-    libtcod.console_print(0, x, y, fmt)
+    libtcod.console_put_char_ex(0, x, y, fmt, fgcolour, bgcolour)
+    # libtcod.console_set_default_background(0, bgcolour)
+    # libtcod.console_set_default_foreground(0, fgcolour)
+    # libtcod.console_print(0, x, y, fmt)
