@@ -1,6 +1,7 @@
 from lib import libtcodpy as libtcod
 import copy
 from string import printable
+import time
 
 KEY_ENTER = libtcod.KEY_ENTER
 KEY_ESCAPE = libtcod.KEY_ESCAPE
@@ -175,6 +176,25 @@ def setUp(screenWidth, screenHeight, FPS):
     libtcod.console_set_background_flag(0, libtcod.BKGND_SET)
     libtcod.console_set_default_foreground(0, libtcod.white)
 
+def eventLoopSetup(handleKey, handleMouse, draw):
+    while not libtcod.console_is_window_closed():
+
+        time.sleep(0.01)
+        newKey, newMouse = getInput()
+
+        if newMouse.on():
+            handleMouse(newMouse)
+        elif newKey.on():
+            handleKey(newKey)
+        else:
+            result = 'NO-INPUT'
+
+        if result == 'QUIT-WM':
+            break
+        elif result != 'NO-INPUT':
+            draw()
+            libtcod.console_flush()
+
 def isWindowClosed():
     return libtcod.console_is_window_closed()
 
@@ -187,6 +207,3 @@ def getInput():
 
 def screenPrint(x, y, fmt, bgcolour=defaultBG(), fgcolour=defaultFG()):
     libtcod.console_put_char_ex(0, x, y, fmt, fgcolour, bgcolour)
-    # libtcod.console_set_default_background(0, bgcolour)
-    # libtcod.console_set_default_foreground(0, fgcolour)
-    # libtcod.console_print(0, x, y, fmt)

@@ -73,7 +73,6 @@ class CodeEditor(Editors.TreeEditor):
     # the codeEditor returns with a newly evaluated buffer if there were any significant changes.
     def handleKeys(self, key):
         result = self.handleKeysInitial(key)
-
         if result != 'UNDO' and result.updateUndo:
             result.evalBuffer()  # updating imperatively?
 
@@ -172,7 +171,7 @@ class evalIOHandler(CodeEditor):
         self.evalBuffer()
         self.mode = 'prog'
 
-    def handleKeysProg(self, key, mouse):
+    def handleKeysProg(self, key):
         if key.isPrintable():
             self.keyHistory.append(key.char())
             self.lastKey = key.char()
@@ -180,15 +179,15 @@ class evalIOHandler(CodeEditor):
         return self
 
 
-    def handleKeys(self, key, mouse):
+    def handleKeys(self, key):
         if key.code() == iop.KEY_TAB:
             self.mode = 'inspect' if self.mode == 'prog' else 'prog'
 
         elif self.mode == 'prog':
-            return self.handleKeysProg(key, mouse)
+            return self.handleKeysProg(key)
 
         else:
-            return super(evalIOHandler, self).handleKeys(key, mouse)
+            return super(evalIOHandler, self).handleKeys(key)
 
 
     def drawProg(self, maxx, maxy, isActive=False):

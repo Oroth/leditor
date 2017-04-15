@@ -36,9 +36,20 @@ WM = Box(wmi)
 # as part of our programs
 eval.wm = lambda: WM.o
 
+def handleKey(key):
+    result = WM.o.handleKeys(key)
+
+    if result == 'QUIT-WM':
+        return False
+        #iop.closeWindow()
+
+    WM.o = result
+
+
+
 def main():
-    wm = WM.o
-    wm.draw()
+    #wm = WM.o
+    WM.o.draw()
     iop.screenFlush()
 
     while not iop.isWindowClosed():
@@ -47,17 +58,17 @@ def main():
         newKey, newMouse = iop.getInput()
 
         if newMouse.on():
-            result = wm.handleMouse(newMouse)
+            result = WM.o.handleMouse(newMouse)
         elif newKey.on():
-            result = wm.handleKeys(newKey)
+            result = WM.o.handleKeys(newKey)
         else:
             result = 'NO-INPUT'
 
         if result == 'QUIT-WM':
             break
         elif result != 'NO-INPUT':
-            wm = result
-            wm.draw()
+            WM.o = result
+            WM.o.draw()
             iop.screenFlush()
 
 def profile_main():
