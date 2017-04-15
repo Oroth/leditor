@@ -38,11 +38,8 @@ eval.wm = lambda: WM.o
 
 def main():
     wm = WM.o
-    #wm = windowManager.WindowManager().cmdLoadLatestAll()
     wm.draw()
     iop.screenFlush()
-    #
-    # eval.wm = lambda: wm
 
     while not iop.isWindowClosed():
 

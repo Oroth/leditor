@@ -46,7 +46,6 @@ class CodeEditor(Editors.TreeEditor):
             return env
 
     def evalBuffer(self):
-        print 'eval'
         eval.eval(buffer.BufferSexp(self.buffer.root), self.env, self.storeNodeValue)
 
     def syncWithImage(self, newImageRoot):
@@ -59,6 +58,7 @@ class CodeEditor(Editors.TreeEditor):
             newSelf = self.update('buffer', newBuffer)
             newSelf.evalBuffer()
             return newSelf
+
         else:
             return self
 
@@ -71,8 +71,16 @@ class CodeEditor(Editors.TreeEditor):
 
     # a bit of a hack, necessary because everything is handled in handleKeys. We need to make sure that
     # the codeEditor returns with a newly evaluated buffer if there were any significant changes.
-    def handleKeysMain(self, key):
+    def handleKeys(self, key):
+        result = self.handleKeysInitial(key)
 
+        if result != 'UNDO' and result.updateUndo:
+            result.evalBuffer()  # updating imperatively?
+
+        return result
+
+
+    def handleKeysMain(self, key):
         # evaluate the current context
         if key.code() == iop.KEY_ENTER and not self.editing:
 
@@ -123,7 +131,7 @@ class CodeEditor(Editors.TreeEditor):
         else:
             result = super(CodeEditor, self).handleKeysMain(key)
 
-        #self.evalBuffer()   # updating imperatively?
+
         return result
 
 

@@ -251,9 +251,6 @@ class TreeEditor(DisplayEditor):
             self.statusBar.clearMessage()
         self.statusBar = self.statusBar.refreshBuffer()
 
-        # if key.code() == 0:
-        #     return self
-
         # Reset the screen to include the cursor if we aren't scrolling
         if key.char() not in ('t', 'T'):
             self.drawMode = 'cursor'
