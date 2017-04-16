@@ -266,7 +266,7 @@ class TreeEditor(DisplayEditor):
     def handleMouse(self, mouse):
         if mouse.lbuttonPressed():
 
-            cell = self.image[mouse.y()][mouse.x()]
+            cell = self.image[mouse.y][mouse.x]
 
             if self.editing:
                 if cell.lineItemNodeReference and cell.lineItemNodeReference.nodeReference == self.buffer.cursor:

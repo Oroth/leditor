@@ -1,6 +1,5 @@
 """
 Note that for compatability with libtcod this requires Python-32bit to run
-
 """
 import iop
 import windowManager

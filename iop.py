@@ -143,9 +143,11 @@ class Mouse():
         return Mouse(newMouseObj)
 
     # positions on console
+    @property
     def x(self):
         return self.mouseObj.cx
 
+    @property
     def y(self):
         return self.mouseObj.cy
 

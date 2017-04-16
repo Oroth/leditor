@@ -511,7 +511,7 @@ class WindowManager(fo.FuncObject):
             return self.update('cmdBar', cmdResult)
 
     def handleMouse(self, mouse):
-        windowClicked, windowAddress = self.matchWindowToClick(mouse.x(), mouse.y())
+        windowClicked, windowAddress = self.matchWindowToClick(mouse.x, mouse.y)
         if windowClicked != self.winTree.cursor:
             newWinTree = self.winTree.newCursorAdd(windowAddress)
         else:
