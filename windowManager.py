@@ -233,7 +233,7 @@ def syncEditorsToImage(editorList, newImage):
 
 
 class WindowManager(fo.FuncObject):
-    def __init__(self, imageFileName=None):
+    def __init__(self, app=None, imageFileName=None):
         if imageFileName == 'testIDImage':
             pyLoad = reader.loadFile(imageFileName)
             pyImage = [0]
@@ -245,7 +245,7 @@ class WindowManager(fo.FuncObject):
             startEditor = self.createListEdFromEditorSettings(imageRoot, "EditorSettings")
             self.editorList = buffer.SimpleBuffer.fromPyExp(startEditor, [0, 0])
 
-            startWindow = Window(self.editorList, 0, 0, iop.screenWidth(), iop.screenHeight())
+            startWindow = Window(self.editorList, 0, 0, app.screenCols, app.screenHeight)
             self.winTree = buffer.SimpleBuffer.fromPyExp(startWindow, [0, 0])
             self.imageFileName = imageFileName
 
@@ -256,7 +256,7 @@ class WindowManager(fo.FuncObject):
             self.winTree = None
             self.imageFileName = None
 
-
+        self.app = app
         self.winCmd = False
         self.cmdBar = None
         self.message = None
@@ -368,11 +368,11 @@ class WindowManager(fo.FuncObject):
     # calculates and sets posx, posy, maxx, maxy for all windows trying to allocate available screen real estate
     # as equally as possible
     def calculateWindowPositions(self):
-        maxX = iop.screenWidth()
+        maxX = self.app.screenCols
         curY = 0
         wins = self.winTree.length()
 
-        screenForWins = iop.screenHeight() - 1 #- numberOfBorders
+        screenForWins = self.app.screenRows - 1 #- numberOfBorders
         minYStep = screenForWins / wins
         leftover = screenForWins % wins
 
@@ -394,14 +394,22 @@ class WindowManager(fo.FuncObject):
         else:
             return ''
 
+    def printToScreen(self, image, posx, posy):
+        maxy = len(image) - 1
+        maxx = len(image[0]) - 1
+
+        for x in xrange(maxx):
+            for y in xrange(maxy):
+                cell = image[y][x]
+                self.app.screenPrint(posx + x, posy + y, cell.character, cell.bgColour, cell.fgColour)
 
     def draw(self):
         self.calculateWindowPositions()
-        maxX = iop.screenWidth()
+        maxX = self.app.screenCols
         curY = 0
         wins = self.winTree.length()
 
-        screenForWins = iop.screenHeight() - 1  # leave space for cmd bar
+        screenForWins = self.app.screenRows - 1  # leave space for cmd bar
         minYStep = screenForWins / wins
         leftover = screenForWins % wins
 
@@ -417,16 +425,16 @@ class WindowManager(fo.FuncObject):
                 winImage = window.draw(0, curY, maxX, curYStep, True)
             else:
                 winImage = window.draw(0, curY, maxX, curYStep, False)
-            screen.printToScreen(winImage, 0, curY)
+            self.printToScreen(winImage, 0, curY)
             curY += curYStep
 
         cmdPosy = screenForWins
         if self.cmdBar:
             cmdImage = self.cmdBar.draw(maxX, 2, isActive=True)
-            screen.printToScreen(cmdImage, 0, cmdPosy)
+            self.printToScreen(cmdImage, 0, cmdPosy)
         else:
             msg = screen.stringToImage(self.calculateMsg(), maxX, 2)
-            screen.printToScreen(msg, 0, cmdPosy)
+            self.printToScreen(msg, 0, cmdPosy)
 
 
     def matchWindowToClick(self, x, y):
@@ -670,7 +678,7 @@ class WindowManager(fo.FuncObject):
     def cmdLoadLatestAll(self):
         pyEditorLoad = reader.readLatestFile('filefs/')
         newWM = self.loadEditorSettingsFromPyExp(pyEditorLoad)
-
+        newWM.app = self.app
         return newWM.cmdLoadLatestImage()
 
     def cmdLoadLatestImage(self):
@@ -685,6 +693,7 @@ class WindowManager(fo.FuncObject):
     def loadEditorSettingsFromPyExp(self, pyExp):
         root = tn.TNode(tn.createTNodeExpFromPyExp(pyExp))
         newBuff = buffer.BufferSexp(root)
+
         return eval.eval(newBuff)
 
 

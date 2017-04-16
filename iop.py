@@ -37,6 +37,12 @@ dark_red = libtcod.dark_red
 darker_green = libtcod.darker_green
 darker_sky = libtcod.darker_sky
 
+def defaultBG():
+    return libtcod.console_get_default_background(0)
+
+def defaultFG():
+    return libtcod.console_get_default_foreground(0)
+
 
 class Key():
     def __init__(self, keyObj):
@@ -142,7 +148,6 @@ class Mouse():
         newMouseObj.cy = newMouseObj.cy - newY1
         return Mouse(newMouseObj)
 
-    # positions on console
     @property
     def x(self):
         return self.mouseObj.cx
@@ -152,71 +157,27 @@ class Mouse():
         return self.mouseObj.cy
 
 
-key = libtcod.Key()
-mouse = libtcod.Mouse()
-
-def defaultBG():
-    return libtcod.console_get_default_background(0)
-
-def defaultFG():
-    return libtcod.console_get_default_foreground(0)
-
-def screenWidth():
-    return libtcod.console_get_width(0)
-
-def screenHeight():
-    return libtcod.console_get_height(0)
-
-def screenFlush():
-    libtcod.console_flush()
-
-def setUp(screenWidth, screenHeight, FPS):
-    libtcod.console_set_custom_font('fonts/terminal8x14_gs_ro.png',
-            libtcod.FONT_TYPE_GREYSCALE | libtcod.FONT_LAYOUT_ASCII_INROW)
-    libtcod.console_init_root(screenWidth, screenHeight, 'List-editor', False)
-    libtcod.sys_set_fps(FPS)
-    libtcod.console_set_background_flag(0, libtcod.BKGND_SET)
-    libtcod.console_set_default_foreground(0, libtcod.white)
-
-loopActive = True
-
-def closeWindow():
-    global loopActive
-    loopActive = False
-
-def eventLoopSetup(handleKey, handleMouse, draw):
-    while not libtcod.console_is_window_closed() and loopActive:
-        time.sleep(0.01)
-        newKey, newMouse = getInput()
-        if newMouse.on():
-            handleMouse(newMouse)
-            draw()
-        elif newKey.on():
-            handleKey(newKey)
-            draw()
-
-
-def toggleFullScreen():
-    libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
-
-def getInput():
-    libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS|libtcod.EVENT_MOUSE,key,mouse)
-    return Key(key), Mouse(mouse)
-
-def screenPrint(x, y, fmt, bgcolour=defaultBG(), fgcolour=defaultFG()):
-    libtcod.console_put_char_ex(0, x, y, fmt, fgcolour, bgcolour)
-
-
 class Application(object):
-    def __int__(self, screenWidth, screenHeight):
+    def __init__(self, screenCols, screenRows):
         self._key = libtcod.Key()
         self._mouse = libtcod.Mouse()
         self._loopActive = True
+        self.screenCols = screenCols
+        self.screenRows = screenRows
+        self.setUp(screenCols, screenRows, 20)
+
+    def setUp(self, screenWidth, screenHeight, FPS):
+        libtcod.console_set_custom_font('fonts/terminal8x14_gs_ro.png',
+                libtcod.FONT_TYPE_GREYSCALE | libtcod.FONT_LAYOUT_ASCII_INROW)
+        libtcod.console_init_root(screenWidth, screenHeight, 'List-editor', False)
+        libtcod.sys_set_fps(FPS)
+        libtcod.console_set_background_flag(0, libtcod.BKGND_SET)
+        libtcod.console_set_default_foreground(0, libtcod.white)
 
     def eventLoopSetup(self, handleKey, handleMouse, draw):
         while not libtcod.console_is_window_closed() and self._loopActive:
             time.sleep(0.01)
-            newKey, newMouse = getInput()
+            newKey, newMouse = self.getInput()
             if newMouse.on():
                 handleMouse(newMouse)
                 draw()
@@ -224,6 +185,8 @@ class Application(object):
                 handleKey(newKey)
                 draw()
 
+    def closeWindow(self):
+        self._loopActive = False
 
     def toggleFullScreen(self):
         libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
@@ -234,3 +197,6 @@ class Application(object):
 
     def screenPrint(self, x, y, fmt, bgcolour=defaultBG(), fgcolour=defaultFG()):
         libtcod.console_put_char_ex(0, x, y, fmt, fgcolour, bgcolour)
+
+    def screenFlush(self):
+        libtcod.console_flush()

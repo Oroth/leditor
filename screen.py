@@ -75,11 +75,11 @@ def stringToImage(text, maxx, maxy, bgCol=iop.defaultBG(), fgCol=iop.defaultFG()
         putNodeOnImage(image, 0, y, textList[y], None, bgCol, fgCol)
     return image
 
-def printToScreen(image, posx, posy):
-    maxy = len(image) - 1
-    maxx = len(image[0]) - 1
-
-    for x in xrange(maxx):
-        for y in xrange(maxy):
-            cell = image[y][x]
-            iop.screenPrint(posx + x, posy + y, cell.character, cell.bgColour, cell.fgColour)
+# def printToScreen(image, posx, posy):
+#     maxy = len(image) - 1
+#     maxx = len(image[0]) - 1
+#
+#     for x in xrange(maxx):
+#         for y in xrange(maxy):
+#             cell = image[y][x]
+#             iop.screenPrint(posx + x, posy + y, cell.character, cell.bgColour, cell.fgColour)

@@ -12,18 +12,16 @@ import pstats
 # Size is in cells
 SCREEN_WIDTH = 120
 SCREEN_HEIGHT = 70
-LIMIT_FPS = 20
 
-iop.setUp(SCREEN_WIDTH, SCREEN_HEIGHT, LIMIT_FPS)
 
 if os.path.isfile("testIDImage"):
     imageFileName = "testIDImage"
 else:
     imageFileName = "Image"
 
-
+app = iop.Application(SCREEN_WIDTH, SCREEN_HEIGHT)
 #wm = windowManager.WindowManager(imageFileName)
-wm = windowManager.WindowManager().cmdLoadLatestAll()
+wm = windowManager.WindowManager(app).cmdLoadLatestAll()
 
 # Make definitions in the window manager available to the base environment in eval, so that they can be called
 # as part of our programs
@@ -33,7 +31,7 @@ def handleKey(key):
     global wm
     result = wm.handleKeys(key)
     if result == 'QUIT-WM':
-        iop.closeWindow()
+        app.closeWindow()
     else:
         wm = result
 
@@ -43,11 +41,11 @@ def handleMouse(mouse):
 
 def draw():
     wm.draw()
-    iop.screenFlush()
+    app.screenFlush()
 
 def main():
     draw()
-    iop.eventLoopSetup(handleKey, handleMouse, draw)
+    app.eventLoopSetup(handleKey, handleMouse, draw)
 
 
 def profile_main():
