@@ -43,7 +43,6 @@ def dropLast(lst):
     curLast.next = None
     return newLst
 
-
 def tnodeIndex(lst, ind):
     curNode = lst
     retInd = 0

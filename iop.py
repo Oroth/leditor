@@ -195,8 +195,6 @@ def eventLoopSetup(handleKey, handleMouse, draw):
             handleKey(newKey)
             draw()
 
-def isWindowClosed():
-    return libtcod.console_is_window_closed()
 
 def toggleFullScreen():
     libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
@@ -207,3 +205,32 @@ def getInput():
 
 def screenPrint(x, y, fmt, bgcolour=defaultBG(), fgcolour=defaultFG()):
     libtcod.console_put_char_ex(0, x, y, fmt, fgcolour, bgcolour)
+
+
+class Application(object):
+    def __int__(self, screenWidth, screenHeight):
+        self._key = libtcod.Key()
+        self._mouse = libtcod.Mouse()
+        self._loopActive = True
+
+    def eventLoopSetup(self, handleKey, handleMouse, draw):
+        while not libtcod.console_is_window_closed() and self._loopActive:
+            time.sleep(0.01)
+            newKey, newMouse = getInput()
+            if newMouse.on():
+                handleMouse(newMouse)
+                draw()
+            elif newKey.on():
+                handleKey(newKey)
+                draw()
+
+
+    def toggleFullScreen(self):
+        libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
+
+    def getInput(self):
+        libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS|libtcod.EVENT_MOUSE,self._key,self._mouse)
+        return Key(self._key), Mouse(self._mouse)
+
+    def screenPrint(self, x, y, fmt, bgcolour=defaultBG(), fgcolour=defaultFG()):
+        libtcod.console_put_char_ex(0, x, y, fmt, fgcolour, bgcolour)

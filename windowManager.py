@@ -20,7 +20,7 @@ import cmdList
 
 
 class Window(fo.FuncObject):
-    def __init__(self, editorList=None, x=0, y=0, width=iop.screenWidth(), height=iop.screenHeight()):
+    def __init__(self, editorList=None, x=0, y=0, width=25, height=25):
         self.posx, self.posy = x, y
         self.maxx, self.maxy = width, height
         self.editorList = editorList
@@ -46,8 +46,8 @@ class Window(fo.FuncObject):
         self.maxx, self.maxy = newMaxx, newMaxy
 
     def draw(self, posx, posy, maxx, maxy, isActive):
-        image = self.getEditor().draw(maxx, maxy, isActive)
-        screen.printToScreen(image, posx, posy)
+        return self.getEditor().draw(maxx, maxy, isActive)
+
 
     def getEditor(self):
         return self.editorList.cursor.child
@@ -316,9 +316,7 @@ class WindowManager(fo.FuncObject):
         return self.winTree.length()
 
     def getWMSettings(self):
-
         editorList = [e.getEditorSettings() for e in self.editorList.toPyExp()]
-
         return [reader.Symbol('WindowManager'),
                 [reader.Symbol('EditorList'),
                  [reader.Symbol('cursor'), self.editorList.cursorAdd],
@@ -416,8 +414,10 @@ class WindowManager(fo.FuncObject):
                 curYStep = minYStep
 
             if winNode == self.winTree.cursor:
-                window.draw(0, curY, maxX, curYStep, True)
-            else: window.draw(0, curY, maxX, curYStep,False)
+                winImage = window.draw(0, curY, maxX, curYStep, True)
+            else:
+                winImage = window.draw(0, curY, maxX, curYStep, False)
+            screen.printToScreen(winImage, 0, curY)
             curY += curYStep
 
         cmdPosy = screenForWins
