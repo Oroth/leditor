@@ -376,8 +376,12 @@ class TreeEditor(DisplayEditor):
 
         elif finished == 'DOT':
             if self.cellEditor.content:
-                newBuff = self.buffer.replaceAtCursor([self.cellEditor.getContent()]).curChild()
-                newBuff2 = newBuff.appendAtCursor('').curNext().quoteAtCursor()
+                if self.buffer.cursor.quoted:
+                    newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent()).curUp().nestCursor()
+                    newBuff2 = newBuff.curChild().appendAtCursor('').curNext().quoteAtCursor()
+                else:
+                    newBuff = self.buffer.replaceAtCursor([self.cellEditor.getContent()]).curChild()
+                    newBuff2 = newBuff.appendAtCursor('').curNext().quoteAtCursor()
             else:
                 return self
                 #newBuff2 = self.buffer.replaceAtCursor('').quoteAtCursor()

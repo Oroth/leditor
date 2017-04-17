@@ -27,8 +27,7 @@ class ScreenEditor(fo.FuncObject):
         if mouse.lbuttonPressed():
             postMouse = self.updateList(
                 ('x', mouse.x),
-                ('y', mouse.y)
-            )
+                ('y', mouse.y))
         else:
             postMouse = self
 

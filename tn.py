@@ -279,13 +279,13 @@ def barfOp(addNode):
     return cons(newListNode, join(barfNode, addNode.next))
 
 def methodChainOp(addNode):
-    nextNode = TNode(addNode.next.child)
+    nextNode = TNode(addNode.next.child, quoted=True)
     currentNode = TNode(addNode.child, next=nextNode)
-    return TNode(currentNode, next=addNode.next.next, methodChain=True)
+    return TNode(currentNode, next=addNode.next.next)
 
 class TNode(fo.FuncObject):
     __nodes__ = 0
-    def __init__(self, val=None, id=None, next=None, quoted=False, methodChain=False):
+    def __init__(self, val=None, id=None, next=None, quoted=False):
         self.next = next
         self.child = self.parseValue(val)
         self.quoted = quoted
