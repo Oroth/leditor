@@ -163,18 +163,23 @@ class ProgInspectionEditor(InspectionEditor):
 
 
 class evalIOHandler(CodeEditor):
-    def __init__(self, aBuffer):
+    def __init__(self, aBuffer=None):
         super(evalIOHandler, self).__init__(aBuffer)
         self.keyHistory = []
         self.lastKey = 0
         self.output = ''
         self.evalBuffer()
         self.mode = 'prog'
+        self.function = self.getNodeValue(self.buffer.cursor)
+
 
     def handleKeysProg(self, key):
         if key.isPrintable():
             self.keyHistory.append(key.char())
             self.lastKey = key.char()
+
+        handleKeysMethod = self.function.call('handleKeys')
+        self.function = handleKeysMethod.call(self.lastKey)
 
         return self
 
@@ -189,12 +194,15 @@ class evalIOHandler(CodeEditor):
         else:
             return super(evalIOHandler, self).handleKeys(key)
 
+    def handleMouse(self, mouse):
+        return self
+
 
     def drawProg(self, maxx, maxy, isActive=False):
-        self.function = self.getNodeValue(self.buffer.cursor)
         if self.lastKey != 0:
             if hasattr(self.function, 'call'):
-                self.output = self.function.call(self.keyHistory)
+                drawFunc = self.function.call('draw')
+                self.output = drawFunc.call(0, 0)
             else:
                 self.output = "Not a function" #ProgException(self.function, "Not a Function")
         return screen.stringToImage(self.output, maxx, maxy, self.colourScheme.bgCol, self.colourScheme.identifierCol)

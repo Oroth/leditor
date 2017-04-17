@@ -196,6 +196,7 @@ class Obj(Closure):
     def call(self, methodName):
         try:
             if methodName == 'update':
+                print 'updating'
                 return self.updateVar
 
             # should potentially change it to only re-evaluate if it is a method.
