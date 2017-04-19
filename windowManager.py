@@ -438,12 +438,11 @@ class WindowManager(fo.FuncObject):
 
 
     def matchWindowToClick(self, x, y):
-        winAdd = [0, 0]
-        for winNode in self.winTree.first():
-            win = winNode.child
-            if win.posx <= x < win.posx + win.maxx and win.posy <= y < win.posy + win.maxy:
-                return winNode, winAdd
-            winAdd[-1] += 1
+        def matchWin(win):
+            return True if win.posx <= x < win.posx + win.maxx and win.posy <= y < win.posy + win.maxy -1 \
+                else False
+
+        return self.winTree.findFirst(matchWin)
 
     # not sure if this is conceptually the right way to go about doing this, but once we've collect all the
     # updates in a newWindowList then this function unpicks it all to get at the various level of changes:
@@ -519,15 +518,14 @@ class WindowManager(fo.FuncObject):
             return self.update('cmdBar', cmdResult)
 
     def handleMouse(self, mouse):
-        windowClicked, windowAddress = self.matchWindowToClick(mouse.x, mouse.y)
-        if windowClicked != self.winTree.cursor:
-            newWinTree = self.winTree.newCursorAdd(windowAddress)
+        try:
+            newWinTree = self.matchWindowToClick(mouse.x, mouse.y)
+        except ValueError:
+            return self
         else:
-            newWinTree = self.winTree
-
-        resultWin = newWinTree.getCurrent().handleMouse(mouse)
-        newWinTree2 = newWinTree.replaceAtCursor(resultWin)
-        return self.update('winTree', newWinTree2)
+            resultWin = newWinTree.getCurrent().handleMouse(mouse)
+            newWinTree2 = newWinTree.replaceAtCursor(resultWin)
+            return self.update('winTree', newWinTree2)
 
 
     def handleKeys(self, key):

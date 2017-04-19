@@ -160,7 +160,12 @@ class SimpleBuffer(fo.FuncObject):
         else:
             raise ValueError
 
-
+    def findFirst(self, pred):
+        for n, node in enumerate(self.first()):
+            if pred(node.child):
+                return self.newCursorAdd([0, n])
+        else:
+            raise ValueError
 
     def mapRoot(self, func):
         newTree = [func(node.child) for node in self.root.child]

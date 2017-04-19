@@ -677,10 +677,10 @@ class TreeEditor(DisplayEditor):
                 elif key.code() == iop.KEY_LEFT or key.char() == 'h':
                     return self.update('buffer', self.buffer.curPrevUnzippedSymbol(self.nodeIsZipped))
 
-                elif key.code() == iop.KEY_DOWN or key.char() == 'j':
+                elif key.code() == iop.KEY_DOWN or key.char() == 'j' and self.cursory +1 < len(self.image):
                     return self.cursorToScreenPos(self.cursorx, self.cursory + 1)
 
-                elif key.code() == iop.KEY_UP or key.char() == 'k':
+                elif key.code() == iop.KEY_UP or key.char() == 'k' and self.cursory > 0:
                     return self.cursorToScreenPos(self.cursorx, self.cursory - 1)
 
 
