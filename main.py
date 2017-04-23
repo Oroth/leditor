@@ -29,6 +29,7 @@ eval.wm = lambda: wm
 
 def handleKey(key):
     global wm
+
     result = wm.handleKeys(key)
     if result == 'QUIT-WM':
         app.closeWindow()
@@ -40,6 +41,7 @@ def handleMouse(mouse):
     wm = wm.handleMouse(mouse)
 
 def draw():
+    app.clear()
     wm.draw()
     app.screenFlush()
 

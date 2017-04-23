@@ -20,7 +20,7 @@ class TestKey(unittest.TestCase):
 
     def test_keyShift(self):
         k = Key.c('a', shift=True)
-        self.assertEqual(k.char(), 'a')
+        self.assertEqual(k.char(), 'A')
 
     def test_keyvk(self):
         k = Key.vk(KEY_ENTER)
