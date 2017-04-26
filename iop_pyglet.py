@@ -104,12 +104,6 @@ class Key():
 
     @classmethod
     def vk(cls, vk, ctrl=False, alt=False, shift=False):
-        # newKey = libtcod.Key()
-        # newKey.vk = vk
-        # if vk in Key.vkCharMap:
-        #     c = Key.vkCharMap[vk]
-        # else:
-        #     newKey.c = 0
         mctrl = key.MOD_CTRL if ctrl else 0
         malt =  key.MOD_ALT if alt else 0
         mshift = key.MOD_SHIFT if shift else 0
@@ -175,9 +169,7 @@ class Key():
 
 
 class Mouse():
-    def __init__(self, x, y, cx, cy, button=0, mouseScroll=0):
-        self.x = x
-        self.y = y
+    def __init__(self, cx, cy, button=0, mouseScroll=0):
         self.cx = cx
         self.cy = cy
         self.button = button
@@ -199,35 +191,68 @@ class Mouse():
         return self.cx, self.cy
 
     def getMouseWithRelativePosition(self, newX1, newY1):
-        relx = self.x - newX1
-        rely = self.y - newY1
+        relx = self.cx - newX1
+        rely = self.cy - newY1
         return Mouse(relx, rely, self.button, self.mouseScroll)
 
     # positions on console
+    @property
     def x(self):
         return self.cx
 
+    @property
     def y(self):
         return self.cy
 
+class BackgroundGroup(pyglet.graphics.OrderedGroup):
+    def __int__(self):
+        super(BackgroundGroup, self).__init__(0)
+
+class ForegroundGroup(pyglet.graphics.OrderedGroup):
+    def __init__(self, fontTex):
+        self.fontTexture = fontTex
+        super(ForegroundGroup, self).__init__(1)
+
+    def set_state(self):
+        gl.glEnable(self.fontTexture.target)
+        gl.glBindTexture(self.fontTexture.target, self.fontTexture.id)
+
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+
+    def unset_state(self):
+        gl.glDisable(gl.GL_BLEND)
+        gl.glDisable(self.fontTexture.target)
 
 
 class Application(pyglet.window.Window):
     def __init__(self, screenCols, screenRows, resizable=True):
+        self.fontImageFileName = 'fonts/terminal-transparent.png'
+        self.fontImage = pyglet.image.load(self.fontImageFileName)
+        self.fontImageRows = 16
+        self.fontImageCols = 16
 
-        self.texturefile = 'fonts/terminal-transparent.png'
-        self.fontRows = 16
-        self.fontCols = 16
-        self.font_image = pyglet.image.load(self.texturefile)
-        self.font_texture = self.font_image.get_texture()
+        self.fontTexture = self.fontImage.get_texture()
+        self.foregroundGroup = ForegroundGroup(self.fontTexture)
+        self.backgroundGroup = pyglet.graphics.OrderedGroup(0)
 
-        self.cellWidth = self.font_texture.width / self.fontRows
-        self.cellHeight = self.font_texture.height / self.fontCols
-
+        self.cellWidth = self.fontTexture.width / self.fontImageRows
+        self.cellHeight = self.fontTexture.height / self.fontImageCols
 
         screenWidth = self.cellWidth * screenCols
         screenHeight = self.cellHeight * screenRows
         super(Application, self).__init__(screenWidth, screenHeight, resizable=resizable)
+
+        self.fontImageGrid = pyglet.image.ImageGrid(self.fontImage, self.fontImageRows, self.fontImageCols)
+        self.fontTextureGrid = pyglet.image.TextureGrid(self.fontImageGrid)
+
+        self.batch = pyglet.graphics.Batch()
+        self.initBackground(screenCols, screenRows, black)
+        self.initForeground(screenCols, screenRows)
+
+        self.pygletKeys = pyglet.window.key.KeyStateHandler()
+        self.push_handlers(self.pygletKeys)
+
 
     @property
     def screenCols(self):
@@ -237,6 +262,27 @@ class Application(pyglet.window.Window):
     def screenRows(self):
         return self.height // self.cellHeight
 
+    def initBackground(self, maxx, maxy, bgcol):
+        vertCoords = []
+        for y in xrange(maxy):
+            for x in xrange(maxx):
+                vertCoords .extend(self.getVertexCoords(x, y))
+
+        self.background = self.batch.add(4 * maxx * maxy, gl.GL_QUADS, self.backgroundGroup,
+            ('v2f', vertCoords),
+            ('c3B', bgcol * 4 * maxx * maxy))
+
+    def initForeground(self, maxx, maxy):
+        vertCoords = []
+        for y in xrange(maxy):
+            for x in xrange(maxx):
+                vertCoords.extend(self.getVertexCoords(x, y))
+
+        self.foreground = self.batch.add(4 * maxx * maxy, gl.GL_QUADS, self.foregroundGroup,
+            ('v2f', vertCoords),
+            ('t3f', self.getTexCoords(' ')  * maxx * maxy),
+            ('c3B', white * 4 * maxx * maxy))
+
     def toggleFullScreen(self):
         self.set_fullscreen(not self.fullscreen)
 
@@ -245,59 +291,45 @@ class Application(pyglet.window.Window):
         ch = self.cellHeight
         sx = x * self.cellWidth
         sy = (self.screenRows - y - 1) * ch
-        return [sx,sy, sx+cw,sy, sx,sy+ch, sx+cw, sy+ch]
 
-    def getCharCoords(self, c):
-        cindex = ord(c)
-        cy = 15 - (cindex // self.fontRows)
-        cx = cindex % self.fontCols
+        return [sx, sy, sx+cw, sy, sx+cw, sy+ch, sx, sy+ch]  # GL_QUAD
 
-        # convert to [0, 1] bounded float notation
-        cw = 1.0 / self.fontCols
-        ch = 0.875 / self.fontRows   # don't understand why this is 0.875, rather than 1.0
-        tcy = cy * ch
-        tcx = cx * cw
-        return [tcx,tcy, tcx+cw,tcy, tcx,tcy+ch, tcx+cw,tcy+ch]
+    def getTexCoords(self, char):
+        charIdx = ord(char)
+        cy = 15 - (charIdx // self.fontImageRows)
+        cx = charIdx % self.fontImageCols
 
-    def setBackgroundCol(self, cellXPos, cellYPos, bgcol=black):
-        vertex_list = pyglet.graphics.vertex_list(4,
-            ('v2i', self.getVertexCoords(cellXPos, cellYPos)),
-            ('c3B', bgcol * 4))
+        return self.fontTextureGrid[cy, cx].tex_coords
 
-        vertex_list.draw(gl.GL_TRIANGLE_STRIP)
+    def screenPrint(self, x, y, fmt, bgcol=defaultBG(), fgcol=defaultFG()):
+        texIdx = 12 * ((y * self.screenCols) + x)
+        self.foreground.tex_coords[texIdx:texIdx+12] = self.getTexCoords(fmt)
 
-
-    def screenPrint(self, cellXPos, cellYPos, fmt, bgcol=defaultBG(), fgcol=white):
-        if bgcol != defaultBG():
-            self.setBackgroundCol(cellXPos, cellYPos, bgcol)
-
-        vertexCoords = self.getVertexCoords(cellXPos, cellYPos)
-        texCoords = self.getCharCoords(fmt)
-
-        vlist = pyglet.graphics.vertex_list(
-            4,
-            ('v2f', vertexCoords),
-            ('t2f', texCoords),
-            ('c3B', fgcol * 4))
-
-        #glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-
-        gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.font_texture.id)
-
-        gl.glEnable(gl.GL_BLEND)
-        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
-
-        vlist.draw(gl.GL_TRIANGLE_STRIP)
-
-        gl.glDisable(gl.GL_BLEND)
-        gl.glDisable(gl.GL_TEXTURE_2D)
+        colIdx = 12 * ((y * self.screenCols) + x)
+        self.foreground.colors[colIdx:colIdx+12] = fgcol * 4
+        self.background.colors[colIdx:colIdx+12] = bgcol * 4
 
     def handleKeyWrapper(self, handler):
         def wrapper(symbol, modifiers):
-            print pyglet.window.key.symbol_string(symbol)
-            key = Key(symbol, modifiers)
-            return handler(key)
+            if modifiers & key.MOD_CTRL and symbol < 256:
+                k = Key(symbol, modifiers)
+                return handler(k)
+
+        return wrapper
+
+    def handleTextWrapper(self, handler):
+        def wrapper(text):
+            if not (self.pygletKeys[key.LCTRL] or self.pygletKeys[key.RCTRL]):
+                k = Key.c(text)
+                return handler(k)
+
+        return wrapper
+
+    def handleMotionWrapper(self, handler):
+        def wrapper(motion):
+            if motion > 6: # above 6 they have ascii defns
+                key = Key(motion)
+                return handler(key)
 
         return wrapper
 
@@ -305,25 +337,26 @@ class Application(pyglet.window.Window):
         def wrapper(x, y, button, modifiers):
             cx = x // self.cellWidth
             cy = (self.height - y) // self.cellHeight
-            mouse = Mouse(x, y, cx, cy, button, modifiers)
+            mouse = Mouse(cx, cy, button, modifiers)
+            print 'clicked', cx, cy
             return handler(mouse)
 
         return wrapper
-
-    #def on_text(self, text):
-    #    print text
 
     #def on_resize(self, width, height):
     #    print 'The window was resized to %dx%d' % (width, height)
 
     def eventLoopSetup(self, handleKey, handleMouse, draw):
+        self.on_text = self.handleTextWrapper(handleKey)
         self.on_key_press = self.handleKeyWrapper(handleKey)
+        self.on_text_motion = self.handleMotionWrapper(handleKey)
         self.on_mouse_press = self.handleMouseWrapper(handleMouse)
         self.on_draw = draw
+        self.clear()
         pyglet.app.run()
 
     def closeWindow(self):
         pyglet.app.exit()
 
     def screenFlush(self):
-        gl.glFlush()
+        self.batch.draw()

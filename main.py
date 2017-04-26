@@ -41,7 +41,7 @@ def handleMouse(mouse):
     wm = wm.handleMouse(mouse)
 
 def draw():
-    app.clear()
+    #app.clear()
     wm.draw()
     app.screenFlush()
 
