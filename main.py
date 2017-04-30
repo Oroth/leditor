@@ -41,7 +41,6 @@ def handleMouse(mouse):
     wm = wm.handleMouse(mouse)
 
 def draw():
-    #app.clear()
     wm.draw()
     app.screenFlush()
 
@@ -57,6 +56,6 @@ def profile_main():
     stats.strip_dirs().sort_stats('cumulative').print_stats()
     stream.close()
 
-main()
+profile_main()
 
 

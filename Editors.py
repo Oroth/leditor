@@ -680,7 +680,7 @@ class TreeEditor(DisplayEditor):
                 elif key.code() == iop.KEY_DOWN or key.char() == 'j' and self.cursory +1 < len(self.image):
                     return self.cursorToScreenPos(self.cursorx, self.cursory + 1)
 
-                elif key.code() == iop.KEY_UP or key.char() == 'k' and self.cursory > 0:
+                elif key.code() == iop.KEY_UP or key.char() == 'k':
                     return self.cursorToScreenPos(self.cursorx, self.cursory - 1)
 
 

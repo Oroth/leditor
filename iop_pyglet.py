@@ -314,12 +314,14 @@ class Application(pyglet.window.Window):
             if modifiers & key.MOD_CTRL and symbol < 256:
                 k = Key(symbol, modifiers)
                 return handler(k)
+            elif symbol > 255:
+                return handler(Key(symbol, modifiers))
 
         return wrapper
 
     def handleTextWrapper(self, handler):
         def wrapper(text):
-            if not (self.pygletKeys[key.LCTRL] or self.pygletKeys[key.RCTRL]):
+            if not any([self.pygletKeys[c] for c in (key.LCTRL, key.RCTRL, key.ENTER)]):
                 k = Key.c(text)
                 return handler(k)
 
