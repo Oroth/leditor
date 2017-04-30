@@ -1,14 +1,13 @@
-import funobj as fo
 import screen
 import Editors
 import iop
 
-class ScreenEditor(fo.FuncObject):
+class ScreenEditor(Editors.Editor):
     def __init__(self, maxx, maxy):
         self.image = screen.createBlank(maxx, maxy)
-        self.statusBar = Editors.StatusBar()
         self.x = 0; self.y = 0
         self.maxx = maxx; self.maxy = maxy
+        super(ScreenEditor, self).__init__()
 
     def syncWithImage(self, newImage):
         return self

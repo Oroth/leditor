@@ -32,6 +32,25 @@ class EditorAtom(object):
 class IntAtom(EditorAtom):
     pass
 
+class Editor(fo.FuncObject):
+    def __init__(self):
+        self.statusBar = StatusBar()
+
+    def syncWithImage(self, newImage):
+        return self
+
+    def isRootImageEditor(self):
+        return False
+
+    def draw(self, maxx, maxy, isActive):
+        return screen.createBlank(maxx, maxy)
+
+    def handleKeys(self, key):
+        return self
+
+    def handleMouse(self, mouse):
+        return self
+
 class CellEditor(object):
     def __init__(self, content, index=0):
         self.original = str(content)
