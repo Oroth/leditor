@@ -17,6 +17,7 @@ import eval
 import leditor_exceptions as ex
 from tn import cons
 import cmdList
+import repl
 
 
 class Window(fo.FuncObject):
@@ -124,6 +125,10 @@ class Window(fo.FuncObject):
         newEd = pager.Pager(flist)
         f.close()
 
+        return self.update('editorList', self.editorList.appendAtCursor(newEd).curNext())
+
+    def cmdNewRepl(self):
+        newEd = repl.Repl()
         return self.update('editorList', self.editorList.appendAtCursor(newEd).curNext())
 
 
@@ -292,6 +297,7 @@ class WindowManager(fo.FuncObject):
         return eval.Env.fromList([
             ('screenEditor', self.cmdScreenEditor),
             ('fileEditor', self.cmdFileEditor),
+            ('repl', self.cmdReplEditor),
             ('save', self.cmdSave),
             ('winNext', self.cmdWinNext),
             ('split', self.cmdWinSplit),
@@ -492,7 +498,7 @@ class WindowManager(fo.FuncObject):
         cmd = cmdBuffer.toPyExp()
         print cmd
 
-        if cmd[0] in ('q', 'quit'):
+        if cmd and cmd[0] in ('q', 'quit'):
             return 'QUIT-WM'
 
         result = eval.eval(buffer.BufferSexp(cmdBuffer.root), self.getCmdBarEnv())
@@ -647,6 +653,10 @@ class WindowManager(fo.FuncObject):
     def cmdTextPager(self):
         print "changing to text paging mode"
         return self.replaceWindow(self.curWin().cmdNewPager())
+
+    def cmdReplEditor(self):
+        print 'starting repl'
+        return self.replaceWindow(self.curWin().cmdNewRepl())
 
 
     def cmdWriteAll(self):

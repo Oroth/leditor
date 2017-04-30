@@ -52,12 +52,23 @@ def overlayLinesOnImage(bottomImage, y, topImage):
         bottomImage[y] = line
         y += 1
 
+def overlayTextOnImage(bottomImage, x, y, text):
+    for cdx, c in enumerate(text):
+        (bottomImage[y][x+cdx]).character = c
+
+def overlayImage(bottomImage, x, y, topImage):
+    maxx = len(bottomImage[0])
+    for lidx, line in enumerate(topImage):
+        for cdx, cell in enumerate(line):
+            if x+cdx < maxx:
+                bottomImage[y+lidx][x+cdx] = cell
+
 def createImageFromStringList(lst, maxx, maxy):
     image = createBlank(maxx, maxy)
 
     for idx, string in enumerate(lst[:maxy]):
         # temp hack [:-1] to remove newlines read in from file, need to move to read section
-        stringMinusNewLine = string[:-1]
+        stringMinusNewLine = string[:-1] if string[-1] == '\n' else string
         stringWithLimit = stringMinusNewLine[:maxx]
         putNodeOnImage(image, 0, idx, stringWithLimit, None, iop.black, iop.white)
 
