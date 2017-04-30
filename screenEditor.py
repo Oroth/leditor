@@ -21,18 +21,19 @@ class ScreenEditor(fo.FuncObject):
 
         return self.image
 
-    def handleKeys(self, key, mouse):
+    def handleKeys(self, key):
         screen.setCellColour(self.image, self.x, self.y, iop.black, iop.white)
 
+        return self.handleKeysMain(key)
+
+    def handleMouse(self, mouse):
+        screen.setCellColour(self.image, self.x, self.y, iop.black, iop.white)
         if mouse.lbuttonPressed():
-            postMouse = self.updateList(
+            return self.updateList(
                 ('x', mouse.x),
                 ('y', mouse.y))
         else:
-            postMouse = self
-
-        return postMouse.handleKeysMain(key)
-
+            return self
 
     def handleKeysMain(self, key):
 

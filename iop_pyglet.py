@@ -321,7 +321,7 @@ class Application(pyglet.window.Window):
 
     def handleTextWrapper(self, handler):
         def wrapper(text):
-            if not any([self.pygletKeys[c] for c in (key.LCTRL, key.RCTRL, key.ENTER)]):
+            if not any([self.pygletKeys[c] for c in (key.LCTRL, key.RCTRL, key.ENTER, key.BACKSPACE)]):
                 k = Key.c(text)
                 return handler(k)
 

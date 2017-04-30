@@ -452,9 +452,9 @@ class WindowManager(fo.FuncObject):
         newWin = newWinList.cursor.child
         newEditorList = newWin.editorList
         newEditor = newEditorList.cursor.child
-        newImage = newEditor.buffer.root
 
-        if newEditor.isRootImageEditor() and self.ImageRoot != newImage:
+        if newEditor.isRootImageEditor() and self.ImageRoot != newEditor.buffer.root:
+            newImage = newEditor.buffer.root
             self.ImageRoot = newImage
             if newEditor.updateUndo:
                 self.hist = cons(self.ImageRoot.child, self.hist)
