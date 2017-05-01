@@ -2,6 +2,7 @@ import Editors
 import os
 import reader
 from os.path import isdir, join
+import tn, buffer
 
 def dirToList(path):
     f = []
@@ -24,6 +25,13 @@ class FileEditor(Editors.TreeEditor):
         self.printingMode = 'allVertical'
         self.indentWidth = 4
         self.directory = None
+
+    @classmethod
+    def fromPath(cls, path='./'):
+        fileList = dirToList(path)
+        fileRoot = tn.createTNodeExpFromPyExp([fileList])
+        fileBuffer = buffer.BufferSexp(fileRoot)
+        return cls(fileBuffer)
 
     def syncWithImage(self, newImage):
         return self

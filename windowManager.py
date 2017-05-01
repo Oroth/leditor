@@ -105,25 +105,20 @@ class Window(fo.FuncObject):
 
 
     def cmdNewFileEditor(self):
-        path = './'
-        fileList = fileEditor.dirToList(path)
-
-        fileRoot = tn.createTNodeExpFromPyExp([fileList])
-        fileBuffer = buffer.BufferSexp(fileRoot)
-        newEd = fileEditor.FileEditor(fileBuffer)
+        # path = './'
+        # fileList = fileEditor.dirToList(path)
+        #
+        # fileRoot = tn.createTNodeExpFromPyExp([fileList])
+        # fileBuffer = buffer.BufferSexp(fileRoot)
+        newEd = fileEditor.FileEditor.fromPath('./')
 
         return self.update('editorList', self.editorList.appendAtCursor(newEd).curNext())
 
 
     def cmdNewPager(self):
         file, pathList = self.editorList.getCurrent().buffer.getNVSListAtCursor()
-        print pathList
         pathText = '.\\' + '\\'.join(pathList)
-        print pathText
-        f = open(pathText, 'r')
-        flist = f.readlines()
-        newEd = pager.Pager(flist)
-        f.close()
+        newEd = pager.Pager.fromFile(pathText)
 
         return self.update('editorList', self.editorList.appendAtCursor(newEd).curNext())
 

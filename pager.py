@@ -7,6 +7,14 @@ class Pager(Editors.Editor):
         self.text = textlist
         self.topLine = 0
 
+    @classmethod
+    def fromFile(cls, fileName):
+        f = open(fileName, 'r')
+        flist = f.readlines()
+        f.close()
+        return cls(flist)
+
+
     def draw(self, maxx, maxy, isActive):
         return screen.createImageFromStringList(self.text[self.topLine:], maxx, maxy)
 
