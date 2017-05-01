@@ -31,14 +31,8 @@ class Repl(Editors.Editor):
         cmd = cmdBuffer.toPyExp()
         print cmd
 
-        #if cmd and cmd[0] in ('q', 'quit'):
-        #    return 'QUIT-WM'
-
         result = eval.eval(buffer.BufferSexp(cmdBuffer.root), self.cmdBarEnv)
-        print result
 
-        #if isinstance(result, WindowManager):
-        #    return result.update('cmdBar', None)
         self.text.append('> ' + reader.to_string(cmd))
         self.text.append(reader.to_string(result))
 

@@ -407,7 +407,7 @@ class WindowManager(fo.FuncObject):
         for x in xrange(maxx):
             for y in xrange(maxy):
                 cell = image[y][x]
-                self.app.screenPrint(posx + x, posy + y, cell.character, cell.bgColour, cell.fgColour)
+                self.app.screenPrint(posx + x, posy + y, cell)
 
     def draw(self):
         self.calculateWindowPositions()

@@ -73,6 +73,27 @@ def defaultBG():
 def defaultFG():
     return white
 
+class Cell(object):
+    def __init__(self, character=' ', characterReference = 0, lineItemNodeRef=None,
+                 bgColour=defaultBG(), fgColour=defaultFG(), dirty=False):
+        self.character = character
+        self.characterReference = characterReference
+        self.lineItemNodeReference = lineItemNodeRef
+        self.bgColour = bgColour
+        self.fgColour = fgColour
+        self.dirty = dirty
+
+    def _key(self):
+        return (self.character, self.bgColour, self.fgColour)
+
+    def __eq__(self, other):
+        return self._key() == other._key()
+
+
+def createBlank(maxx, maxy, bgColour=defaultBG(), fgColour=defaultFG()):
+    return [[Cell(bgColour=bgColour, fgColour=fgColour) for x in xrange(0, maxx)] for y in xrange(0, maxy)]
+
+
 
 class Key():
     def __init__(self, symbol, modifier=0):
@@ -142,6 +163,9 @@ class Key():
         return (self.symbol, self.ctrl(), self.alt(), self.shift())
 
     def code(self):
+        if self.symbol in (KEY_SPACE, KEY_ENTER):
+            return self.symbol
+
         if self.symbol < 256 and chr(self.symbol) in printable:
             return KEY_CHAR
         return self.symbol
@@ -247,6 +271,7 @@ class Application(pyglet.window.Window):
         self.fontTextureGrid = pyglet.image.TextureGrid(self.fontImageGrid)
 
         self.batch = pyglet.graphics.Batch()
+        self.initScreen(screenCols, screenRows)
         self.initBackground(screenCols, screenRows, black)
         self.initForeground(screenCols, screenRows)
 
@@ -262,11 +287,14 @@ class Application(pyglet.window.Window):
     def screenRows(self):
         return self.height // self.cellHeight
 
+    def initScreen(self, maxx, maxy):
+        self.screenGrid = createBlank(maxx, maxy)
+
     def initBackground(self, maxx, maxy, bgcol):
         vertCoords = []
         for y in xrange(maxy):
             for x in xrange(maxx):
-                vertCoords .extend(self.getVertexCoords(x, y))
+                vertCoords.extend(self.getVertexCoords(x, y))
 
         self.background = self.batch.add(4 * maxx * maxy, gl.GL_QUADS, self.backgroundGroup,
             ('v2f', vertCoords),
@@ -301,13 +329,32 @@ class Application(pyglet.window.Window):
 
         return self.fontTextureGrid[cy, cx].tex_coords
 
-    def screenPrint(self, x, y, fmt, bgcol=defaultBG(), fgcol=defaultFG()):
-        texIdx = 12 * ((y * self.screenCols) + x)
-        self.foreground.tex_coords[texIdx:texIdx+12] = self.getTexCoords(fmt)
+    def screenPrint(self, x, y, cell): #fmt, bgcol=defaultBG(), fgcol=defaultFG()):
+        if self.screenGrid[y][x] == cell:
+            return
 
-        colIdx = 12 * ((y * self.screenCols) + x)
-        self.foreground.colors[colIdx:colIdx+12] = fgcol * 4
-        self.background.colors[colIdx:colIdx+12] = bgcol * 4
+        self.screenGrid[y][x] = cell
+        texIdx = 12 * ((y * self.screenCols) + x)
+        #self.foreground.tex_coords[texIdx:texIdx+12] = self.getTexCoords(fmt)
+
+        cindex = ord(cell.character)
+
+        cy = 15 - (cindex // self.fontImageRows)
+        cx = cindex % self.fontImageCols
+
+        # convert to [0, 1] bounded float notation
+        cw = 1.0 / self.fontImageCols
+        ch = 0.875 / self.fontImageRows   # don't understand why this is 0.875, rather than 1.0
+        tcy = cy * ch
+        tcx = cx * cw
+        tex_coords =  [tcx, tcy, 0, tcx+cw, tcy, 0, tcx+cw, tcy+ch, 0, tcx, tcy+ch, 0]  # quads
+        self.foreground.tex_coords[texIdx:texIdx+12] = tex_coords
+
+
+        #colIdx = 12 * ((y * self.screenCols) + x)
+        colIdx = texIdx
+        self.foreground.colors[colIdx:colIdx+12] = cell.fgColour * 4
+        self.background.colors[colIdx:colIdx+12] = cell.bgColour * 4
 
     def handleKeyWrapper(self, handler):
         def wrapper(symbol, modifiers):

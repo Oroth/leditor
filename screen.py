@@ -1,6 +1,5 @@
 import funobj as fo
 import iop
-import copy
 
 class Cell(fo.FuncObject):
     def __init__(self, character=' ', characterReference = 0, lineItemNodeRef=None,
@@ -11,8 +10,11 @@ class Cell(fo.FuncObject):
         self.bgColour = bgColour
         self.fgColour = fgColour
 
-defaultCell = Cell()
-defaultScreenRow = [Cell(bgColour=iop.black, fgColour=iop.white) for x in xrange(0, 120)]
+    def _key(self):
+        return (self.character, self.bgColour, self.fgColour)
+
+    def __eq__(self, other):
+        return self._key() == other._key()
 
 def createBlank(maxx, maxy, bgColour=iop.defaultBG(), fgColour=iop.defaultFG()):
     return [[Cell(bgColour=bgColour, fgColour=fgColour) for x in xrange(0, maxx)] for y in xrange(0, maxy)]
@@ -86,11 +88,4 @@ def stringToImage(text, maxx, maxy, bgCol=iop.defaultBG(), fgCol=iop.defaultFG()
         putNodeOnImage(image, 0, y, textList[y], None, bgCol, fgCol)
     return image
 
-# def printToScreen(image, posx, posy):
-#     maxy = len(image) - 1
-#     maxx = len(image[0]) - 1
-#
-#     for x in xrange(maxx):
-#         for y in xrange(maxy):
-#             cell = image[y][x]
-#             iop.screenPrint(posx + x, posy + y, cell.character, cell.bgColour, cell.fgColour)
+

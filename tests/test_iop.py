@@ -26,6 +26,16 @@ class TestKey(unittest.TestCase):
         k = Key.vk(KEY_ENTER)
         self.assertEqual(k.code(), KEY_ENTER)
 
+
+    def test_keySpace(self):
+        k = Key.c(' ')
+        self.assertEqual(k.code(), KEY_SPACE)
+
+    #def test_keyEnter(self):
+    #    k = Key.c(chr(13))
+    #    self.assertEqual(k.code(), KEY_ENTER)
+
+
     def test_keyvk2(self):
         k = Key.vk(KEY_DOWN)
         self.assertEqual(k.char(), chr(0))
