@@ -392,6 +392,13 @@ class Application(pyglet.window.Window):
 
         return wrapper
 
+    def handleMouseScrollWrapper(self, handler):
+        def wrapper(x, y, scroll_x, scroll_y):
+            mouse = Mouse(0, 0, mouseScroll=scroll_y)
+            return handler(mouse)
+
+        return wrapper
+
     #def on_resize(self, width, height):
     #    print 'The window was resized to %dx%d' % (width, height)
 
@@ -400,6 +407,7 @@ class Application(pyglet.window.Window):
         self.on_key_press = self.handleKeyWrapper(handleKey)
         self.on_text_motion = self.handleMotionWrapper(handleKey)
         self.on_mouse_press = self.handleMouseWrapper(handleMouse)
+        self.on_mouse_scroll = self.handleMouseScrollWrapper(handleMouse)
         self.on_draw = draw
         self.clear()
         pyglet.app.run()

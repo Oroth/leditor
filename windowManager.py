@@ -105,13 +105,7 @@ class Window(fo.FuncObject):
 
 
     def cmdNewFileEditor(self):
-        # path = './'
-        # fileList = fileEditor.dirToList(path)
-        #
-        # fileRoot = tn.createTNodeExpFromPyExp([fileList])
-        # fileBuffer = buffer.BufferSexp(fileRoot)
         newEd = fileEditor.FileEditor.fromPath('./')
-
         return self.update('editorList', self.editorList.appendAtCursor(newEd).curNext())
 
 
