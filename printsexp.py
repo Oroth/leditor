@@ -450,7 +450,7 @@ def makeLineIndentList(editor, winWidth, winHeight):
             newTopLine = totalLineCount - winHeight
 
 
-        return lines, newTopLine
+        return lines, newTopLine, cursorTopLine, cursorBottomLine
 
 
     recurModes = \
@@ -465,6 +465,24 @@ def makeLineIndentList(editor, winWidth, winHeight):
     viewNode = editor.buffer.view
     parseState = ParseState(editor.buffer.view, [0])
     lineTokenStream = makeLineTokenStream(parseState)
-    lineList, topLine = makeLineList(lineTokenStream)
+    lineList, topLine, cursorTopLine, cursorBottomLine = makeLineList(lineTokenStream)
 
-    return lineList, topLine
+    return lineList, topLine, cursorTopLine, cursorBottomLine
+
+
+def getTopLine(lineList, cursorTopLine, cursorBottomLine, currentTopLine, winHeight):
+    totalLineCount = len(lineList)
+
+    if cursorTopLine <= currentTopLine:
+        newTopLine = cursorTopLine - 1
+    elif cursorTopLine >= currentTopLine + winHeight:
+        newTopLine = cursorBottomLine - winHeight +1
+    #don't allow scrolling past the bottom
+    elif totalLineCount < winHeight:
+        newTopLine = 0
+    elif totalLineCount <= currentTopLine + winHeight:
+        newTopLine = totalLineCount - winHeight
+    else:
+        newTopLine = currentTopLine
+
+    return newTopLine

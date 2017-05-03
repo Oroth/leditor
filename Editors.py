@@ -217,7 +217,11 @@ class DisplayEditor(fo.FuncObject):
         return self.nodeIsZipped(buffer.cursor)
 
     def draw(self, maxx, maxy, isActive):
-        lineList, self.topLine = printsexp.makeLineIndentList(self, maxx, maxy)
+        lineList, topLine, cursorTopLine, cursorBottomLine = printsexp.makeLineIndentList(self, maxx, maxy)
+        if cursorTopLine is None:
+            cursorTopLine, cursorBottomLine = 0, 0
+        self.topLine = printsexp.getTopLine(lineList, cursorTopLine, cursorBottomLine, self.topLine, maxy)
+
         toppedLineList = lineList[self.topLine:]
         self.image, self.cursorx, self.cursory = \
             printsexp.drawLineList(
