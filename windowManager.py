@@ -46,6 +46,10 @@ class Window(fo.FuncObject):
         self.posx, self.posy = newPosx, newPosy
         self.maxx, self.maxy = newMaxx, newMaxy
 
+        return self
+
+        #self.getEditor().updateSize(newMaxx, newMaxy)
+
     def draw(self, posx, posy, maxx, maxy, isActive):
         return self.getEditor().draw(maxx, maxy, isActive)
 
@@ -371,6 +375,9 @@ class WindowManager(fo.FuncObject):
         minYStep = screenForWins / wins
         leftover = screenForWins % wins
 
+
+        editorTNodeList = self.editorList.root
+
         for winNode in self.winTree.first():
             if leftover > 0:
                 curYStep = minYStep + 1
@@ -380,6 +387,17 @@ class WindowManager(fo.FuncObject):
 
             winNode.child.setPosition(0, curY, maxX, curYStep)
             curY += curYStep
+
+            editBuffer = winNode.child.editorList
+            editor = editBuffer.cursor.child
+            editorAdd = editBuffer.cursorAdd
+            newEditor = editor.updateSize(maxX, curYStep)
+
+            editorTNodeList = tn.replaceAdd(editorTNodeList, editorAdd, newEditor)
+
+        self.editorList = buffer.SimpleBuffer(editorTNodeList)
+        self.winTree = syncWindowsToEditorList(self.winTree, self.editorList)
+
 
     def calculateMsg(self):
         if self.message:

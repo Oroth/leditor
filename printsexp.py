@@ -41,6 +41,10 @@ class TokenNode(fo.FuncObject):
         self.highlightIndex = None
         self.nodeAddress = ps.cursorAdd
 
+    @property
+    def isEditing(self):
+        return self.highlightIndex is not None
+
     def nodeToString(self):
         return self.text
 
@@ -58,6 +62,15 @@ class LineNode(fo.FuncObject):
         text = [token.text for token in self.tokenList]
         spaces = len(self.tokenList)
         return self.indent + self.parenAlignment + len(''.join(text)) + spaces
+
+class LineList(object):
+    def __init__(self, lines, curTop, curBot):
+        #super(LineList, self).__init__(iter)
+        self.lines = lines
+        self.cursorTopLine = curTop if curTop is not None else 0
+        self.cursorBottomLine = curBot if curBot is not None else 0
+
+
 
 # draws the indent space at the beginning of lines
 # returns the size of the indent
@@ -82,7 +95,7 @@ def drawItem(item, prevItem, colScheme, hlcol, image, x, y, winWidth, winHeight)
     fgcol = lookupItemFGColour(item, colScheme)
     text = item.nodeToString()
 
-    if item.isCursor:
+    if item.isCursor and not item.isEditing:
         bgcol = hlcol
 
     elif \
@@ -274,11 +287,8 @@ def makeLineIndentList(editor, winWidth, winHeight):
             return ret
 
 
-
         if ps.cursor == editor.buffer.cursor and editor.editing:
-            # slightly hacky, isCursor is technically True, but we call it false to stop it
-            # from highlighting the entire node. need to re-engineer the rules really
-            editingNode = TokenNode(ps.reset('isCursor'), editor.cellEditor.getContentAsString())
+            editingNode = TokenNode(ps, editor.cellEditor.getContentAsString())
             if editor.cellEditor.isString:
                 editingNode.printRule = 'cellEditorString'
                 editingNode.highlightIndex = editor.cellEditor.index + 1
@@ -403,18 +413,6 @@ def makeLineIndentList(editor, winWidth, winHeight):
             currentLineLength = currentLine.length()
 
             if isinstance(node, LineNode):
-                # Adjust the top line of the window relative to the cursor:
-                #  if it's above the current window set the top line to be above it
-                if editor.drawMode == 'cursor':
-                    if cursorTopLine is not None and cursorBottomLine is not None:
-                        if cursorTopLine <= editor.topLine:
-                            newTopLine = cursorTopLine - 1
-                        elif cursorTopLine >= editor.topLine + winHeight:
-                            newTopLine = cursorBottomLine - winHeight +1
-
-                        if currentLineNumber >= newTopLine + winHeight:
-                            break
-
                 lines.append(LineNode(node.indent, node.parenAlignment))
 
             # TokenNode
@@ -438,19 +436,7 @@ def makeLineIndentList(editor, winWidth, winHeight):
                 else:
                     currentLine.addToken(node)
 
-        totalLineCount = len(lines)
-
-        #check if we found the last line
-        if cursorTopLine >= editor.topLine + winHeight and editor.drawMode == 'cursor':
-            newTopLine = cursorBottomLine - winHeight +1
-        #don't allow scrolling past the bottom
-        elif totalLineCount < winHeight:
-            newTopLine = 0
-        elif totalLineCount <= editor.topLine + winHeight:
-            newTopLine = totalLineCount - winHeight
-
-
-        return lines, newTopLine, cursorTopLine, cursorBottomLine
+        return LineList(lines, cursorTopLine, cursorBottomLine)
 
 
     recurModes = \
@@ -465,18 +451,18 @@ def makeLineIndentList(editor, winWidth, winHeight):
     viewNode = editor.buffer.view
     parseState = ParseState(editor.buffer.view, [0])
     lineTokenStream = makeLineTokenStream(parseState)
-    lineList, topLine, cursorTopLine, cursorBottomLine = makeLineList(lineTokenStream)
+    lineList = makeLineList(lineTokenStream)
 
-    return lineList, topLine, cursorTopLine, cursorBottomLine
+    return lineList
 
+# move to lineList
+def getTopLine(lineList, currentTopLine, winHeight):
+    totalLineCount = len(lineList.lines)
 
-def getTopLine(lineList, cursorTopLine, cursorBottomLine, currentTopLine, winHeight):
-    totalLineCount = len(lineList)
-
-    if cursorTopLine <= currentTopLine:
-        newTopLine = cursorTopLine - 1
-    elif cursorTopLine >= currentTopLine + winHeight:
-        newTopLine = cursorBottomLine - winHeight +1
+    if lineList.cursorTopLine <= currentTopLine:
+        newTopLine = lineList.cursorTopLine - 1
+    elif lineList.cursorTopLine >= currentTopLine + winHeight:
+        newTopLine = lineList.cursorBottomLine - winHeight +1
     #don't allow scrolling past the bottom
     elif totalLineCount < winHeight:
         newTopLine = 0

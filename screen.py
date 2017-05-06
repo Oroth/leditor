@@ -10,6 +10,12 @@ class Cell(fo.FuncObject):
         self.bgColour = bgColour
         self.fgColour = fgColour
 
+    def __repr__(self):
+        return "'" + self.character + "'"
+
+    def __str__(self):
+        return '<Cell: ' + self.character + '>'
+
     def _key(self):
         return (self.character, self.bgColour, self.fgColour)
 

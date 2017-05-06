@@ -55,7 +55,7 @@ class CodeEditor(Editors.TreeEditor):
                 newBuffer = self.buffer.indexNewRoot(newImageRoot)
             else:
                 newBuffer =  self.buffer.syncToNewRoot(newImageRoot)
-            newSelf = self.update('buffer', newBuffer)
+            newSelf = self.updateBuffer(newBuffer)
             newSelf.evalBuffer()
             return newSelf
 
@@ -76,7 +76,7 @@ class CodeEditor(Editors.TreeEditor):
         if result != 'UNDO' and result.updateUndo:
             result.evalBuffer()  # updating imperatively?
 
-        return result
+        return result.updateImage()
 
 
     def handleKeysMain(self, key):
