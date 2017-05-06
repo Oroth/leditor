@@ -128,6 +128,9 @@ class Mouse():
     def lbuttonPressed(self):
         return self.mouseObj.lbutton_pressed
 
+    def wheelScrolled(self):
+        return self.mouseObj.wheel_up or self.mouseObj.wheel_down
+
     def wheelUp(self):
         return self.mouseObj.wheel_up
 
@@ -194,8 +197,8 @@ class Application(object):
         libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS|libtcod.EVENT_MOUSE,self._key,self._mouse)
         return Key(self._key), Mouse(self._mouse)
 
-    def screenPrint(self, x, y, fmt, bgcolour=defaultBG(), fgcolour=defaultFG()):
-        libtcod.console_put_char_ex(0, x, y, fmt, fgcolour, bgcolour)
+    def screenPrint(self, x, y, cell):
+        libtcod.console_put_char_ex(0, x, y, cell.character, cell.fgColour, cell.bgColour)
 
     def screenFlush(self):
         libtcod.console_flush()

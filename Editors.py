@@ -290,6 +290,10 @@ class TreeEditor(DisplayEditor):
 
     #def updateWrappedLineList(self, maxy):
 
+    def updateTopLine(self, newTopLine):
+        newEditor = self.update('topLine', newTopLine)
+        return newEditor.updateImage()
+
     def updateImage(self):
         lineList = printsexp.makeLineIndentList(self, self.maxx, self.maxy)
         topLine = printsexp.getTopLine(lineList, self.topLine, self.maxy)
@@ -347,17 +351,22 @@ class TreeEditor(DisplayEditor):
 
             elif cell.lineItemNodeReference:
                 newBuff = self.buffer.newCursorAdd(cell.lineItemNodeReference.nodeAddress)
-                return self.update('buffer', newBuff)
+                return self.updateBuffer(newBuff)
 
             else:
                 return self
-        elif mouse.wheelDown():
-            self.topLine += 3
-        elif mouse.wheelUp():
-            if self.topLine > 2:
-                self.topLine -= 3
+
+        elif mouse.wheelScrolled():
+            if mouse.wheelDown():
+                newTopLine = self.topLine + 3
+
+            # scroll up
+            elif self.topLine > 2:
+                newTopLine = self.topLine - 3
             else:
-                self.topLine = 0
+                newTopLine = 0
+
+            return self.updateTopLine(newTopLine)
 
         return self
 
@@ -751,12 +760,14 @@ class TreeEditor(DisplayEditor):
                     return self.cursorToScreenPos(self.cursorx, self.cursory + 1)
 
                 elif key.code() == iop.KEY_UP or key.char() == 'k':
-                    if self.cursory == 0 and self.topLine > 0:
-                        self.topLine -= 1
-                        newEd = self.updateImage()
-                        return newEd.cursorToScreenPos(self.cursorx, self.cursory - 1)
+                    if self.topLine > 0:
+                        if self.cursory == 0:
+                            self.topLine -= 1
+                            newEd = self.updateImage()
+                            #newEd = self.updateTopLine(self.topLine-1)
+                            return newEd.cursorToScreenPos(self.cursorx, 0)
 
-                    return self.cursorToScreenPos(self.cursorx, self.cursory - 1)
+                        return self.cursorToScreenPos(self.cursorx, self.cursory - 1)
 
 
             except ValueError:pass
@@ -783,16 +794,8 @@ class TreeEditor(DisplayEditor):
 
 
 
-
-
-
     def draw(self, maxx, maxy, isActive):
         finalImage = screen.createBlank(maxx, maxy+1)
-        #mainImage = super(TreeEditor, self).draw(maxx, maxy-1, isActive)[:]
-
-        self.maxx = maxx
-        self.maxy = maxy
-
         screen.overlayLinesOnImage(finalImage, 0, self.image)
 
         if self.statusBar:

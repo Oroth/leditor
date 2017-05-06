@@ -6,6 +6,8 @@ from pyglet.window import key
 import pyglet.window.mouse
 from string import printable
 
+import time
+
 KEY_ENTER = key.ENTER
 KEY_ESCAPE = key.ESCAPE
 KEY_BACKSPACE = key.BACKSPACE
@@ -201,6 +203,9 @@ class Mouse():
 
     def lbuttonPressed(self):
         return self.button == pyglet.window.mouse.LEFT
+
+    def wheelScrolled(self):
+        return self.mouseScroll != 0
 
     def wheelUp(self):
         return self.mouseScroll > 0
@@ -410,6 +415,9 @@ class Application(pyglet.window.Window):
         self.on_mouse_scroll = self.handleMouseScrollWrapper(handleMouse)
         self.on_draw = draw
         self.clear()
+        #def update(dt):
+        #    time.sleep(0.01)
+        #pyglet.clock.schedule_interval(update, 0.1)
         pyglet.app.run()
 
     def closeWindow(self):
@@ -417,3 +425,4 @@ class Application(pyglet.window.Window):
 
     def screenFlush(self):
         self.batch.draw()
+        #gl.glFinish()
