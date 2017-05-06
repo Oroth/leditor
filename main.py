@@ -44,6 +44,7 @@ def draw():
     wm.draw()
     app.screenFlush()
 
+#t
 def main():
     draw()
     app.eventLoopSetup(handleKey, handleMouse, draw)
