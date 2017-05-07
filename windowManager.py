@@ -283,6 +283,7 @@ class WindowManager(fo.FuncObject):
             (Key.c('w', ctrl=True), 'cmdStartWinMode'),
             (Key.c('s', ctrl=True), 'cmdSave'),
             (Key.c(':'), 'cmdStartCmdBar'),
+            (Key.vk(iop.KEY_F5), 'cmdPlayMedia'),
             (Key.vk(iop.KEY_F9, alt=True), 'cmdScreenEditor'),
             (Key.vk(iop.KEY_F10, alt=True), 'cmdFileEditor'),
             (Key.vk(iop.KEY_F11, alt=True), 'cmdTextPager'),
@@ -455,10 +456,10 @@ class WindowManager(fo.FuncObject):
 
         cmdPosy = screenForWins
         if self.cmdBar:
-            cmdImage = self.cmdBar.draw(maxX, 2, isActive=True)
+            cmdImage = self.cmdBar.draw(maxX, 1, isActive=True)
             self.printToScreen(cmdImage, 0, cmdPosy)
         else:
-            msg = screen.stringToImage(self.calculateMsg(), maxX, 2)
+            msg = screen.stringToImage(self.calculateMsg(), maxX, 1)
             self.printToScreen(msg, 0, cmdPosy)
 
 
@@ -646,6 +647,9 @@ class WindowManager(fo.FuncObject):
         print 'fullscreen'
         iop.toggleFullScreen()
         return self.update('winCmd', False)
+
+    def cmdPlayMedia(self):
+        self.app.playMedia()
 
     def cmdSave(self):
         self.writeImage()

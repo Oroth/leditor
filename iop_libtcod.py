@@ -3,6 +3,11 @@ import copy
 from string import printable
 import time
 
+import pyglet
+pyglet.lib.load_library('avbin')
+pyglet.have_avbin=True
+
+
 KEY_ENTER = libtcod.KEY_ENTER
 KEY_ESCAPE = libtcod.KEY_ESCAPE
 KEY_BACKSPACE = libtcod.KEY_BACKSPACE
@@ -175,6 +180,7 @@ class Application(object):
         libtcod.sys_set_fps(FPS)
         libtcod.console_set_background_flag(0, libtcod.BKGND_SET)
         libtcod.console_set_default_foreground(0, libtcod.white)
+        pyglet.options['audio'] = ('directsound', 'silent')
 
     def eventLoopSetup(self, handleKey, handleMouse, draw):
         while not libtcod.console_is_window_closed() and self._loopActive:
@@ -202,3 +208,7 @@ class Application(object):
 
     def screenFlush(self):
         libtcod.console_flush()
+
+    def playMedia(self):
+        source = pyglet.media.load('Front Line Assembly - Caustic Grip - 01 - Resist.mp3')
+        source.play()

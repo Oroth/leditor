@@ -6,6 +6,9 @@ from pyglet.window import key
 import pyglet.window.mouse
 from string import printable
 
+pyglet.lib.load_library('avbin')
+pyglet.have_avbin=True
+
 import time
 
 KEY_ENTER = key.ENTER
@@ -415,9 +418,9 @@ class Application(pyglet.window.Window):
         self.on_mouse_scroll = self.handleMouseScrollWrapper(handleMouse)
         self.on_draw = draw
         self.clear()
-        #def update(dt):
-        #    time.sleep(0.01)
-        #pyglet.clock.schedule_interval(update, 0.1)
+
+        pyglet.options['audio'] = ('directsound', 'silent')
+
         pyglet.app.run()
 
     def closeWindow(self):
@@ -426,3 +429,7 @@ class Application(pyglet.window.Window):
     def screenFlush(self):
         self.batch.draw()
         #gl.glFinish()
+
+    def playMedia(self):
+        source = pyglet.media.load('Front Line Assembly - Caustic Grip - 01 - Resist.mp3')
+        source.play()
