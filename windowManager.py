@@ -43,12 +43,16 @@ class Window(fo.FuncObject):
         self.persist = ['editorList']
 
     def setPosition(self, newPosx, newPosy, newMaxx, newMaxy):
-        self.posx, self.posy = newPosx, newPosy
-        self.maxx, self.maxy = newMaxx, newMaxy
+        #self.posx, self.posy = newPosx, newPosy
+        #self.maxx, self.maxy = newMaxx, newMaxy
+        #return self
 
-        return self
+        return self.updateList(
+            ('posx', newPosx),
+            ('posy', newPosy),
+            ('maxx', newMaxx),
+            ('maxy', newMaxy))
 
-        #self.getEditor().updateSize(newMaxx, newMaxy)
 
     def draw(self, posx, posy, maxx, maxy, isActive):
         return self.getEditor().draw(maxx, maxy, isActive)
@@ -377,15 +381,17 @@ class WindowManager(fo.FuncObject):
 
 
         editorTNodeList = self.editorList.root
+        windowTNodeList = self.winTree.root
 
-        for winNode in self.winTree.first():
+        for winPos, winNode in enumerate(self.winTree.first()):
             if leftover > 0:
                 curYStep = minYStep + 1
                 leftover -= 1
             else:
                 curYStep = minYStep
 
-            winNode.child.setPosition(0, curY, maxX, curYStep)
+            newWindow = winNode.child.setPosition(0, curY, maxX, curYStep)
+            windowTNodeList = tn.replaceAdd(windowTNodeList, [0, winPos], newWindow)
             curY += curYStep
 
             editBuffer = winNode.child.editorList
@@ -395,8 +401,9 @@ class WindowManager(fo.FuncObject):
 
             editorTNodeList = tn.replaceAdd(editorTNodeList, editorAdd, newEditor)
 
+        newWinTree = self.winTree.syncToNewRoot(windowTNodeList)
         self.editorList = buffer.SimpleBuffer(editorTNodeList)
-        self.winTree = syncWindowsToEditorList(self.winTree, self.editorList)
+        self.winTree = syncWindowsToEditorList(newWinTree, self.editorList)
 
 
     def calculateMsg(self):
@@ -408,13 +415,18 @@ class WindowManager(fo.FuncObject):
             return ''
 
     def printToScreen(self, image, posx, posy):
-        maxy = len(image) - 1
-        maxx = len(image[0]) - 1
+        # maxy = len(image) - 1
+        # maxx = len(image[0]) - 1
+        #
+        # for x in xrange(maxx):
+        #     for y in xrange(maxy):
+        #         cell = image[y][x]
+        #         self.app.screenPrint(posx + x, posy + y, cell)
 
-        for x in xrange(maxx):
-            for y in xrange(maxy):
-                cell = image[y][x]
+        for y, col in enumerate(image):
+            for x, cell in enumerate(col):
                 self.app.screenPrint(posx + x, posy + y, cell)
+
 
     def draw(self):
         self.calculateWindowPositions()
