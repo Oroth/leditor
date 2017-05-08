@@ -252,11 +252,12 @@ class TreeEditor(DisplayEditor):
         self.maxy = 68
         self.lineList = printsexp.makeLineIndentList(self, self.maxx, self.maxy)
 
-        toppedLineList = self.lineList[self.topLine:]
+        #toppedLineList = self.lineList[self.topLine:]
+        self.lineList.topLine = self.topLine
         isActive = True
         self.image, self.cursorx, self.cursory = \
             printsexp.drawLineList(
-                toppedLineList, self.maxx, self.maxy, self.colourScheme, isActive, self.indentWidth)
+                self.lineList, self.maxx, self.maxy, self.colourScheme, isActive, self.indentWidth)
 
     def nodeIsRevealed(self, node):
         return node in self.revealedNodes and self.revealedNodes[node]
@@ -286,19 +287,42 @@ class TreeEditor(DisplayEditor):
         else:
             return self
 
-    #def updateLineList(self):  buffer?
+    def updateLineList(self, newLineList):
+        newTopLine = printsexp.getTopLine(newLineList, self.topLine, self.maxy)
+        toppedLineList = newLineList[newTopLine:]
+
+        isActive = True
+        image, self.cursorx, self.cursory = \
+            printsexp.drawLineList(
+                toppedLineList, self.maxx, self.maxy, self.colourScheme, isActive, self.indentWidth)
+
+        return self.updateList(
+            ('image', image),
+            ('topLine', newTopLine),
+            ('lineList', newLineList))
+
 
     #def updateWrappedLineList(self, maxy):
 
     def updateTopLine(self, newTopLine):
-        newEditor = self.update('topLine', newTopLine)
-        return newEditor.updateImage()
+        checkedTopLine = printsexp.getTopLine(self.lineList, newTopLine, self.maxy)
+        toppedLineList = self.lineList[checkedTopLine:]
+        self.lineList.topLine = checkedTopLine
+        isActive = True
+        image, self.cursorx, self.cursory = \
+            printsexp.drawLineList(
+                toppedLineList, self.maxx, self.maxy, self.colourScheme, isActive, self.indentWidth)
+
+        return self.updateList(
+            ('image', image),
+            ('topLine', checkedTopLine))
 
     def updateImage(self):
         lineList = printsexp.makeLineIndentList(self, self.maxx, self.maxy)
         topLine = printsexp.getTopLine(lineList, self.topLine, self.maxy)
 
         toppedLineList = lineList[topLine:]
+        lineList.topLine = topLine
         isActive = True
         self.image, self.cursorx, self.cursory = \
             printsexp.drawLineList(
@@ -310,7 +334,7 @@ class TreeEditor(DisplayEditor):
 
     def handleKeys(self, key):
         result = self.handleKeysInitial(key)
-        return result.updateImage()
+        return result
 
 
     # split out for flexibility when inheriting
@@ -324,8 +348,8 @@ class TreeEditor(DisplayEditor):
         self.statusBar = self.statusBar.refreshBuffer()
 
         # Reset the screen to include the cursor if we aren't scrolling
-        if key.char() not in ('t', 'T'):
-            self.drawMode = 'cursor'
+        #if key.char() not in ('t', 'T'):
+        #    self.drawMode = 'cursor'
 
         if self.editing:
             return self.handleCellEditor(key)
@@ -333,9 +357,23 @@ class TreeEditor(DisplayEditor):
         elif self.changeMode:
             return self.handleKeysChangeMode(key)
 
+        elif key.char() == 't':
+            return self.updateTopLine(self.topLine + 1)
+
+        elif key.char() == 'T':
+            if self.topLine > 0:
+                return self.updateTopLine(self.topLine - 1)
+            else:
+                return self
+
         result =  self.handleKeysMain(key)
 
-        return result
+        if key.char() in  ('j', 'k', 'l', 'h'):
+            # this is reason enough to not subclass list (i.e. don't copy entire list)
+            newLineList = self.lineList.update('cursorAdd', result.buffer.cursorAdd)
+            return result.updateLineList(newLineList)
+
+        return result.updateImage()
 
     def handleMouse(self, mouse):
         if mouse.lbuttonPressed():
@@ -619,13 +657,6 @@ class TreeEditor(DisplayEditor):
                 ('cellEditor', CellEditor(Symbol(''))),
                 ('editing', True))
 
-        elif key.char() == 't':
-            self.topLine += 1
-
-        elif key.char() == 'T':
-            if self.topLine > 0:
-                self.topLine -= 1
-
         elif key.char() == 'u':
             return "UNDO"
 
@@ -691,7 +722,7 @@ class TreeEditor(DisplayEditor):
 
         else:
             try:
-                if key.char() == 'J' and key.ctrl():
+                if key.char() == 'j' and key.ctrl():
                     newBuff = self.buffer.viewToCursor()
                     newHist = self.viewHistory.insertAtCursor(View(newBuff.viewAdd)).curPrev()
                     newHist2 = newHist.rootToCursor()
@@ -713,7 +744,7 @@ class TreeEditor(DisplayEditor):
                         ('viewHistory', newHist),
                         ('buffer', newBuff))
 
-                elif key.char() == 'K' and key.ctrl():
+                elif key.char() == 'k' and key.ctrl():
                     return self.update('buffer', self.buffer.viewUp())
 
                 elif key.char() == 'H' and key.ctrl():

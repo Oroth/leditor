@@ -74,9 +74,9 @@ class CodeEditor(Editors.TreeEditor):
     def handleKeys(self, key):
         result = self.handleKeysInitial(key)
         if result != 'UNDO' and result.updateUndo:
-            result.evalBuffer()  # updating imperatively?
+            result.evalBuffer()  # updating imperatively
 
-        return result.updateImage()
+        return result
 
 
     def handleKeysMain(self, key):

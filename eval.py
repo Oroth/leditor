@@ -6,6 +6,7 @@ import funobj as fo
 import tn
 import leditor_exceptions as ex
 import sys
+import traceback
 
 
 wm = None
@@ -18,9 +19,16 @@ def evalString(str):
 
 # file io
 def deserialiseClass(module_name, cls_name, lst):
-    cls = getattr(sys.modules[module_name], cls_name)
-    return cls.fromFile(lst)
+    try:
+        cls = getattr(sys.modules[module_name], cls_name)
+        obj = cls.fromFile(lst)
+        return obj
+    except Exception as e:
+        traceback.print_stack()
+        raise DeserialiseException(e)
 
+
+class DeserialiseException(ex.GeneralException): pass
 
 class EvalException(ex.GeneralException): pass
 

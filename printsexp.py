@@ -64,25 +64,42 @@ class LineNode(fo.FuncObject):
         return self.indent + self.parenAlignment + len(''.join(text)) + spaces
 
 
-class LineList(list):
+class LineList(list, fo.FuncObject):
     """ holds a bunch of lines """
-    def __init__(self, lines, curTop, curBot):
+    def __init__(self, lines, curTop, curBot, curAdd, topLine=0):
         super(LineList, self).__init__(lines)
         self.cursorTopLine = curTop if curTop is not None else 0
         self.cursorBottomLine = curBot if curBot is not None else 0
+        self.cursorAdd = curAdd
+        self.topLine = topLine
 
+    def __getslice__(self, i, j):
+        newList = list.__getslice__(self, i, j)
+        return LineList(newList, self.cursorTopLine, self.cursorBottomLine, self.cursorAdd)
+
+    def topped(self):
+        return self[self.topLine]
+
+    #def newCursor(self, start, end):
+    #    for lineNode in self:
+    #        for tokenNode in lineNode:
+    #            if tokenNode.nodeReference == start:
+
+    #def wrap(self, width)
 
 
 # draws the indent space at the beginning of lines
 # returns the size of the indent
-def drawIndentSpace(line, prevLine, indentWidth, colScheme, hlcol, image, x, y):
+def drawIndentSpace(line, prevLine, indentWidth, colScheme, hlcol, image, x, y, cursorAdd):
     totalLineIndent = line.indent * indentWidth + line.parenAlignment
 
     # print the indentation space
     if line.indent > 0:
         firstItem = line.tokenList[0]
         # highlight the indented space if it carries over from the previous line
-        if firstItem.isCursor and prevLine and prevLine.tokenList[-1].isCursor:
+        #if firstItem.isCursor and prevLine and prevLine.tokenList[-1].isCursor:
+        if cursorMatch(cursorAdd, firstItem.nodeAddress) \
+                and prevLine and cursorMatch(cursorAdd, prevLine.tokenList[-1].nodeAddress):
             bgcol = hlcol
         else:
             bgcol = colScheme.bgCol
@@ -91,12 +108,17 @@ def drawIndentSpace(line, prevLine, indentWidth, colScheme, hlcol, image, x, y):
 
     return totalLineIndent
 
+def cursorMatch(cursorAdd, checkAdd):
+    return cursorAdd == checkAdd[:len(cursorAdd)]
 
-def drawItem(item, prevItem, colScheme, hlcol, image, x, y, winWidth, winHeight):
+
+def drawItem(item, prevItem, colScheme, hlcol, image, x, y, winWidth, winHeight, cursorAdd):
     fgcol = lookupItemFGColour(item, colScheme)
     text = item.nodeToString()
 
-    if item.isCursor and not item.isEditing:
+    #if item.isCursor and not item.isEditing:
+    if cursorMatch(cursorAdd, item.nodeAddress) and not item.isEditing:
+    #if cursorAdd == item.nodeAddress and not item.isEditing:
         bgcol = hlcol
 
     elif \
@@ -141,8 +163,9 @@ def lookupItemFGColour(item, colScheme):
 
    return fgcol
 
-def drawSymbolSpace(item, prevItem, colScheme, hlcol, image, x, y):
-    if item.isCursor and prevItem.isCursor:
+def drawSymbolSpace(item, prevItem, colScheme, hlcol, image, x, y, cursorAdd):
+    #if item.isCursor and prevItem.isCursor:
+    if cursorMatch(cursorAdd, item.nodeAddress) and cursorMatch(cursorAdd, prevItem.nodeAddress):
         bgcol = hlcol
     elif prevItem.printRule in [ 'cellEditorString', 'cellEditorNonString'] \
                 and prevItem.highlightIndex == len(prevItem.nodeToString()):
@@ -158,11 +181,12 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive, indentWidth
     hlcol = colScheme.activeHiCol if isActive else colScheme.idleHiCol
     prevLine = None
     y = 0
-    curx, cury = 0, 0
+    #curx, cury = 0, 0
+    curx, cury = None, None
 
 
     for line in lineList[:winHeight]:
-        x = drawIndentSpace(line, prevLine, indentWidth, colScheme, hlcol, image, 0, y)
+        x = drawIndentSpace(line, prevLine, indentWidth, colScheme, hlcol, image, 0, y, lineList.cursorAdd)
 
         prevLine = line
         prevItem = None
@@ -171,16 +195,18 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive, indentWidth
             if prevItem and prevItem.nodeToString() not in ("'", '.', '(', '#') \
                         and item.nodeToString() not in ('.', ')'):
 
-                drawSymbolSpace(item, prevItem, colScheme, hlcol, image, x, y)
+                drawSymbolSpace(item, prevItem, colScheme, hlcol, image, x, y, lineList.cursorAdd)
                 x += 1
 
             # cursor tracking
-            if item.isCursor:
-                if not prevItem or not prevItem.isCursor:
+            if cursorMatch(lineList.cursorAdd, item.nodeAddress):
+            #if item.isCursor:
+                #if not prevItem or not prevItem.isCursor:
+                if curx is None:
                     curx = x
                 cury = y
 
-            drawItem(item, prevItem, colScheme, hlcol, image, x, y, winWidth, winHeight)
+            drawItem(item, prevItem, colScheme, hlcol, image, x, y, winWidth, winHeight, lineList.cursorAdd)
             x += len(item.nodeToString())
 
             prevItem = item
@@ -321,17 +347,17 @@ def makeLineIndentList(editor, winWidth, winHeight):
             ret.append(TokenNode(ps, "."))
 
         # code editor, needs to go with the code editor code
-        try:
-            if  editor.nodeIsRevealed(ps.cursor) or \
-                    (ps.cursor == editor.buffer.cursor and editor.evalCursorMode == 'active' and ps.onSubNode()):
-                ret.append(TokenNode(ps, '=>'))
-                ret.append(TokenNode(ps, reader.to_string(editor.getNodeValue(ps.cursor))))
-        # this exception catch is sort of hacky - covers for the fact that e.g. statusBar won't have revealedNodes
-        # potentially should either move revealedNodes to the parent (but isn't relevant to everything
-        # should call a more generic function on each editor
-        # should move all the code so it is a method of the editor
-        except AttributeError: pass
-        except KeyError: pass
+        # try:
+        #     if  editor.nodeIsRevealed(ps.cursor) or \
+        #             (ps.cursor == editor.buffer.cursor and editor.evalCursorMode == 'active' and ps.onSubNode()):
+        #         ret.append(TokenNode(ps, '=>'))
+        #         ret.append(TokenNode(ps, reader.to_string(editor.getNodeValue(ps.cursor))))
+        # # this exception catch is sort of hacky - covers for the fact that e.g. statusBar won't have revealedNodes
+        # # potentially should either move revealedNodes to the parent (but isn't relevant to everything
+        # # should call a more generic function on each editor
+        # # should move all the code so it is a method of the editor
+        # except AttributeError: pass
+        # except KeyError: pass
 
         if parseState.cursor == viewNode:
             return ret
@@ -437,11 +463,10 @@ def makeLineIndentList(editor, winWidth, winHeight):
                 else:
                     currentLine.addToken(node)
 
-        return LineList(lines, cursorTopLine, cursorBottomLine)
+        return LineList(lines, cursorTopLine, cursorBottomLine, editor.buffer.cursorAdd)
 
 
-    recurModes = \
-        {
+    recurModes = {
             'code': recurCode,
             'horizontal': recurHorizontal,
             'vertical': recurVertical,
