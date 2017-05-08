@@ -225,7 +225,7 @@ class DisplayEditor(fo.FuncObject):
 
         self.image, self.cursorx, self.cursory = \
             printsexp.drawLineList(
-                lineList.lines, maxx, maxy, self.colourScheme, isActive, self.indentWidth)
+                lineList, maxx, maxy, self.colourScheme, isActive, self.indentWidth)
 
         return self.image
 
@@ -252,7 +252,7 @@ class TreeEditor(DisplayEditor):
         self.maxy = 68
         self.lineList = printsexp.makeLineIndentList(self, self.maxx, self.maxy)
 
-        toppedLineList = self.lineList.lines[self.topLine:]
+        toppedLineList = self.lineList[self.topLine:]
         isActive = True
         self.image, self.cursorx, self.cursory = \
             printsexp.drawLineList(
@@ -298,7 +298,7 @@ class TreeEditor(DisplayEditor):
         lineList = printsexp.makeLineIndentList(self, self.maxx, self.maxy)
         topLine = printsexp.getTopLine(lineList, self.topLine, self.maxy)
 
-        toppedLineList = lineList.lines[topLine:]
+        toppedLineList = lineList[topLine:]
         isActive = True
         self.image, self.cursorx, self.cursory = \
             printsexp.drawLineList(

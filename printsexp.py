@@ -64,11 +64,10 @@ class LineNode(fo.FuncObject):
         return self.indent + self.parenAlignment + len(''.join(text)) + spaces
 
 
-class LineList(object):
+class LineList(list):
     """ holds a bunch of lines """
     def __init__(self, lines, curTop, curBot):
-        #super(LineList, self).__init__(iter)
-        self.lines = lines
+        super(LineList, self).__init__(lines)
         self.cursorTopLine = curTop if curTop is not None else 0
         self.cursorBottomLine = curBot if curBot is not None else 0
 
@@ -459,7 +458,7 @@ def makeLineIndentList(editor, winWidth, winHeight):
 
 # move to lineList
 def getTopLine(lineList, currentTopLine, winHeight):
-    totalLineCount = len(lineList.lines)
+    totalLineCount = len(lineList)
 
     if lineList.cursorTopLine <= currentTopLine:
         newTopLine = lineList.cursorTopLine - 1
