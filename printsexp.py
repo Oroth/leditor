@@ -63,7 +63,9 @@ class LineNode(fo.FuncObject):
         spaces = len(self.tokenList)
         return self.indent + self.parenAlignment + len(''.join(text)) + spaces
 
+
 class LineList(object):
+    """ holds a bunch of lines """
     def __init__(self, lines, curTop, curBot):
         #super(LineList, self).__init__(iter)
         self.lines = lines
