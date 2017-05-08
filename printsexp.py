@@ -80,6 +80,28 @@ class LineList(list, fo.FuncObject):
     def topped(self):
         return self[self.topLine]
 
+    # switch to binary search maybe for extra efficiency
+    def newCursorAdd(self, add):
+        newTopLine = None
+        newBottomLine = None
+
+        for lineNumber, lineNode in enumerate(self):
+            for tokenNode in lineNode.tokenList:
+                if cursorMatch(add, tokenNode.nodeAddress):
+                    if newTopLine is None:
+                        newTopLine = lineNumber
+                    newBottomLine = lineNumber
+                elif newBottomLine is not None:
+                    break
+
+        print 'tb', newTopLine, newBottomLine
+
+        return self.updateList(
+            ('cursorAdd', add),
+            ('cursorTopLine', newTopLine),
+            ('cursorBottomLine', newBottomLine))
+
+
     #def newCursor(self, start, end):
     #    for lineNode in self:
     #        for tokenNode in lineNode:
@@ -485,9 +507,9 @@ def makeLineIndentList(editor, winWidth, winHeight):
 def getTopLine(lineList, currentTopLine, winHeight):
     totalLineCount = len(lineList)
 
-    if lineList.cursorTopLine <= currentTopLine:
+    if lineList.cursorTopLine < currentTopLine:
         newTopLine = lineList.cursorTopLine - 1
-    elif lineList.cursorTopLine >= currentTopLine + winHeight:
+    elif lineList.cursorTopLine >= currentTopLine + winHeight - 1:
         newTopLine = lineList.cursorBottomLine - winHeight +1
     #don't allow scrolling past the bottom
     elif totalLineCount < winHeight:

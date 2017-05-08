@@ -288,7 +288,7 @@ class TreeEditor(DisplayEditor):
             return self
 
     def updateLineList(self, newLineList):
-        newTopLine = printsexp.getTopLine(newLineList, self.topLine, self.maxy)
+        newTopLine = printsexp.getTopLine(newLineList, self.topLine, self.maxy-1)
         toppedLineList = newLineList[newTopLine:]
 
         isActive = True
@@ -305,9 +305,9 @@ class TreeEditor(DisplayEditor):
     #def updateWrappedLineList(self, maxy):
 
     def updateTopLine(self, newTopLine):
-        checkedTopLine = printsexp.getTopLine(self.lineList, newTopLine, self.maxy)
+        checkedTopLine = printsexp.getTopLine(self.lineList, newTopLine, self.maxy-1)
         toppedLineList = self.lineList[checkedTopLine:]
-        self.lineList.topLine = checkedTopLine
+        #self.lineList.topLine = checkedTopLine
         isActive = True
         image, self.cursorx, self.cursory = \
             printsexp.drawLineList(
@@ -319,7 +319,7 @@ class TreeEditor(DisplayEditor):
 
     def updateImage(self):
         lineList = printsexp.makeLineIndentList(self, self.maxx, self.maxy)
-        topLine = printsexp.getTopLine(lineList, self.topLine, self.maxy)
+        topLine = printsexp.getTopLine(lineList, self.topLine, self.maxy-1)
 
         toppedLineList = lineList[topLine:]
         lineList.topLine = topLine
@@ -370,7 +370,8 @@ class TreeEditor(DisplayEditor):
 
         if key.char() in  ('j', 'k', 'l', 'h'):
             # this is reason enough to not subclass list (i.e. don't copy entire list)
-            newLineList = self.lineList.update('cursorAdd', result.buffer.cursorAdd)
+            #newLineList = self.lineList.update('cursorAdd', result.buffer.cursorAdd)
+            newLineList = self.lineList.newCursorAdd(result.buffer.cursorAdd)
             return result.updateLineList(newLineList)
 
         return result.updateImage()
@@ -791,13 +792,10 @@ class TreeEditor(DisplayEditor):
                     return self.cursorToScreenPos(self.cursorx, self.cursory + 1)
 
                 elif key.code() == iop.KEY_UP or key.char() == 'k':
-                    if self.topLine > 0:
-                        if self.cursory == 0:
-                            self.topLine -= 1
-                            newEd = self.updateImage()
-                            #newEd = self.updateTopLine(self.topLine-1)
-                            return newEd.cursorToScreenPos(self.cursorx, 0)
-
+                    if self.topLine > 0 and self.cursory == 0:
+                        newEd = self.updateTopLine(self.topLine-1)
+                        return newEd.cursorToScreenPos(self.cursorx, 0)
+                    elif self.cursory > 0:
                         return self.cursorToScreenPos(self.cursorx, self.cursory - 1)
 
 
@@ -826,11 +824,11 @@ class TreeEditor(DisplayEditor):
 
 
     def draw(self, maxx, maxy, isActive):
-        finalImage = screen.createBlank(maxx, maxy+1)
+        finalImage = screen.createBlank(maxx, maxy)
         screen.overlayLinesOnImage(finalImage, 0, self.image)
 
         if self.statusBar:
-            statusImage = self.statusBar.draw(maxx, 2, isActive=False)
+            statusImage = self.statusBar.draw(maxx, 1, isActive=False)
             screen.overlayLinesOnImage(finalImage, maxy - 1, statusImage)
 
         return finalImage

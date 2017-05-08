@@ -36,6 +36,7 @@ def handleKey(key):
     else:
         wm = result
 
+
 def handleMouse(mouse):
     global wm
     wm = wm.handleMouse(mouse)
@@ -57,6 +58,6 @@ def profile_main():
     stats.strip_dirs().sort_stats('cumulative').print_stats()
     stream.close()
 
-profile_main()
+main()
 
 
