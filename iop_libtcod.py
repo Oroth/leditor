@@ -29,18 +29,10 @@ KEY_UP = libtcod.KEY_UP
 KEY_DOWN = libtcod.KEY_DOWN
 KEY_CHAR = libtcod.KEY_CHAR
 
-black = libtcod.black
-white = libtcod.white
-light_green = libtcod.light_green
-light_sky = libtcod.light_sky
-light_purple = libtcod.light_purple
-azure = libtcod.azure
-light_grey = libtcod.light_grey
-grey = libtcod.grey
-dark_green = libtcod.dark_green
-dark_red = libtcod.dark_red
-darker_green = libtcod.darker_green
-darker_sky = libtcod.darker_sky
+
+class Colour(libtcod.Color):
+    def __init__(self, *args, **kwargs):
+        super(Colour, self).__init__(*args, **kwargs)
 
 def defaultBG():
     return libtcod.console_get_default_background(0)

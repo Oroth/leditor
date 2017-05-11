@@ -824,7 +824,9 @@ class TreeEditor(DisplayEditor):
 
 
     def draw(self, maxx, maxy, isActive):
-        finalImage = screen.createBlank(maxx, maxy)
+        #finalImage = screen.createBlank(maxx, maxy)
+        finalImage =[None] * maxy
+
         screen.overlayLinesOnImage(finalImage, 0, self.image)
 
         if self.statusBar:

@@ -57,26 +57,18 @@ ShiftMap = {
     key.SLASH : key.QUESTION
 }
 
-light_grey = (159,159,159)
-light_green= (114,255,114)
-white = (255, 255, 255)
-black = (0, 0, 0)
 
-light_sky = (114,219,255)
-light_purple = (219,114,255)
-azure = (0,127,255)
-grey = (127,127,127)
-dark_green = (0,191,0)
-dark_red = (191,0,0)
-darker_green = (0,127,0)
-darker_sky = (0,95,127)
+class Colour(tuple):
+    def __new__(cls, r, g, b):
+        return (r, g, b)
 
 
 def defaultBG():
-    return black
+    return Colour(0, 0, 0)
+
 
 def defaultFG():
-    return white
+    return Colour(255, 255, 255)
 
 class Cell(object):
     def __init__(self, character=' ', characterReference = 0, lineItemNodeRef=None,
@@ -280,7 +272,7 @@ class Application(pyglet.window.Window):
 
         self.batch = pyglet.graphics.Batch()
         self.initScreen(screenCols, screenRows)
-        self.initBackground(screenCols, screenRows, black)
+        self.initBackground(screenCols, screenRows, defaultBG())
         self.initForeground(screenCols, screenRows)
 
         self.pygletKeys = pyglet.window.key.KeyStateHandler()
@@ -317,7 +309,7 @@ class Application(pyglet.window.Window):
         self.foreground = self.batch.add(4 * maxx * maxy, gl.GL_QUADS, self.foregroundGroup,
             ('v2f', vertCoords),
             ('t3f', self.getTexCoords(' ')  * maxx * maxy),
-            ('c3B', white * 4 * maxx * maxy))
+            ('c3B', defaultFG() * 4 * maxx * maxy))
 
     def toggleFullScreen(self):
         self.set_fullscreen(not self.fullscreen)
