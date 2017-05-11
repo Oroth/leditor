@@ -2,6 +2,9 @@
 #from iop_libtcod import *
 from iop_pyglet import *
 
+import pyglet
+pyglet.lib.load_library('avbin')
+pyglet.have_avbin=True
 
 white = Colour(255, 255, 255)
 black = Colour(0, 0, 0)
@@ -22,3 +25,12 @@ darker_sky = Colour(0,95,127)
 #
 # def defaultFG():
 #     return white
+
+class Application(IOApplication):
+    def __init__(self, screenCols, screenRows, bgcol=black, fgcol=white):
+        super(Application, self).__init__(screenCols, screenRows, bgcol, fgcol)
+        pyglet.options['audio'] = ('directsound', 'silent')
+
+    def playMedia(self):
+        source = pyglet.media.load('Front Line Assembly - Caustic Grip - 01 - Resist.mp3')
+        source.play()

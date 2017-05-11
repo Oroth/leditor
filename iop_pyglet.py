@@ -6,10 +6,6 @@ from pyglet.window import key
 import pyglet.window.mouse
 from string import printable
 
-pyglet.lib.load_library('avbin')
-pyglet.have_avbin=True
-
-import time
 
 KEY_ENTER = key.ENTER
 KEY_ESCAPE = key.ESCAPE
@@ -249,8 +245,8 @@ class ForegroundGroup(pyglet.graphics.OrderedGroup):
         gl.glDisable(self.fontTexture.target)
 
 
-class Application(pyglet.window.Window):
-    def __init__(self, screenCols, screenRows, resizable=True):
+class IOApplication(pyglet.window.Window):
+    def __init__(self, screenCols, screenRows, bgcol, fgcol, resizable=True):
         self.fontImageFileName = 'fonts/terminal-transparent.png'
         self.fontImage = pyglet.image.load(self.fontImageFileName)
         self.fontImageRows = 16
@@ -265,15 +261,15 @@ class Application(pyglet.window.Window):
 
         screenWidth = self.cellWidth * screenCols
         screenHeight = self.cellHeight * screenRows
-        super(Application, self).__init__(screenWidth, screenHeight, resizable=resizable)
+        super(IOApplication, self).__init__(screenWidth, screenHeight, resizable=resizable)
 
         self.fontImageGrid = pyglet.image.ImageGrid(self.fontImage, self.fontImageRows, self.fontImageCols)
         self.fontTextureGrid = pyglet.image.TextureGrid(self.fontImageGrid)
 
         self.batch = pyglet.graphics.Batch()
         self.initScreen(screenCols, screenRows)
-        self.initBackground(screenCols, screenRows, defaultBG())
-        self.initForeground(screenCols, screenRows)
+        self.initBackground(screenCols, screenRows, bgcol)
+        self.initForeground(screenCols, screenRows, fgcol)
 
         self.pygletKeys = pyglet.window.key.KeyStateHandler()
         self.push_handlers(self.pygletKeys)
@@ -300,7 +296,7 @@ class Application(pyglet.window.Window):
             ('v2f', vertCoords),
             ('c3B', bgcol * 4 * maxx * maxy))
 
-    def initForeground(self, maxx, maxy):
+    def initForeground(self, maxx, maxy, fgcol):
         vertCoords = []
         for y in xrange(maxy):
             for x in xrange(maxx):
@@ -309,7 +305,7 @@ class Application(pyglet.window.Window):
         self.foreground = self.batch.add(4 * maxx * maxy, gl.GL_QUADS, self.foregroundGroup,
             ('v2f', vertCoords),
             ('t3f', self.getTexCoords(' ')  * maxx * maxy),
-            ('c3B', defaultFG() * 4 * maxx * maxy))
+            ('c3B', fgcol * 4 * maxx * maxy))
 
     def toggleFullScreen(self):
         self.set_fullscreen(not self.fullscreen)
@@ -329,7 +325,7 @@ class Application(pyglet.window.Window):
 
         return self.fontTextureGrid[cy, cx].tex_coords
 
-    def screenPrint(self, x, y, cell): #fmt, bgcol=defaultBG(), fgcol=defaultFG()):
+    def screenPrint(self, x, y, cell):
         if self.screenGrid[y][x] == cell:
             return
 
@@ -411,8 +407,6 @@ class Application(pyglet.window.Window):
         self.on_draw = draw
         self.clear()
 
-        pyglet.options['audio'] = ('directsound', 'silent')
-
         pyglet.app.run()
 
     def closeWindow(self):
@@ -420,8 +414,4 @@ class Application(pyglet.window.Window):
 
     def screenFlush(self):
         self.batch.draw()
-        #gl.glFinish()
 
-    def playMedia(self):
-        source = pyglet.media.load('Front Line Assembly - Caustic Grip - 01 - Resist.mp3')
-        source.play()

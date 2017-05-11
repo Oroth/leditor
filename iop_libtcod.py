@@ -3,10 +3,6 @@ import copy
 from string import printable
 import time
 
-import pyglet
-pyglet.lib.load_library('avbin')
-pyglet.have_avbin=True
-
 
 KEY_ENTER = libtcod.KEY_ENTER
 KEY_ESCAPE = libtcod.KEY_ESCAPE
@@ -156,23 +152,23 @@ class Mouse():
         return self.mouseObj.cy
 
 
-class Application(object):
-    def __init__(self, screenCols, screenRows):
+class IOApplication(object):
+    def __init__(self, screenCols, screenRows, bgcol, fgcol):
         self._key = libtcod.Key()
         self._mouse = libtcod.Mouse()
         self._loopActive = True
         self.screenCols = screenCols
         self.screenRows = screenRows
-        self.setUp(screenCols, screenRows, 20)
+        self.setUp(screenCols, screenRows, 20, fgcol)
 
-    def setUp(self, screenWidth, screenHeight, FPS):
+    def setUp(self, screenWidth, screenHeight, FPS, fgcol):
         libtcod.console_set_custom_font('fonts/terminal8x14_gs_ro.png',
                 libtcod.FONT_TYPE_GREYSCALE | libtcod.FONT_LAYOUT_ASCII_INROW)
         libtcod.console_init_root(screenWidth, screenHeight, 'List-editor', False)
         libtcod.sys_set_fps(FPS)
         libtcod.console_set_background_flag(0, libtcod.BKGND_SET)
-        libtcod.console_set_default_foreground(0, libtcod.white)
-        pyglet.options['audio'] = ('directsound', 'silent')
+        libtcod.console_set_default_foreground(0, fgcol)
+
 
     def eventLoopSetup(self, handleKey, handleMouse, draw):
         while not libtcod.console_is_window_closed() and self._loopActive:
@@ -200,7 +196,3 @@ class Application(object):
 
     def screenFlush(self):
         libtcod.console_flush()
-
-    def playMedia(self):
-        source = pyglet.media.load('Front Line Assembly - Caustic Grip - 01 - Resist.mp3')
-        source.play()
