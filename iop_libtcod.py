@@ -88,6 +88,7 @@ class Key():
         k = self.keyObj
         return (k.vk, k.c, k.lctrl or k.rctrl, k.lalt or k.ralt, k.shift)
 
+    @property
     def code(self):
         return self.keyObj.vk
 

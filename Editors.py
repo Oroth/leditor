@@ -80,32 +80,32 @@ class CellEditor(object):
             self.index = characterRef
 
     def handleKey(self, key):
-        if key.code() == iop.KEY_ENTER:
+        if key.code == iop.KEY_ENTER:
             try:
                 if self.isString and ''.join(self.content).decode('string_escape'):
                     return 'END'
             except ValueError: return
             return 'END'  # exit editor
 
-        if key.code() == iop.KEY_ESCAPE:
+        if key.code == iop.KEY_ESCAPE:
             return 'CANCEL'  # exit editor
 
-        elif key.code() == iop.KEY_LEFT:
+        elif key.code == iop.KEY_LEFT:
             if self.index > 0:
                 self.index -= 1
 
-        elif key.code() == iop.KEY_RIGHT:
+        elif key.code == iop.KEY_RIGHT:
             if self.index < len(self.content):
                 self.index += 1
 
-        elif key.code() == iop.KEY_BACKSPACE:
+        elif key.code == iop.KEY_BACKSPACE:
             if self.content and self.index != 0:
                 del self.content[self.index - 1]
                 self.index -= 1
             elif not self.content:
                 return 'PREV'
 
-        elif key.code() == iop.KEY_DELETE:
+        elif key.code == iop.KEY_DELETE:
             if self.content and self.index != len(self.content):
                 del self.content[self.index]
 
@@ -129,7 +129,7 @@ class CellEditor(object):
                 if temp.find(' ') == -1:
                     self.isString = False
 
-        elif not self.isString and key.code() == iop.KEY_SPACE:
+        elif not self.isString and key.code == iop.KEY_SPACE:
             if len(self.content) > 0:
                 return 'SPACE'
 
@@ -342,7 +342,7 @@ class TreeEditor(DisplayEditor):
         self.drawMode = 'uncursor'
         self.updateStatusBar()
 
-        if key.code() != 0:
+        if key.code != 0:
             self.statusBar.clearMessage()
         self.statusBar = self.statusBar.refreshBuffer()
 
@@ -351,10 +351,10 @@ class TreeEditor(DisplayEditor):
         #    self.drawMode = 'cursor'
 
         if self.editing:
-            return self.handleCellEditor(key)
+            return self.handleCellEditor(key).updateImage()
 
         elif self.changeMode:
-            return self.handleKeysChangeMode(key)
+            return self.handleKeysChangeMode(key).updateImage()
 
         elif key.char == 't':
             return self.updateTopLine(self.topLine + 1)
@@ -781,16 +781,16 @@ class TreeEditor(DisplayEditor):
 
 
 
-                elif key.code() == iop.KEY_RIGHT or key.char == 'l':
+                elif key.code == iop.KEY_RIGHT or key.char == 'l':
                     return self.update('buffer', self.buffer.curNextUnzippedSymbol(self.nodeIsZipped))
 
-                elif key.code() == iop.KEY_LEFT or key.char == 'h':
+                elif key.code == iop.KEY_LEFT or key.char == 'h':
                     return self.update('buffer', self.buffer.curPrevUnzippedSymbol(self.nodeIsZipped))
 
-                elif key.code() == iop.KEY_DOWN or key.char == 'j' and self.cursory +1 < len(self.image):
+                elif key.code == iop.KEY_DOWN or key.char == 'j' and self.cursory +1 < len(self.image):
                     return self.cursorToScreenPos(self.cursorx, self.cursory + 1)
 
-                elif key.code() == iop.KEY_UP or key.char == 'k':
+                elif key.code == iop.KEY_UP or key.char == 'k':
                     if self.topLine > 0 and self.cursory == 0:
                         newEd = self.updateTopLine(self.topLine-1)
                         return newEd.cursorToScreenPos(self.cursorx, 0)

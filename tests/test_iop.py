@@ -16,7 +16,7 @@ class TestKey(unittest.TestCase):
 
     def test_key3(self):
         k = Key.c('b')
-        self.assertEqual(k.code(), KEY_CHAR)
+        self.assertEqual(k.code, KEY_CHAR)
 
     def test_keyShift(self):
         k = Key.c('a', shift=True)
@@ -24,12 +24,12 @@ class TestKey(unittest.TestCase):
 
     def test_keyvk(self):
         k = Key.vk(KEY_ENTER)
-        self.assertEqual(k.code(), KEY_ENTER)
+        self.assertEqual(k.code, KEY_ENTER)
 
 
     def test_keySpace(self):
         k = Key.c(' ')
-        self.assertEqual(k.code(), KEY_SPACE)
+        self.assertEqual(k.code, KEY_SPACE)
 
     #def test_keyEnter(self):
     #    k = Key.c(chr(13))

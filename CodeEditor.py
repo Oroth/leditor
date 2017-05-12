@@ -81,7 +81,7 @@ class CodeEditor(Editors.TreeEditor):
 
     def handleKeysMain(self, key):
         # evaluate the current context
-        if key.code() == iop.KEY_ENTER and not self.editing:
+        if key.code == iop.KEY_ENTER and not self.editing:
 
             nodeValue = self.getNodeValue(self.buffer.cursor)
             if key.shift():
@@ -93,12 +93,12 @@ class CodeEditor(Editors.TreeEditor):
                 self.statusBar.updateMessage('Result to buffer')
                 result = self.update('yankBuffer', nodeValue)
 
-        elif key.code() == iop.KEY_F2:
+        elif key.code == iop.KEY_F2:
             newCursorMode = misc.cycleThroughList(self.evalCursorMode, self.evalCursorModeOptions)
             result = self.update('evalCursorMode', newCursorMode)
 
         # Create a repl like environment to evaluate code in
-        elif key.code() == iop.KEY_F8:
+        elif key.code == iop.KEY_F8:
             newBuff = self.buffer.curChild().curLast()
             newBuff = newBuff.viewToCursor().curChild().curLast()
             self.printingMode = 'vertical'
@@ -185,7 +185,7 @@ class evalIOHandler(CodeEditor):
 
 
     def handleKeys(self, key):
-        if key.code() == iop.KEY_TAB:
+        if key.code == iop.KEY_TAB:
             self.mode = 'inspect' if self.mode == 'prog' else 'prog'
 
         elif self.mode == 'prog':

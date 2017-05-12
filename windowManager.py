@@ -635,7 +635,7 @@ class WindowManager(fo.FuncObject):
         except ex.UnappliedProcedureException:
             return self
 
-    # elif key.code() == iop.KEY_F5:
+    # elif key.code == iop.KEY_F5:
     #     self.winCmd = False
     #     #return self.replaceWindow(curWin.cmdRunProg())
     #     return self.addWindow(curWin.cmdInspectProcedureCall(["abc"]))

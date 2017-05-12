@@ -36,22 +36,22 @@ class ScreenEditor(Editors.Editor):
 
     def handleKeysMain(self, key):
 
-        if key.code() == iop.KEY_RIGHT and self.x < self.maxx:
+        if key.code == iop.KEY_RIGHT and self.x < self.maxx:
             return self.update('x', self.x + 1)
 
-        elif key.code() == iop.KEY_LEFT and self.x > 0:
+        elif key.code == iop.KEY_LEFT and self.x > 0:
             return self.update('x', self.x - 1)
 
-        elif key.code() == iop.KEY_DOWN and self.y < self.maxy:
+        elif key.code == iop.KEY_DOWN and self.y < self.maxy:
             return self.update('y', self.y + 1)
 
-        elif key.code() == iop.KEY_UP and self.y > 0:
+        elif key.code == iop.KEY_UP and self.y > 0:
             return self.update('y', self.y - 1)
 
-        elif key.code() == iop.KEY_DELETE:
+        elif key.code == iop.KEY_DELETE:
             screen.putNodeOnImage(self.image, self.x, self.y, ' ', None, iop.black, iop.white)
 
-        elif key.code() == iop.KEY_BACKSPACE and self.x != 0:
+        elif key.code == iop.KEY_BACKSPACE and self.x != 0:
             self.x -= 1
             screen.putNodeOnImage(self.image, self.x, self.y, ' ', None, iop.black, iop.white)
 

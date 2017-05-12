@@ -100,6 +100,7 @@ class Key():
     def _key(self):
         return (self.symbol, self.ctrl(), self.alt(), self.shift())
 
+    @property
     def code(self):
         if self.symbol in (KEY_SPACE, KEY_ENTER):
             return self.symbol
