@@ -81,6 +81,9 @@ class Key():
     def __hash__(self):
         return hash(self._key())
 
+    def __repr__(self):
+        return 'key(%d, %d)' % (self.keyObj.c, self.keyObj.vk)
+
     def _key(self):
         k = self.keyObj
         return (k.vk, k.c, k.lctrl or k.rctrl, k.lalt or k.ralt, k.shift)
@@ -88,6 +91,7 @@ class Key():
     def code(self):
         return self.keyObj.vk
 
+    @property
     def char(self):
         return chr(self.keyObj.c)
 
@@ -111,40 +115,40 @@ class Key():
 
 class Mouse():
     def __init__(self, mouseObj=libtcod.Mouse()):
-        self.mouseObj = mouseObj
+        self._mouseObj = mouseObj
 
     def lbuttonPressed(self):
-        return self.mouseObj.lbutton_pressed
+        return self._mouseObj.lbutton_pressed
 
     def wheelScrolled(self):
-        return self.mouseObj.wheel_up or self.mouseObj.wheel_down
+        return self._mouseObj.wheel_up or self._mouseObj.wheel_down
 
     def wheelUp(self):
-        return self.mouseObj.wheel_up
+        return self._mouseObj.wheel_up
 
     def wheelDown(self):
-        return self.mouseObj.wheel_down
+        return self._mouseObj.wheel_down
 
     def on(self):
-        m = self.mouseObj
+        m = self._mouseObj
         return m.lbutton_pressed or m.wheel_up or m.wheel_down
 
-    def getPos(self):
-        return self.mouseObj.cx, self.mouseObj.cy
+    def position(self):
+        return self._mouseObj.cx, self._mouseObj.cy
 
     def getMouseWithRelativePosition(self, newX1, newY1):
-        newMouseObj = copy.copy(self.mouseObj)
+        newMouseObj = copy.copy(self._mouseObj)
         newMouseObj.cx = newMouseObj.cx - newX1
         newMouseObj.cy = newMouseObj.cy - newY1
         return Mouse(newMouseObj)
 
     @property
     def x(self):
-        return self.mouseObj.cx
+        return self._mouseObj.cx
 
     @property
     def y(self):
-        return self.mouseObj.cy
+        return self._mouseObj.cy
 
 
 class IOApplication(object):

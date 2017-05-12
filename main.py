@@ -29,7 +29,7 @@ eval.wm = lambda: wm
 
 def handleKey(key):
     global wm
-
+    #print repr(key)
     result = wm.handleKeys(key)
     if result == 'QUIT-WM':
         app.closeWindow()
@@ -58,6 +58,6 @@ def profile_main():
     stats.strip_dirs().sort_stats('cumulative').print_stats()
     stream.close()
 
-profile_main()
+main()
 
 

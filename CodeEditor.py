@@ -105,7 +105,7 @@ class CodeEditor(Editors.TreeEditor):
             self.topLine = 0
             return self.update('buffer', newBuff)
 
-        # elif key.char() == '>':
+        # elif key.char == '>':
         #     curNode = self.buffer.cursor
         #     if curNode.isSubNode():
         #         args = []
@@ -175,8 +175,8 @@ class evalIOHandler(CodeEditor):
 
     def handleKeysProg(self, key):
         if key.isPrintable():
-            self.keyHistory.append(key.char())
-            self.lastKey = key.char()
+            self.keyHistory.append(key.char)
+            self.lastKey = key.char
 
         handleKeysMethod = self.function.call('handleKeys')
         self.function = handleKeysMethod.call(self.lastKey)

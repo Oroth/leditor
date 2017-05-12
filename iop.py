@@ -1,10 +1,10 @@
 
 from iop_libtcod import *
-from iop_pyglet import *
+#rom iop_pyglet import *
 
 
 import pyglet
-pyglet.lib.load_library('avbin')
+#pyglet.lib.load_library('avbin')
 pyglet.have_avbin=True
 
 

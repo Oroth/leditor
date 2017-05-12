@@ -56,7 +56,7 @@ class ScreenEditor(Editors.Editor):
             screen.putNodeOnImage(self.image, self.x, self.y, ' ', None, iop.black, iop.white)
 
         elif key.isPrintable():
-            newImage = screen.fnPutNodeOnImage(self.image, self.x, self.y, key.char())
+            newImage = screen.fnPutNodeOnImage(self.image, self.x, self.y, key.char)
             if self.x != self.maxx:
                 newx = self.x + 1
             else:
@@ -68,7 +68,7 @@ class ScreenEditor(Editors.Editor):
                 ('x', newx))
 
 
-            #screen.putNodeOnImage(self.image, self.x, self.y, key.char(), None, iop.black, iop.white)
+            #screen.putNodeOnImage(self.image, self.x, self.y, key.char, None, iop.black, iop.white)
             #if self.x != self.maxx:
             #    self.x += 1
 

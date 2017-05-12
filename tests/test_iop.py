@@ -7,11 +7,11 @@ from iop import *
 class TestKey(unittest.TestCase):
     def test_key1(self):
         k = Key.c('a')
-        self.assertEqual(k.char(), 'a')
+        self.assertEqual(k.char, 'a')
 
     def test_key2(self):
         k = Key.c('A')
-        self.assertEqual(k.char(), 'A')
+        self.assertEqual(k.char, 'A')
         self.assertEqual(k.shift(), True)
 
     def test_key3(self):
@@ -20,7 +20,7 @@ class TestKey(unittest.TestCase):
 
     def test_keyShift(self):
         k = Key.c('a', shift=True)
-        self.assertEqual(k.char(), 'A')
+        self.assertEqual(k.char, 'A')
 
     def test_keyvk(self):
         k = Key.vk(KEY_ENTER)
@@ -38,7 +38,7 @@ class TestKey(unittest.TestCase):
 
     def test_keyvk2(self):
         k = Key.vk(KEY_DOWN)
-        self.assertEqual(k.char(), chr(0))
+        self.assertEqual(k.char, chr(0))
 
     def test_keyctrl(self):
         k = Key.vk(KEY_DOWN, ctrl=True)

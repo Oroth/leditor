@@ -19,10 +19,10 @@ class Pager(Editors.Editor):
         return screen.createImageFromStringList(self.text[self.topLine:], maxx, maxy)
 
     def handleKeys(self, key):
-        if key.char() == 'j' and self.topLine < len(self.text) - 10:
+        if key.char == 'j' and self.topLine < len(self.text) - 10:
             return self.update('topLine', self.topLine + 1)
 
-        elif key.char() == 'k' and self.topLine > 0:
+        elif key.char == 'k' and self.topLine > 0:
             return self.update('topLine', self.topLine - 1)
 
         return self

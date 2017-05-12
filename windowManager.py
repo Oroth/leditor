@@ -95,7 +95,7 @@ class Window(fo.FuncObject):
             else:
                 return self
 
-        elif key.char() == 'b' and key.ctrl():
+        elif key.char == 'b' and key.ctrl():
             return self.updateList(
                 ('editorCmd', True),
                 ('message', "--Buffer Command--"))

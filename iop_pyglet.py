@@ -94,6 +94,9 @@ class Key():
     def __hash__(self):
         return hash(self._key())
 
+    def __repr__(self):
+        return 'key(%s)' % self.symbol
+
     def _key(self):
         return (self.symbol, self.ctrl(), self.alt(), self.shift())
 
@@ -105,6 +108,7 @@ class Key():
             return KEY_CHAR
         return self.symbol
 
+    @property
     def char(self):
         return self.c
 
@@ -149,7 +153,7 @@ class Mouse():
     def on(self):
         return self.button or self.mouseScroll
 
-    def getPos(self):
+    def position(self):
         return self.cx, self.cy
 
     def getMouseWithRelativePosition(self, newX1, newY1):

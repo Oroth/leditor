@@ -80,7 +80,6 @@ class CellEditor(object):
             self.index = characterRef
 
     def handleKey(self, key):
-
         if key.code() == iop.KEY_ENTER:
             try:
                 if self.isString and ''.join(self.content).decode('string_escape'):
@@ -110,19 +109,19 @@ class CellEditor(object):
             if self.content and self.index != len(self.content):
                 del self.content[self.index]
 
-        elif not self.isString and key.char()  == "'":
+        elif not self.isString and key.char  == "'":
             return 'QUOTE'
 
-        elif not self.isString and key.char() == ".":
+        elif not self.isString and key.char == ".":
             return 'DOT'
 
-        elif not self.isString and key.char() == '(':
+        elif not self.isString and key.char == '(':
             return 'NEST'
 
-        elif not self.isString and key.char() == ')':
+        elif not self.isString and key.char == ')':
             return 'UNNEST'
 
-        elif key.char() == '"':
+        elif key.char == '"':
             if not self.isString:
                 self.isString = True
             else:
@@ -134,8 +133,8 @@ class CellEditor(object):
             if len(self.content) > 0:
                 return 'SPACE'
 
-        elif key.isPrintable() and (self.isString or key.char() not in ':;\\|,#~[]{}%&*'):
-            self.content.insert(self.index, key.char())
+        elif key.isPrintable() and (self.isString or key.char not in ':;\\|,#~[]{}%&*'):
+            self.content.insert(self.index, key.char)
             self.index += 1
 
 class ColourScheme(fo.FuncObject):
@@ -348,7 +347,7 @@ class TreeEditor(DisplayEditor):
         self.statusBar = self.statusBar.refreshBuffer()
 
         # Reset the screen to include the cursor if we aren't scrolling
-        #if key.char() not in ('t', 'T'):
+        #if key.char not in ('t', 'T'):
         #    self.drawMode = 'cursor'
 
         if self.editing:
@@ -357,10 +356,10 @@ class TreeEditor(DisplayEditor):
         elif self.changeMode:
             return self.handleKeysChangeMode(key)
 
-        elif key.char() == 't':
+        elif key.char == 't':
             return self.updateTopLine(self.topLine + 1)
 
-        elif key.char() == 'T':
+        elif key.char == 'T':
             if self.topLine > 0:
                 return self.updateTopLine(self.topLine - 1)
             else:
@@ -368,7 +367,7 @@ class TreeEditor(DisplayEditor):
 
         result =  self.handleKeysMain(key)
 
-        if key.char() in  ('j', 'k', 'l', 'h'):
+        if key.char in  ('j', 'k', 'l', 'h'):
             # this is reason enough to not subclass list (i.e. don't copy entire list)
             #newLineList = self.lineList.update('cursorAdd', result.buffer.cursorAdd)
             newLineList = self.lineList.newCursorAdd(result.buffer.cursorAdd)
@@ -516,7 +515,7 @@ class TreeEditor(DisplayEditor):
         if self.changeMode in ('from', 'to'):
             if key.isPrintable():
                 text = self.buffer.cursor.child
-                index = text.find(key.char())
+                index = text.find(key.char)
                 if self.changeMode == 'from':
                     newCellEditor =  CellEditor(text, index)
                 else:
@@ -530,49 +529,49 @@ class TreeEditor(DisplayEditor):
                 return self.update('changeMode', False)
 
         # change from start
-        if key.char() == 'i':
+        if key.char == 'i':
             return self.updateList(
                 ('cellEditor', CellEditor(self.buffer.cursor.child)),
                 ('editing', True),
                 ('changeMode', False))
 
         # change from end
-        elif key.char() == 'a':
+        elif key.char == 'a':
             return self.updateList(
                 ('cellEditor', CellEditor(self.buffer.cursor.child, -1)),
                 ('editing', True),
                 ('changeMode', False))
 
         # change to end
-        elif key.char() in ('e', 'l'):
+        elif key.char in ('e', 'l'):
             return self.updateList(
                 ('cellEditor', CellEditor(Symbol(''))),
                 ('editing', True),
                 ('changeMode', False))
 
-        elif key.char() == 'f':
+        elif key.char == 'f':
             return self.update('changeMode', 'from')
 
-        elif key.char() == 't':
+        elif key.char == 't':
             return self.update('changeMode', 'to')
 
         return self.update('changeMode', False)
 
     def handleKeysMain(self, key):
 
-        if key.char() == 'd':
+        if key.char == 'd':
             if self.buffer.cursor != self.buffer.root:
                 return self.updateList(
                     ('buffer', self.buffer.deleteAtCursor()),
                     ('yankBuffer', self.buffer.cursorToPyExp()),
                     ('updateUndo', True))
 
-        elif key.char() == 'c':
+        elif key.char == 'c':
             if not self.buffer.onSubNode():
                 print 'changeMode on'
                 return self.update('changeMode', True)
 
-        elif key.char() == 'a':
+        elif key.char == 'a':
             if self.buffer.cursor != self.buffer.view:
                 newBuff = self.buffer.appendAtCursor('').curNext()
                 return self.updateList(
@@ -580,7 +579,7 @@ class TreeEditor(DisplayEditor):
                     ('cellEditor', CellEditor(Symbol(''))),
                     ('editing', True))
 
-        elif key.char() == 'i':
+        elif key.char == 'i':
             if self.buffer.cursor != self.buffer.view:    # maybe the correct behaviour is to sub and ins
                 newBuff = self.buffer.insertAtCursor('').curPrev()
                 return self.updateList(
@@ -589,24 +588,24 @@ class TreeEditor(DisplayEditor):
                     ('editing', True))
 
 
-        elif key.char() == 'G':
+        elif key.char == 'G':
             lookupAddress = self.buffer.cursor.childToPyExp()
             newBuff = buffer.BufferSexp(self.buffer.root, lookupAddress)
             return self.update('buffer', newBuff)
 
 
-        elif key.char() == '(':
+        elif key.char == '(':
             return self.updateList(
                 ('buffer', self.buffer.nestCursor()),
                 ('updateUndo', True))
 
-        elif key.char() == ')':
+        elif key.char == ')':
             if self.buffer.onSubNode() and self.buffer.cursor != self.buffer.root:
                 return self.updateList(
                     ('buffer', self.buffer.denestCursor()),
                     ('updateUndo', True))
 
-        elif key.char() == 'o' and not key.ctrl():
+        elif key.char == 'o' and not key.ctrl():
             if self.buffer.cursor != self.buffer.view:
                 newBuff = self.buffer.appendAtCursor(['']).curNext().curChild()
                 return self.updateList(
@@ -614,7 +613,7 @@ class TreeEditor(DisplayEditor):
                     ('cellEditor', CellEditor(Symbol(''))),
                     ('editing', True))
 
-        elif key.char() == 'O':
+        elif key.char == 'O':
             if self.buffer.cursor != self.buffer.view:
                 newBuff = self.buffer.insertAtCursor(['']).curPrev().curChild()
                 return self.updateList(
@@ -622,75 +621,75 @@ class TreeEditor(DisplayEditor):
                     ('cellEditor', CellEditor(Symbol(''))),
                     ('editing', True))
 
-        elif key.char() == 'm':
+        elif key.char == 'm':
             newPrintingMode = misc.cycleThroughList(self.printingMode, self.printingModeOptions)
             self.statusBar.updateMessage("DisplayMode: " + newPrintingMode)
 
             return self.update('printingMode', newPrintingMode)
 
 
-        elif key.char() == 'N':
+        elif key.char == 'N':
             newBuff = buffer.BufferSexp(self.buffer.root, [0], [0, 0]).curLast()
             newBuff = newBuff.appendAtCursor([reader.Symbol('newNode')]).curNext()
             newBuff = newBuff.viewToCursor().curChild()
             self.topLine = 0
             return self.update('buffer', newBuff)
 
-        elif key.char() == 'p':
+        elif key.char == 'p':
             if self.yankBuffer:
                 toInsert = tn.createTNodeExpFromPyExp(self.yankBuffer)
                 return self.updateList(
                     ('buffer', self.buffer.appendAtCursor(toInsert)),
                     ('updateUndo', True))
 
-        elif key.char() == 'P':
+        elif key.char == 'P':
             if self.yankBuffer:
                 toInsert = tn.createTNodeExpFromPyExp(self.yankBuffer)
                 return self.updateList(
                     ('buffer', self.buffer.insertAtCursor(toInsert)),
                     ('updateUndo', True))
 
-        elif key.char() == 'R':
+        elif key.char == 'R':
             return self.update('buffer', self.buffer.viewToRoot())
 
-        elif key.char() == 's':
+        elif key.char == 's':
             return self.updateList(
                 ('cellEditor', CellEditor(Symbol(''))),
                 ('editing', True))
 
-        elif key.char() == 'u':
+        elif key.char == 'u':
             return "UNDO"
 
-        elif key.char() == 'y':
+        elif key.char == 'y':
             self.yankBuffer = self.buffer.cursorToPyExp()
             print self.yankBuffer
 
-        elif key.char() == 'z':
+        elif key.char == 'z':
             if self.buffer.cursor.nodeID in self.zippedNodes:
                 self.zippedNodes[self.buffer.cursor.nodeID] = not(self.zippedNodes[self.buffer.cursor.nodeID])
             else:
                 self.zippedNodes[self.buffer.cursor.nodeID] = True
 
-        elif key.char() == "'":
+        elif key.char == "'":
             newBuff = self.buffer.quoteAtCursor()
             return self.update('buffer', newBuff)
 
-        elif key.char() == '.':
+        elif key.char == '.':
             if self.buffer.cursor.next and not self.buffer.cursor.next.isSubNode():
                 newBuff = self.buffer.methodChainAtCursor()
                 return self.update('buffer', newBuff)
 
-        elif key.char() == '>':
+        elif key.char == '>':
             if self.buffer.onSubNode() or self.buffer.cursor.child is None:
                 newBuff = self.buffer.slurpAtCursor()
                 return self.update('buffer', newBuff)
 
-        elif key.char() == '<':
+        elif key.char == '<':
             if self.buffer.onSubNode() and self.buffer.cursor.child:
                 newBuff = self.buffer.barfAtCursor()
                 return self.update('buffer', newBuff)
 
-        elif key.char() == '+':
+        elif key.char == '+':
             numList = self.buffer.cursorToPyExp()
             try:
                 result = reduce(operator.add, numList)
@@ -703,18 +702,18 @@ class TreeEditor(DisplayEditor):
                 ('buffer', newBuff),
                 ('updateUndo', True))
 
-        elif key.char() == '"':
+        elif key.char == '"':
             return self.updateList(
                 ('buffer', self.buffer.toggleStringAtCursor()),
                 ('updateUndo', True))
 
-        elif key.char() == '/':
+        elif key.char == '/':
             if not self.buffer.onSubNode():
                 try:
                     return self.update('buffer', self.buffer.search(self.buffer.getCurrent()))
                 except ValueError: pass
 
-        elif key.char() == '=':
+        elif key.char == '=':
             if self.buffer.cursor in self.revealedNodes:
                 self.revealedNodes[self.buffer.cursor] = not(self.revealedNodes[self.buffer.cursor])
             else:
@@ -723,7 +722,7 @@ class TreeEditor(DisplayEditor):
 
         else:
             try:
-                if key.char() == 'j' and key.ctrl():
+                if key.char == 'j' and key.ctrl():
                     newBuff = self.buffer.viewToCursor()
                     newHist = self.viewHistory.insertAtCursor(View(newBuff.viewAdd)).curPrev()
                     newHist2 = newHist.rootToCursor()
@@ -731,42 +730,42 @@ class TreeEditor(DisplayEditor):
                         ('buffer', newBuff),
                         ('viewHistory', newHist2))
 
-                elif key.char() == 'o' and key.ctrl():
+                elif key.char == 'o' and key.ctrl():
                     newHist = self.viewHistory.curNext()
                     newBuff = self.buffer.newViewAdd(newHist.cursor.child.address)
                     return self.updateList(
                         ('viewHistory', newHist),
                         ('buffer', newBuff))
 
-                elif key.char() == 'h' and key.ctrl():
+                elif key.char == 'h' and key.ctrl():
                     newHist = self.viewHistory.curPrev()
                     newBuff = self.buffer.newViewAdd(newHist.cursor.child.address)
                     return self.updateList(
                         ('viewHistory', newHist),
                         ('buffer', newBuff))
 
-                elif key.char() == 'k' and key.ctrl():
+                elif key.char == 'k' and key.ctrl():
                     return self.update('buffer', self.buffer.viewUp())
 
-                elif key.char() == 'H' and key.ctrl():
+                elif key.char == 'H' and key.ctrl():
                     return self.update('buffer', self.buffer.viewPrev())
 
-                elif key.char() == 'L' and key.ctrl():
+                elif key.char == 'L' and key.ctrl():
                     return self.update('buffer', self.buffer.viewNext())
 
 
-                elif key.char() == 'J':
+                elif key.char == 'J':
                     if self.cursorIsZipped(self.buffer):
                         raise ValueError
                     return self.update('buffer', self.buffer.curDownAlong(self.nodeIsZipped))
 
-                elif key.char() == 'H':
+                elif key.char == 'H':
                     return self.update('buffer', self.buffer.curPrevUpAlong())
 
-                elif key.char() == 'K':
+                elif key.char == 'K':
                     return self.update('buffer', self.buffer.curUp())
 
-                elif key.char() == 'L':
+                elif key.char == 'L':
                     if self.cursorIsZipped(self.buffer):
                         newBuff = self.buffer.curUp().curNextUpAlong()
                     else:
@@ -774,24 +773,24 @@ class TreeEditor(DisplayEditor):
                     return self.update('buffer', newBuff)
 
 
-                elif key.char() == 'e': # and key.ctrl():
+                elif key.char == 'e': # and key.ctrl():
                     return self.update('buffer', self.buffer.curUnzippedLast(self.nodeIsZipped))
                 #
-                #elif key.char() == 'H':     # Go back to the first expression in the list
+                #elif key.char == 'H':     # Go back to the first expression in the list
                 #     return self.update('buffer', self.buffer.curFirst())
 
 
 
-                elif key.code() == iop.KEY_RIGHT or key.char() == 'l':
+                elif key.code() == iop.KEY_RIGHT or key.char == 'l':
                     return self.update('buffer', self.buffer.curNextUnzippedSymbol(self.nodeIsZipped))
 
-                elif key.code() == iop.KEY_LEFT or key.char() == 'h':
+                elif key.code() == iop.KEY_LEFT or key.char == 'h':
                     return self.update('buffer', self.buffer.curPrevUnzippedSymbol(self.nodeIsZipped))
 
-                elif key.code() == iop.KEY_DOWN or key.char() == 'j' and self.cursory +1 < len(self.image):
+                elif key.code() == iop.KEY_DOWN or key.char == 'j' and self.cursory +1 < len(self.image):
                     return self.cursorToScreenPos(self.cursorx, self.cursory + 1)
 
-                elif key.code() == iop.KEY_UP or key.char() == 'k':
+                elif key.code() == iop.KEY_UP or key.char == 'k':
                     if self.topLine > 0 and self.cursory == 0:
                         newEd = self.updateTopLine(self.topLine-1)
                         return newEd.cursorToScreenPos(self.cursorx, 0)
