@@ -196,26 +196,62 @@ class IOApplication(pyglet.window.Window):
         self.fontImageRows = 16
         self.fontImageCols = 16
 
-        self.fontTexture = self.fontImage.get_texture()
-        self.foregroundGroup = ForegroundGroup(self.fontTexture)
-        self.backgroundGroup = pyglet.graphics.OrderedGroup(0)
+        self._fontTexture = self.fontImage.get_texture()
+        self._foregroundGroup = ForegroundGroup(self._fontTexture)
+        self._backgroundGroup = pyglet.graphics.OrderedGroup(0)
 
-        self.cellWidth = self.fontTexture.width / self.fontImageRows
-        self.cellHeight = self.fontTexture.height / self.fontImageCols
+        self.cellWidth = self._fontTexture.width / self.fontImageRows
+        self.cellHeight = self._fontTexture.height / self.fontImageCols
 
         screenWidth = self.cellWidth * screenCols
         screenHeight = self.cellHeight * screenRows
         super(IOApplication, self).__init__(screenWidth, screenHeight, resizable=resizable)
 
-        self.fontImageGrid = pyglet.image.ImageGrid(self.fontImage, self.fontImageRows, self.fontImageCols)
-        self.fontTextureGrid = pyglet.image.TextureGrid(self.fontImageGrid)
+        self._fontImageGrid = pyglet.image.ImageGrid(self.fontImage, self.fontImageRows, self.fontImageCols)
+        self._fontTextureGrid = pyglet.image.TextureGrid(self._fontImageGrid)
 
-        self.batch = pyglet.graphics.Batch()
+        self._batch = pyglet.graphics.Batch()
         self._initBackground(screenCols, screenRows, bgcol)
         self._initForeground(screenCols, screenRows, fgcol)
 
-        self.pygletKeys = pyglet.window.key.KeyStateHandler()
-        self.push_handlers(self.pygletKeys)
+        self._pygletKeys = pyglet.window.key.KeyStateHandler()
+        self.push_handlers(self._pygletKeys)
+
+    def _initBackground(self, maxx, maxy, bgcol):
+        vertCoords = []
+        for y in xrange(maxy):
+            for x in xrange(maxx):
+                vertCoords.extend(self._getVertexCoords(x, y))
+
+        self.background = self._batch.add(4 * maxx * maxy, gl.GL_QUADS, self._backgroundGroup,
+                                          ('v2f', vertCoords),
+                                          ('c3B', bgcol * 4 * maxx * maxy))
+
+    def _initForeground(self, maxx, maxy, fgcol):
+        vertCoords = []
+        for y in xrange(maxy):
+            for x in xrange(maxx):
+                vertCoords.extend(self._getVertexCoords(x, y))
+
+        self.foreground = self._batch.add(4 * maxx * maxy, gl.GL_QUADS, self._foregroundGroup,
+                                          ('v2f', vertCoords),
+                                          ('t3f', self._getTexCoords(' ') * maxx * maxy),
+                                          ('c3B', fgcol * 4 * maxx * maxy))
+
+    def _getVertexCoords(self, x, y):
+        cw = self.cellWidth
+        ch = self.cellHeight
+        sx = x * self.cellWidth
+        sy = (self.screenRows - y - 1) * ch
+
+        return [sx, sy, sx+cw, sy, sx+cw, sy+ch, sx, sy+ch]  # GL_QUAD
+
+    def _getTexCoords(self, char):
+        charIdx = ord(char)
+        cy = 15 - (charIdx // self.fontImageRows)
+        cx = charIdx % self.fontImageCols
+
+        return self._fontTextureGrid[cy, cx].tex_coords
 
 
     @property
@@ -226,49 +262,12 @@ class IOApplication(pyglet.window.Window):
     def screenRows(self):
         return self.height // self.cellHeight
 
-
-    def _initBackground(self, maxx, maxy, bgcol):
-        vertCoords = []
-        for y in xrange(maxy):
-            for x in xrange(maxx):
-                vertCoords.extend(self.getVertexCoords(x, y))
-
-        self.background = self.batch.add(4 * maxx * maxy, gl.GL_QUADS, self.backgroundGroup,
-            ('v2f', vertCoords),
-            ('c3B', bgcol * 4 * maxx * maxy))
-
-    def _initForeground(self, maxx, maxy, fgcol):
-        vertCoords = []
-        for y in xrange(maxy):
-            for x in xrange(maxx):
-                vertCoords.extend(self.getVertexCoords(x, y))
-
-        self.foreground = self.batch.add(4 * maxx * maxy, gl.GL_QUADS, self.foregroundGroup,
-            ('v2f', vertCoords),
-            ('t3f', self.getTexCoords(' ')  * maxx * maxy),
-            ('c3B', fgcol * 4 * maxx * maxy))
-
     def toggleFullScreen(self):
         self.set_fullscreen(not self.fullscreen)
 
-    def getVertexCoords(self, x, y):
-        cw = self.cellWidth
-        ch = self.cellHeight
-        sx = x * self.cellWidth
-        sy = (self.screenRows - y - 1) * ch
-
-        return [sx, sy, sx+cw, sy, sx+cw, sy+ch, sx, sy+ch]  # GL_QUAD
-
-    def getTexCoords(self, char):
-        charIdx = ord(char)
-        cy = 15 - (charIdx // self.fontImageRows)
-        cx = charIdx % self.fontImageCols
-
-        return self.fontTextureGrid[cy, cx].tex_coords
-
     def screenPrint(self, x, y, cell):
         texIdx = 12 * ((y * self.screenCols) + x)
-        self.foreground.tex_coords[texIdx:texIdx+12] = self.getTexCoords(cell.character)
+        self.foreground.tex_coords[texIdx:texIdx+12] = self._getTexCoords(cell.character)
 
         colIdx = texIdx
         self.foreground.colors[colIdx:colIdx+12] = cell.fgColour * 4
@@ -287,7 +286,7 @@ class IOApplication(pyglet.window.Window):
 
     def handleTextWrapper(self, handler):
         def wrapper(text):
-            if not any([self.pygletKeys[c] for c in (key.LCTRL, key.RCTRL, key.ENTER, key.BACKSPACE)]):
+            if not any([self._pygletKeys[c] for c in (key.LCTRL, key.RCTRL, key.ENTER, key.BACKSPACE)]):
                 k = Key.c(text)
                 return handler(k)
 
@@ -336,5 +335,5 @@ class IOApplication(pyglet.window.Window):
         pyglet.app.exit()
 
     def screenFlush(self):
-        self.batch.draw()
+        self._batch.draw()
 
