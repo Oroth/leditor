@@ -30,11 +30,6 @@ class Colour(libtcod.Color):
     def __init__(self, *args, **kwargs):
         super(Colour, self).__init__(*args, **kwargs)
 
-def defaultBG():
-    return libtcod.console_get_default_background(0)
-
-def defaultFG():
-    return libtcod.console_get_default_foreground(0)
 
 class Key():
     def __init__(self, keyObj):
