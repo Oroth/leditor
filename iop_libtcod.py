@@ -149,6 +149,7 @@ class Mouse():
 
 class IOApplication(object):
     def __init__(self, screenCols, screenRows, bgcol, fgcol):
+        self.fontImageFileName = 'fonts/terminal8x14_gs_ro.png'
         self._key = libtcod.Key()
         self._mouse = libtcod.Mouse()
         self._loopActive = True
@@ -157,7 +158,7 @@ class IOApplication(object):
         self.setUp(screenCols, screenRows, 20, fgcol)
 
     def setUp(self, screenWidth, screenHeight, FPS, fgcol):
-        libtcod.console_set_custom_font('fonts/terminal8x14_gs_ro.png',
+        libtcod.console_set_custom_font(self.fontImageFileName,
                 libtcod.FONT_TYPE_GREYSCALE | libtcod.FONT_LAYOUT_ASCII_INROW)
         libtcod.console_init_root(screenWidth, screenHeight, 'List-editor', False)
         libtcod.sys_set_fps(FPS)

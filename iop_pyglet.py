@@ -28,44 +28,14 @@ KEY_UP = key.UP
 KEY_DOWN = key.DOWN
 KEY_CHAR = 65
 
-ShiftMap = {
-    key.GRAVE : key.QUOTELEFT,
-    key._1 : key.EXCLAMATION,
-    key._2 : key.DOUBLEQUOTE,
-    key._3 : key.POUND,
-    key._4 : key.DOLLAR,
-    key._5 : key.PERCENT,
-    key._6 : key.ASCIICIRCUM,
-    key._7 : key.AMPERSAND,
-    key._8 : key.ASTERISK,
-    key._9 : key.PARENLEFT,
-    key._0 : key.PARENRIGHT,
-    key.UNDERSCORE : key.UNDERSCORE,
-    key.EQUAL : key.PLUS,
-    key.BRACKETLEFT : key.BRACELEFT,
-    key.BRACKETRIGHT : key.BRACERIGHT,
-    key.SEMICOLON : key.COLON,
-    key.APOSTROPHE : key.AT,
-    key.HASH : key.ASCIITILDE,
-    key.BACKSLASH : key.BAR,
-    key.COMMA : key.LESS,
-    key.PERIOD : key.GREATER,
-    key.SLASH : key.QUESTION
-}
-
 
 class Colour(tuple):
     def __new__(cls, r, g, b):
         return (r, g, b)
 
-
-
 class Key():
     def __init__(self, symbol, modifier=0):
-        if modifier & key.MOD_SHIFT and symbol in ShiftMap:
-            self.symbol = (ShiftMap[symbol])
-        else:
-            self.symbol = symbol
+        self.symbol = symbol
 
         if self.symbol < 256 and chr(self.symbol) in printable:
             c = chr(self.symbol)
@@ -196,6 +166,8 @@ class Mouse():
     def y(self):
         return self.cy
 
+
+
 class BackgroundGroup(pyglet.graphics.OrderedGroup):
     def __int__(self):
         super(BackgroundGroup, self).__init__(0)
@@ -239,8 +211,8 @@ class IOApplication(pyglet.window.Window):
         self.fontTextureGrid = pyglet.image.TextureGrid(self.fontImageGrid)
 
         self.batch = pyglet.graphics.Batch()
-        self.initBackground(screenCols, screenRows, bgcol)
-        self.initForeground(screenCols, screenRows, fgcol)
+        self._initBackground(screenCols, screenRows, bgcol)
+        self._initForeground(screenCols, screenRows, fgcol)
 
         self.pygletKeys = pyglet.window.key.KeyStateHandler()
         self.push_handlers(self.pygletKeys)
@@ -255,7 +227,7 @@ class IOApplication(pyglet.window.Window):
         return self.height // self.cellHeight
 
 
-    def initBackground(self, maxx, maxy, bgcol):
+    def _initBackground(self, maxx, maxy, bgcol):
         vertCoords = []
         for y in xrange(maxy):
             for x in xrange(maxx):
@@ -265,7 +237,7 @@ class IOApplication(pyglet.window.Window):
             ('v2f', vertCoords),
             ('c3B', bgcol * 4 * maxx * maxy))
 
-    def initForeground(self, maxx, maxy, fgcol):
+    def _initForeground(self, maxx, maxy, fgcol):
         vertCoords = []
         for y in xrange(maxy):
             for x in xrange(maxx):

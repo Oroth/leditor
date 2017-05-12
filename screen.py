@@ -3,7 +3,7 @@ import iop
 
 class Cell(fo.FuncObject):
     def __init__(self, character=' ', characterReference = 0, lineItemNodeRef=None,
-                 bgColour=iop.defaultBG(), fgColour=iop.defaultFG()):
+                 bgColour=iop.defaultBG, fgColour=iop.defaultFG):
         self.character = character
         self.characterReference = characterReference
         self.lineItemNodeReference = lineItemNodeRef
@@ -22,7 +22,7 @@ class Cell(fo.FuncObject):
     def __eq__(self, other):
         return self._key() == other._key()
 
-def createBlank(maxx, maxy, bgColour=iop.defaultBG(), fgColour=iop.defaultFG()):
+def createBlank(maxx, maxy, bgColour=iop.defaultBG, fgColour=iop.defaultFG):
     return [[Cell(bgColour=bgColour, fgColour=fgColour) for x in xrange(0, maxx)] for y in xrange(0, maxy)]
 
 
@@ -82,7 +82,7 @@ def createImageFromStringList(lst, maxx, maxy):
 
     return image
 
-def stringToImage(text, maxx, maxy, bgCol=iop.defaultBG(), fgCol=iop.defaultFG()):
+def stringToImage(text, maxx, maxy, bgCol=iop.defaultBG, fgCol=iop.defaultFG):
     image = createBlank(maxx, maxy)
 
     if len(text) > 0:

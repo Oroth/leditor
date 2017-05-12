@@ -10,12 +10,8 @@ pyglet.have_avbin=True
 
 white = Colour(255, 255, 255)
 black = Colour(0, 0, 0)
-
-def defaultBG():
-    return black
-
-def defaultFG():
-    return white
+defaultBG = black
+defaultFG = white
 
 import screen
 
@@ -32,9 +28,8 @@ darker_green = Colour(0,127,0)
 darker_sky = Colour(0,95,127)
 
 
-
 class Application(IOApplication):
-    def __init__(self, screenCols, screenRows, bgcol=black, fgcol=white):
+    def __init__(self, screenCols, screenRows, bgcol=defaultBG, fgcol=defaultFG):
         super(Application, self).__init__(screenCols, screenRows, bgcol, fgcol)
 
         pyglet.options['audio'] = ('directsound', 'silent')
