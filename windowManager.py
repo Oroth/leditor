@@ -43,10 +43,6 @@ class Window(fo.FuncObject):
         self.persist = ['editorList']
 
     def setPosition(self, newPosx, newPosy, newMaxx, newMaxy):
-        #self.posx, self.posy = newPosx, newPosy
-        #self.maxx, self.maxy = newMaxx, newMaxy
-        #return self
-
         return self.updateList(
             ('posx', newPosx),
             ('posy', newPosy),
