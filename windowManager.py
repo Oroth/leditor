@@ -1,12 +1,11 @@
-from window import Window
-import window
-
 __author__ = 'chephren'
 import tn
 import buffer
 import reader
 import screen
 import CodeEditor
+from window import Window
+import window
 from cmdBar import CmdBar
 import os.path
 import iop
@@ -14,12 +13,11 @@ from iop import Key
 import funobj as fo
 import eval
 import leditor_exceptions as ex
-from tn import cons
 import cmdList
 
 
-def syncWindowsToEditorList(winTree, newEditorList):
-    return winTree.mapRoot(lambda node: node.syncWithEditorList(newEditorList))
+def syncWindowsToEditorList(windowList, newEditorList):
+    return windowList.mapRoot(lambda node: node.syncWithEditorList(newEditorList))
 
 def syncEditorsToImage(editorList, newImage):
     return editorList.mapRoot(lambda node: node.syncWithImage(newImage))
@@ -40,22 +38,21 @@ class WindowManager(fo.FuncObject):
             self.editorList = buffer.SimpleBuffer.fromPyExp(startEditor, [0, 0])
 
             startWindow = Window(self.editorList, 0, 0, app.screenCols, app.screenHeight)
-            self.winTree = buffer.SimpleBuffer.fromPyExp(startWindow, [0, 0])
+            self.windowList = buffer.SimpleBuffer.fromPyExp(startWindow, [0, 0])
             self.imageFileName = imageFileName
 
         else:
             self.ImageRoot = None
             self.hist = None
             self.editorList = None
-            self.winTree = None
+            self.windowList = None
             self.imageFileName = None
 
         self.app = app
         self.winCmd = False
         self.cmdBar = None
         self.message = None
-
-        self.persist = ['editorList', 'winTree']
+        self.persist = ['editorList', 'windowList']
 
         self.wincl = cmdList.CmdList([
             (Key.c('j'), cmdWinDown),
@@ -66,7 +63,6 @@ class WindowManager(fo.FuncObject):
             (Key.c('>'), cmdOpenWinInspectProc),
             (Key.vk(iop.KEY_SPACE), cmdRunProg),
             (Key.vk(iop.KEY_ENTER), cmdOpenWinOnCursor),
-            #(Key.vk(iop.KEY_F5), 'cmdWinUp'),
             (Key.vk(iop.KEY_F10), cmdToggleFullscreen),
             (Key.vk(iop.KEY_ESCAPE), cmdExitWinMode)
         ])
@@ -109,7 +105,7 @@ class WindowManager(fo.FuncObject):
 
 
     def getWinCount(self):
-        return self.winTree.length()
+        return self.windowList.length()
 
     def getWMSettings(self):
         editorList = [e.getEditorSettings() for e in self.editorList.toPyExp()]
@@ -120,12 +116,12 @@ class WindowManager(fo.FuncObject):
 
 
     def getEditSexp(self):
-        curWin = self.winTree.getCurrent()
-        curEd = curWin.getEditor()
+        curWin = self.windowList.getCurrent()
+        curEd = curWin.editor
         return curEd.getEditorSettings()
 
     def curWin(self):
-        return self.winTree.getCurrent()
+        return self.windowList.getCurrent()
 
     def writeEditor(self):
         print self.getWMSettings()
@@ -166,7 +162,7 @@ class WindowManager(fo.FuncObject):
     def calculateWindowPositions(self):
         maxX = self.app.screenCols
         curY = 0
-        wins = self.winTree.length()
+        wins = self.windowList.length()
 
         screenForWins = self.app.screenRows - 1 #- numberOfBorders
         minYStep = screenForWins / wins
@@ -174,9 +170,9 @@ class WindowManager(fo.FuncObject):
 
 
         editorTNodeList = self.editorList.root
-        windowTNodeList = self.winTree.root
+        windowTNodeList = self.windowList.root
 
-        for winPos, winNode in enumerate(self.winTree.first()):
+        for winPos, winNode in enumerate(self.windowList.first()):
             if leftover > 0:
                 curYStep = minYStep + 1
                 leftover -= 1
@@ -194,9 +190,9 @@ class WindowManager(fo.FuncObject):
 
             editorTNodeList = tn.replaceAdd(editorTNodeList, editorAdd, newEditor)
 
-        newWinTree = self.winTree.syncToNewRoot(windowTNodeList)
+        newwindowList = self.windowList.syncToNewRoot(windowTNodeList)
         self.editorList = buffer.SimpleBuffer(editorTNodeList)
-        self.winTree = syncWindowsToEditorList(newWinTree, self.editorList)
+        self.windowList = syncWindowsToEditorList(newwindowList, self.editorList)
 
 
     def calculateMsg(self):
@@ -217,13 +213,13 @@ class WindowManager(fo.FuncObject):
         self.calculateWindowPositions()
         maxX = self.app.screenCols
         curY = 0
-        wins = self.winTree.length()
+        wins = self.windowList.length()
 
         screenForWins = self.app.screenRows - 1  # leave space for cmd bar
         minYStep = screenForWins / wins
         leftover = screenForWins % wins
 
-        for winNode in self.winTree.first():
+        for winNode in self.windowList.first():
             window = winNode.child
             if leftover > 0:
                 curYStep = minYStep + 1
@@ -231,7 +227,7 @@ class WindowManager(fo.FuncObject):
             else:
                 curYStep = minYStep
 
-            if winNode == self.winTree.cursor:
+            if winNode == self.windowList.cursor:
                 winImage = window.draw(0, curY, maxX, curYStep, True)
             else:
                 winImage = window.draw(0, curY, maxX, curYStep, False)
@@ -252,7 +248,7 @@ class WindowManager(fo.FuncObject):
             return True if win.posx <= x < win.posx + win.maxx and win.posy <= y < win.posy + win.maxy -1 \
                 else False
 
-        return self.winTree.findFirst(matchWin)
+        return self.windowList.findFirst(matchWin)
 
     # not sure if this is conceptually the right way to go about doing this, but once we've collect all the
     # updates in a newWindowList then this function unpicks it all to get at the various level of changes:
@@ -267,7 +263,7 @@ class WindowManager(fo.FuncObject):
             newImage = newEditor.buffer.root
             self.ImageRoot = newImage
             if newEditor.updateUndo:
-                self.hist = cons(self.ImageRoot.child, self.hist)
+                self.hist = tn.cons(self.ImageRoot.child, self.hist)
 
             syncedEditorList = syncEditorsToImage(newEditorList, newImage)
         else:
@@ -275,25 +271,25 @@ class WindowManager(fo.FuncObject):
 
         return self.updateList(
             ('editorList', syncedEditorList),
-            ('winTree', syncWindowsToEditorList(newWinList, syncedEditorList)))
+            ('windowList', syncWindowsToEditorList(newWinList, syncedEditorList)))
 
     def loadNewImage(self, newImage):
         syncedEditorList = syncEditorsToImage(self.editorList, newImage)
-        syncedWindowList = syncWindowsToEditorList(self.winTree, syncedEditorList)
+        syncedWindowList = syncWindowsToEditorList(self.windowList, syncedEditorList)
 
         return self.updateList(
             ('ImageRoot', newImage),
             ('hist', newImage),
             ('editorList', syncedEditorList),
-            ('winTree', syncedWindowList))
+            ('windowList', syncedWindowList))
 
 
     def addWindow(self, newWindow):
-        newWinList = self.winTree.appendAtCursor(newWindow).curNext()
+        newWinList = self.windowList.appendAtCursor(newWindow).curNext()
         return self.integrateUpdatedWindowList(newWinList)
 
     def replaceWindow(self, newWindow):
-        newWinList = self.winTree.replaceAtCursor(newWindow)
+        newWinList = self.windowList.replaceAtCursor(newWindow)
         return self.integrateUpdatedWindowList(newWinList)
 
 
@@ -329,13 +325,13 @@ class WindowManager(fo.FuncObject):
 
     def handleMouse(self, mouse):
         try:
-            newWinTree = self.matchWindowToClick(mouse.x, mouse.y)
+            newwindowList = self.matchWindowToClick(mouse.x, mouse.y)
         except ValueError:
             return self
         else:
-            resultWin = newWinTree.getCurrent().handleMouse(mouse)
-            newWinTree2 = newWinTree.replaceAtCursor(resultWin)
-            return self.update('winTree', newWinTree2)
+            resultWin = newwindowList.getCurrent().handleMouse(mouse)
+            newwindowList2 = newwindowList.replaceAtCursor(resultWin)
+            return self.update('windowList', newwindowList2)
 
 
     def handleKeys(self, key):
@@ -356,13 +352,20 @@ class WindowManager(fo.FuncObject):
 
         else:
             resultWin = self.curWin().handleKeys(key)
-            resultEd = resultWin.getEditor()
+            resultEd = resultWin.editor
 
             if resultEd == 'UNDO':
                 return cmdUndo(self)
 
             else:
                 return self.replaceWindow(resultWin)
+
+
+    def loadEditorSettingsFromPyExp(self, pyExp):
+        root = tn.TNode(tn.createTNodeExpFromPyExp(pyExp))
+        newBuff = buffer.BufferSexp(root)
+
+        return eval.eval(newBuff)
 
     def cmdWriteAll(self):
         self.cmdWriteImageTS()
@@ -374,7 +377,7 @@ class WindowManager(fo.FuncObject):
         # bit of a hack, but basically change the persistence definition at save time as currently difficult to
         # retain with the way objects are set up.
         self.editorList.persist.append('root')
-        self.winTree.persist.append('root')
+        self.windowList.persist.append('root')
         pyObj = self.serialise()
         text = reader.to_string(pyObj)
         reader.writeLatestFile('filefs/', 'EditorSettings', text)
@@ -402,14 +405,7 @@ class WindowManager(fo.FuncObject):
         imageRoot = tn.createTNodeExpFromPyNumberedExp(pyImage)
     
         return self.loadNewImage(imageRoot)
-    
-    def loadEditorSettingsFromPyExp(self, pyExp):
-        root = tn.TNode(tn.createTNodeExpFromPyExp(pyExp))
-        newBuff = buffer.BufferSexp(root)
-    
-        return eval.eval(newBuff)
-    
-    
+
     def cmdLoadEditorSettings(self):
         pyEditorLoad = reader.readLatestFile('filefs/')
         newWM = self.loadEditorSettingsFromPyExp(pyEditorLoad)
@@ -422,26 +418,26 @@ class WindowManager(fo.FuncObject):
 
 def cmdWinDown(wm):
     try:
-        return wm.update('winTree', wm.winTree.curNext())
+        return wm.update('windowList', wm.windowList.curNext())
     except ValueError:
         return wm
 
 def cmdWinUp(wm):
     try:
-        return wm.update('winTree', wm.winTree.curPrev())
+        return wm.update('windowList', wm.windowList.curPrev())
     except ValueError:
 
         return wm
 
 def cmdWinDel(wm):
-    if wm.winTree.length() > 1:
-        return wm.update('winTree', wm.winTree.deleteAtCursor())
+    if wm.windowList.length() > 1:
+        return wm.update('windowList', wm.windowList.deleteAtCursor())
     else:
         return wm
 
 def cmdWinSplit(wm):
-    curWin = wm.winTree.getCurrent()
-    newEd = curWin.getEditor().clone()
+    curWin = wm.curWin()
+    newEd = curWin.editor.clone()
     newWin = curWin.addEditor(newEd)
     return wm.addWindow(newWin)
 
@@ -454,11 +450,11 @@ def cmdUndo(wm):
 
         return wm.updateList(
             ('editorList', syncedEditorList),
-            ('winTree', syncWindowsToEditorList(wm.winTree, syncedEditorList)))
+            ('windowList', syncWindowsToEditorList(wm.windowList, syncedEditorList)))
 
 def cmdWinNext(wm):
     return wm.updateList(
-        ('winTree', wm.winTree.curCycle()),
+        ('windowList', wm.windowList.curCycle()),
         ('winCmd', False))
 
 def cmdRunProg(wm):
@@ -472,11 +468,6 @@ def cmdOpenWinInspectProc(wm):
         return wm.addWindow(window.cmdInspectProcedureCall2(wm.curWin()))
     except ex.UnappliedProcedureException:
         return wm
-
-# elif key.code == iop.KEY_F5:
-#     wm.winCmd = False
-#     #return wm.replaceWindow(curWin.cmdRunProg())
-#     return wm.addWindow(curWin.cmdInspectProcedureCall(["abc"]))
 
 def cmdExitWinMode(wm):
     return wm.update('winCmd', False)

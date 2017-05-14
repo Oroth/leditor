@@ -1,4 +1,3 @@
-import iop
 import funobj as fo
 
 class CmdList(fo.FuncObject):
@@ -12,10 +11,6 @@ class CmdList(fo.FuncObject):
         if key in self.dict:
             cmd = self.dict[key]
             return cmd(caller)
-
-            # if hasattr(caller, cmdName):
-            #     cmd = getattr(caller, cmdName)
-            #     return cmd()
 
         return False
 

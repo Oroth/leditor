@@ -33,7 +33,6 @@ class Window(fo.FuncObject):
         ])
 
         self.message = None
-
         self.persist = ['editorList']
 
     def setPosition(self, newPosx, newPosy, newMaxx, newMaxy):
@@ -45,10 +44,10 @@ class Window(fo.FuncObject):
 
 
     def draw(self, posx, posy, maxx, maxy, isActive):
-        return self.getEditor().draw(maxx, maxy, isActive)
+        return self.editor.draw(maxx, maxy, isActive)
 
-
-    def getEditor(self):
+    @property
+    def editor(self):
         return self.editorList.cursor.child
 
     def addEditor(self, newEd):
@@ -66,7 +65,7 @@ class Window(fo.FuncObject):
 
     def handleMouse(self, mouse):
         relativePositionMouse = mouse.getMouseWithRelativePosition(self.posx, self.posy)
-        newEditor = self.getEditor().handleMouse(relativePositionMouse)
+        newEditor = self.editor.handleMouse(relativePositionMouse)
         return self.update('editorList', self.editorList.replaceAtCursor(newEditor))
 
 
@@ -91,7 +90,7 @@ class Window(fo.FuncObject):
                 ('message', "--Buffer Command--"))
 
         else:
-            newEditor = self.getEditor().handleKeys(key)
+            newEditor = self.editor.handleKeys(key)
             return self.updateList(
                 ('editorList', self.editorList.replaceAtCursor(newEditor)))
 
@@ -121,7 +120,7 @@ def cmdNewRepl(window):
 
 
 def cmdNewEditorOnCursor(window):
-    newEd = window.getEditor().clone()
+    newEd = window.editor().clone()
     newEd2 = newEd.update('buffer', newEd.buffer.viewToCursor())
 
     return window.update('editorList', window.editorList.appendAtCursor(newEd2).curNext())
@@ -134,8 +133,8 @@ def cmdInspectProcedureCall(window):
 
 
 def cmdInspectProcedureCall2(window, proc=None, args=None):
-    curEd = window.getEditor()
-    procedure = window.getEditor().buffer.cursor if proc is None else proc
+    curEd = window.editor()
+    procedure = window.editor().buffer.cursor if proc is None else proc
 
     if args is None:
         procValue = curEd.getNodeValue(procedure.child)
@@ -159,7 +158,7 @@ def cmdInspectProcedureCall2(window, proc=None, args=None):
 
 
 def cmdEditorDisplayHelp(window):
-    curEd = window.getEditor()
+    curEd = window.editor
 
     rootObj = curEd.getNodeValue(curEd.buffer.root)
     helpResult = rootObj.call(reader.Symbol('help')).call("all")
@@ -171,9 +170,10 @@ def cmdEditorDisplayHelp(window):
     return window.update('editorList', window.editorList.appendAtCursor(newEd).curNext())
 
 def cmdEditorRunProg(window):
-    curEd = window.getEditor()
+    curEd = window.editor
     imageRoot = curEd.buffer.root
     evalBuffer = buffer.BufferSexp(imageRoot, curEd.buffer.rootToCursorAdd())
+    #evalBuffer = curEd.buffer.viewToCursor()
 
     #procedure = window.getEditor().buffer.cursor
     #procValue = curEd.getNodeValue(procedure.child)
@@ -186,7 +186,7 @@ def cmdEditorRunProg(window):
     return window.update('editorList', newEditorList)
 
 def cmdRunEditorObj(window):
-    curEd = window.getEditor()
+    curEd = window.editor
     imageRoot = curEd.buffer.root
     evalBuffer = buffer.BufferSexp(imageRoot, curEd.buffer.rootToCursorAdd())
     prog = lispObjEditor.LispObjEditor(eval.eval(evalBuffer))
