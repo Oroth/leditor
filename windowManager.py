@@ -37,7 +37,7 @@ class WindowManager(fo.FuncObject):
             startEditor = self.createListEdFromEditorSettings(imageRoot, "EditorSettings")
             self.editorList = buffer.SimpleBuffer.fromPyExp(startEditor, [0, 0])
 
-            startWindow = Window(self.editorList, 0, 0, app.screenCols, app.screenHeight)
+            startWindow = window.StdWindow(self.editorList, 0, 0, app.screenCols, app.screenHeight)
             self.windowList = buffer.SimpleBuffer.fromPyExp(startWindow, [0, 0])
             self.imageFileName = imageFileName
 

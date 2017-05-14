@@ -19,18 +19,6 @@ class Window(fo.FuncObject):
         self.posx, self.posy = x, y
         self.maxx, self.maxy = width, height
         self.editorList = editorList
-        self.editorCmd = False
-
-        self.editModeCL = cmdList.CmdList([
-            (Key.c('l'), cmdEditorNext),
-            (Key.c('h'), cmdEditorPrev),
-            (Key.c('d'), cmdEditorDel),
-            (Key.c('>'), cmdInspectProcedureCall),
-            (Key.c('?'), cmdEditorDisplayHelp),
-            (Key.c('r'), cmdRunEditorObj),
-            (Key.vk(iop.KEY_SPACE), cmdEditorRunProg),
-            (Key.vk(iop.KEY_ENTER), cmdNewEditorOnCursor)
-        ])
 
         self.message = None
         self.persist = ['editorList']
@@ -41,7 +29,6 @@ class Window(fo.FuncObject):
             ('posy', newPosy),
             ('maxx', newMaxx),
             ('maxy', newMaxy))
-
 
     def draw(self, posx, posy, maxx, maxy, isActive):
         return self.editor.draw(maxx, maxy, isActive)
@@ -68,6 +55,26 @@ class Window(fo.FuncObject):
         newEditor = self.editor.handleMouse(relativePositionMouse)
         return self.update('editorList', self.editorList.replaceAtCursor(newEditor))
 
+    def handleKeys(self, key):
+        newEditor = self.editor.handleKeys(key)
+        return self.updateList(
+            ('editorList', self.editorList.replaceAtCursor(newEditor)))
+
+
+class StdWindow(Window):
+    def __init__(self, *args, **kargs):
+        super(StdWindow, self).__init__(*args, **kargs)
+        self.editorCmd = False
+        self.editModeCL = cmdList.CmdList([
+            (Key.c('l'), cmdEditorNext),
+            (Key.c('h'), cmdEditorPrev),
+            (Key.c('d'), cmdEditorDel),
+            (Key.c('>'), cmdInspectProcedureCall),
+            (Key.c('?'), cmdEditorDisplayHelp),
+            (Key.c('r'), cmdRunEditorObj),
+            (Key.vk(iop.KEY_SPACE), cmdEditorRunProg),
+            (Key.vk(iop.KEY_ENTER), cmdNewEditorOnCursor)
+        ])
 
     def handleKeys(self, key):
         if self.editorCmd:
@@ -90,11 +97,7 @@ class Window(fo.FuncObject):
                 ('message', "--Buffer Command--"))
 
         else:
-            newEditor = self.editor.handleKeys(key)
-            return self.updateList(
-                ('editorList', self.editorList.replaceAtCursor(newEditor)))
-
-
+            return super(StdWindow, self).handleKeys(key)
 
 
 def cmdNewScreenEditor(window):
