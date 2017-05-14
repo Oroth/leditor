@@ -35,12 +35,28 @@ class IntAtom(EditorAtom):
 class Editor(fo.FuncObject):
     def __init__(self):
         self.statusBar = StatusBar()
+        self.maxx = 125
+        self.maxy = 75
+        self.image = screen.createBlank(self.maxx, self.maxy)
 
     def syncWithImage(self, newImage):
         return self
 
     def isRootImageEditor(self):
         return False
+
+    def updateSize(self, newMaxx, newMaxy):
+        if (self.maxx, self.maxy) != (newMaxx, newMaxy):
+            return self.updateList(
+                ('maxx', newMaxx),
+                ('maxy', newMaxy),
+                ('image', screen.createBlank(newMaxx, newMaxy)))
+
+        else:
+            return self
+
+    #def updateImage(self):
+    #   newImage = screen.createBlank(maxx, maxy)
 
     def draw(self, maxx, maxy, isActive):
         return screen.createBlank(maxx, maxy)
