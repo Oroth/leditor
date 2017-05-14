@@ -10,11 +10,12 @@ class CmdList(fo.FuncObject):
 
     def process(self, key, caller):
         if key in self.dict:
-            cmdName = self.dict[key]
+            cmd = self.dict[key]
+            return cmd(caller)
 
-            if hasattr(caller, cmdName):
-                cmd = getattr(caller, cmdName)
-                return cmd()
+            # if hasattr(caller, cmdName):
+            #     cmd = getattr(caller, cmdName)
+            #     return cmd()
 
         return False
 

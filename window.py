@@ -22,14 +22,14 @@ class Window(fo.FuncObject):
         self.editorCmd = False
 
         self.editModeCL = cmdList.CmdList([
-            (Key.c('l'), 'cmdEditorNext'),
-            (Key.c('h'), 'cmdEditorPrev'),
-            (Key.c('d'), 'cmdEditorDel'),
-            (Key.c('>'), 'cmdInspectProcedureCall'),
-            (Key.c('?'), 'cmdEditorDisplayHelp'),
-            (Key.c('r'), 'cmdRunEditorObj'),
-            (Key.vk(iop.KEY_SPACE), 'cmdEditorRunProg'),
-            (Key.vk(iop.KEY_ENTER), 'cmdNewEditorOnCursor')
+            (Key.c('l'), cmdEditorNext),
+            (Key.c('h'), cmdEditorPrev),
+            (Key.c('d'), cmdEditorDel),
+            (Key.c('>'), cmdInspectProcedureCall),
+            (Key.c('?'), cmdEditorDisplayHelp),
+            (Key.c('r'), cmdRunEditorObj),
+            (Key.vk(iop.KEY_SPACE), cmdEditorRunProg),
+            (Key.vk(iop.KEY_ENTER), cmdNewEditorOnCursor)
         ])
 
         self.message = None
@@ -97,114 +97,115 @@ class Window(fo.FuncObject):
 
 
 
-    def cmdNewScreenEditor(self):
-        newEd = screenEditor.ScreenEditor(self.maxx, self.maxy)
-        return self.update('editorList', self.editorList.appendAtCursor(newEd).curNext())
+
+def cmdNewScreenEditor(window):
+    newEd = screenEditor.ScreenEditor(window.maxx, window.maxy)
+    return window.update('editorList', window.editorList.appendAtCursor(newEd).curNext())
 
 
-    def cmdNewFileEditor(self):
-        newEd = fileEditor.FileEditor.fromPath('./')
-        return self.update('editorList', self.editorList.appendAtCursor(newEd).curNext())
+def cmdNewFileEditor(window):
+    newEd = fileEditor.FileEditor.fromPath('./')
+    return window.update('editorList', window.editorList.appendAtCursor(newEd).curNext())
 
 
-    def cmdNewPager(self):
-        file, pathList = self.editorList.getCurrent().buffer.getNVSListAtCursor()
-        pathText = '.\\' + '\\'.join(pathList)
-        newEd = pager.Pager.fromFile(pathText)
+def cmdNewPager(window):
+    file, pathList = window.editorList.getCurrent().buffer.getNVSListAtCursor()
+    pathText = '.\\' + '\\'.join(pathList)
+    newEd = pager.Pager.fromFile(pathText)
 
-        return self.update('editorList', self.editorList.appendAtCursor(newEd).curNext())
+    return window.update('editorList', window.editorList.appendAtCursor(newEd).curNext())
 
-    def cmdNewRepl(self):
-        newEd = repl.Repl()
-        return self.update('editorList', self.editorList.appendAtCursor(newEd).curNext())
-
-
-    def cmdNewEditorOnCursor(self):
-        newEd = self.getEditor().clone()
-        newEd2 = newEd.update('buffer', newEd.buffer.viewToCursor())
-
-        return self.update('editorList', self.editorList.appendAtCursor(newEd2).curNext())
-
-    def cmdInspectProcedureCall(self):
-        try:
-            return self.cmdInspectProcedureCall2()
-        except ex.UnappliedProcedureException:
-            return self
+def cmdNewRepl(window):
+    newEd = repl.Repl()
+    return window.update('editorList', window.editorList.appendAtCursor(newEd).curNext())
 
 
-    def cmdInspectProcedureCall2(self, proc=None, args=None):
-        curEd = self.getEditor()
-        procedure = self.getEditor().buffer.cursor if proc is None else proc
+def cmdNewEditorOnCursor(window):
+    newEd = window.getEditor().clone()
+    newEd2 = newEd.update('buffer', newEd.buffer.viewToCursor())
 
+    return window.update('editorList', window.editorList.appendAtCursor(newEd2).curNext())
+
+def cmdInspectProcedureCall(window):
+    try:
+        return window.cmdInspectProcedureCall2()
+    except ex.UnappliedProcedureException:
+        return window
+
+
+def cmdInspectProcedureCall2(window, proc=None, args=None):
+    curEd = window.getEditor()
+    procedure = window.getEditor().buffer.cursor if proc is None else proc
+
+    if args is None:
+        procValue = curEd.getNodeValue(procedure.child)
+    else:
+        procValue = curEd.getNodeValue(procedure)
+
+    if procedure.isSubNode() and hasattr(procValue, 'inspect'):
         if args is None:
-            procValue = curEd.getNodeValue(procedure.child)
+            args2 = [curEd.getNodeValue(node) for node in procedure.child][1:]
         else:
-            procValue = curEd.getNodeValue(procedure)
+            args2 = args
+        newTree, env = procValue.inspect(*args2)
+        newEd = CodeEditor.InspectionEditor(newTree.viewToCursor(),
+                                      zippedNodes=curEd.zippedNodes)
+        newEd.env = env
 
-        if procedure.isSubNode() and hasattr(procValue, 'inspect'):
-            if args is None:
-                args2 = [curEd.getNodeValue(node) for node in procedure.child][1:]
-            else:
-                args2 = args
-            newTree, env = procValue.inspect(*args2)
-            newEd = CodeEditor.InspectionEditor(newTree.viewToCursor(),
-                                          zippedNodes=curEd.zippedNodes)
-            newEd.env = env
+        return window.update('editorList', window.editorList.appendAtCursor(newEd).curNext())
 
-            return self.update('editorList', self.editorList.appendAtCursor(newEd).curNext())
-
-        else:
-            raise ex.UnappliedProcedureException(procValue)
+    else:
+        raise ex.UnappliedProcedureException(procValue)
 
 
-    def cmdEditorDisplayHelp(self):
-        curEd = self.getEditor()
+def cmdEditorDisplayHelp(window):
+    curEd = window.getEditor()
 
-        rootObj = curEd.getNodeValue(curEd.buffer.root)
-        helpResult = rootObj.call(reader.Symbol('help')).call("all")
-        newBuff = rootObj.updateVarSource('evalBuffer', helpResult)
-        newEd = CodeEditor.CodeEditor(newBuff.viewToCursor())
-        newEd.printingMode = 'vertical'
-        newEd.evalCursorMode = 'disabled'
+    rootObj = curEd.getNodeValue(curEd.buffer.root)
+    helpResult = rootObj.call(reader.Symbol('help')).call("all")
+    newBuff = rootObj.updateVarSource('evalBuffer', helpResult)
+    newEd = CodeEditor.CodeEditor(newBuff.viewToCursor())
+    newEd.printingMode = 'vertical'
+    newEd.evalCursorMode = 'disabled'
 
-        return self.update('editorList', self.editorList.appendAtCursor(newEd).curNext())
+    return window.update('editorList', window.editorList.appendAtCursor(newEd).curNext())
 
-    def cmdEditorRunProg(self):
-        curEd = self.getEditor()
-        imageRoot = curEd.buffer.root
-        evalBuffer = buffer.BufferSexp(imageRoot, curEd.buffer.rootToCursorAdd())
+def cmdEditorRunProg(window):
+    curEd = window.getEditor()
+    imageRoot = curEd.buffer.root
+    evalBuffer = buffer.BufferSexp(imageRoot, curEd.buffer.rootToCursorAdd())
 
-        #procedure = self.getEditor().buffer.cursor
-        #procValue = curEd.getNodeValue(procedure.child)
-        #newTree, env = procValue.inspect(*args2)
-        #newEd = CodeEditor.InspectionEditor(newTree.root, newTree.rootToCursorAdd())
+    #procedure = window.getEditor().buffer.cursor
+    #procValue = curEd.getNodeValue(procedure.child)
+    #newTree, env = procValue.inspect(*args2)
+    #newEd = CodeEditor.InspectionEditor(newTree.root, newTree.rootToCursorAdd())
 
-        prog = CodeEditor.evalIOHandler(evalBuffer)
-        newEditorList =  self.editorList.appendAtCursor(prog).curNext()
+    prog = CodeEditor.evalIOHandler(evalBuffer)
+    newEditorList =  window.editorList.appendAtCursor(prog).curNext()
 
-        return self.update('editorList', newEditorList)
+    return window.update('editorList', newEditorList)
 
-    def cmdRunEditorObj(self):
-        curEd = self.getEditor()
-        imageRoot = curEd.buffer.root
-        evalBuffer = buffer.BufferSexp(imageRoot, curEd.buffer.rootToCursorAdd())
-        prog = lispObjEditor.LispObjEditor(eval.eval(evalBuffer))
+def cmdRunEditorObj(window):
+    curEd = window.getEditor()
+    imageRoot = curEd.buffer.root
+    evalBuffer = buffer.BufferSexp(imageRoot, curEd.buffer.rootToCursorAdd())
+    prog = lispObjEditor.LispObjEditor(eval.eval(evalBuffer))
 
-        newEditorList =  self.editorList.appendAtCursor(prog).curNext()
+    newEditorList =  window.editorList.appendAtCursor(prog).curNext()
 
-        return self.update('editorList', newEditorList)
+    return window.update('editorList', newEditorList)
 
-
-    def cmdEditorNext(self):
-        return self.update('editorList', self.editorList.curCycle())
-
-
-    def cmdEditorPrev(self):
-        return self.update('editorList', self.editorList.curCyclePrev())
+def cmdEditorNext(window):
+    return window.update('editorList', window.editorList.curCycle())
 
 
-    def cmdEditorDel(self):
-        if self.editorList.length() > 1:
-            return self.update('editorList', self.editorList.deleteAtCursor())
-        else:
-            return self
+def cmdEditorPrev(window):
+    return window.update('editorList', window.editorList.curCyclePrev())
+
+
+def cmdEditorDel(window):
+    if window.editorList.length() > 1:
+        return window.update('editorList', window.editorList.deleteAtCursor())
+    else:
+        return window
+

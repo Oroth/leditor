@@ -1,4 +1,5 @@
 from window import Window
+import window
 
 __author__ = 'chephren'
 import tn
@@ -23,11 +24,6 @@ def syncWindowsToEditorList(winTree, newEditorList):
 def syncEditorsToImage(editorList, newImage):
     return editorList.mapRoot(lambda node: node.syncWithImage(newImage))
 
-
-# class WinEditorList(buffer.SimpleBuffer):
-#     def __init__(self, *args, **kargs):
-#         super(WinEditorList, self).__init__(*args, **kargs)
-#         self.persist = ['cursorAdd']
 
 
 class WindowManager(fo.FuncObject):
@@ -62,39 +58,39 @@ class WindowManager(fo.FuncObject):
         self.persist = ['editorList', 'winTree']
 
         self.wincl = cmdList.CmdList([
-            (Key.c('j'), 'cmdWinDown'),
-            (Key.c('k'), 'cmdWinUp'),
-            (Key.c('d'), 'cmdWinDel'),
-            (Key.c('u'), 'cmdWinUndo'),
-            (Key.c('w'), 'cmdWinNext'),
-            (Key.c('>'), 'cmdOpenWinInspectProc'),
-            (Key.vk(iop.KEY_SPACE), 'cmdRunProg'),
-            (Key.vk(iop.KEY_ENTER), 'cmdOpenWinOnCursor'),
+            (Key.c('j'), cmdWinDown),
+            (Key.c('k'), cmdWinUp),
+            (Key.c('d'), cmdWinDel),
+            #(Key.c('u'), cmdWinUndo),
+            (Key.c('w'), cmdWinNext),
+            (Key.c('>'), cmdOpenWinInspectProc),
+            (Key.vk(iop.KEY_SPACE), cmdRunProg),
+            (Key.vk(iop.KEY_ENTER), cmdOpenWinOnCursor),
             #(Key.vk(iop.KEY_F5), 'cmdWinUp'),
-            (Key.vk(iop.KEY_F10), 'cmdToggleFullscreen'),
-            (Key.vk(iop.KEY_ESCAPE), 'cmdExitWinMode')
+            (Key.vk(iop.KEY_F10), cmdToggleFullscreen),
+            (Key.vk(iop.KEY_ESCAPE), cmdExitWinMode)
         ])
 
         self.mainCl = cmdList.CmdList([
-            (Key.c('w', ctrl=True), 'cmdStartWinMode'),
+            (Key.c('w', ctrl=True), cmdStartWinMode),
             (Key.c('s', ctrl=True), 'cmdSave'),
-            (Key.c(':'), 'cmdStartCmdBar'),
-            (Key.vk(iop.KEY_F5), 'cmdPlayMedia'),
-            (Key.vk(iop.KEY_F9, alt=True), 'cmdScreenEditor'),
-            (Key.vk(iop.KEY_F10, alt=True), 'cmdFileEditor'),
-            (Key.vk(iop.KEY_F11, alt=True), 'cmdTextPager'),
+            (Key.c(':'), cmdStartCmdBar),
+            (Key.vk(iop.KEY_F5), cmdPlayMedia),
+            (Key.vk(iop.KEY_F9, alt=True), cmdScreenEditor),
+            (Key.vk(iop.KEY_F10, alt=True), cmdFileEditor),
+            (Key.vk(iop.KEY_F11, alt=True), cmdTextPager),
         ])
 
 
 
     def getCmdBarEnv(self):
         return eval.Env.fromList([
-            ('screenEditor', self.cmdScreenEditor),
-            ('fileEditor', self.cmdFileEditor),
-            ('repl', self.cmdReplEditor),
-            ('save', self.cmdSave),
-            ('winNext', self.cmdWinNext),
-            ('split', self.cmdWinSplit),
+            ('screenEditor', lambda:cmdScreenEditor(self)),
+            ('fileEditor', lambda:cmdFileEditor(self)),
+            ('repl', lambda:cmdReplEditor(self)),
+            ('save', lambda:cmdSave(self)),
+            ('winNext', lambda:cmdWinNext(self)),
+            ('split', lambda:cmdWinSplit(self)),
             ('we', self.cmdWriteEditorSettingsTS),
             ('le', self.cmdLoadEditorSettings),
             ('wi', self.cmdWriteImageTS),
@@ -212,14 +208,6 @@ class WindowManager(fo.FuncObject):
             return ''
 
     def printToScreen(self, image, posx, posy):
-        # maxy = len(image) - 1
-        # maxx = len(image[0]) - 1
-        #
-        # for x in xrange(maxx):
-        #     for y in xrange(maxy):
-        #         cell = image[y][x]
-        #         self.app.screenPrint(posx + x, posy + y, cell)
-
         for y, col in enumerate(image):
             for x, cell in enumerate(col):
                 self.app.screenPrint(posx + x, posy + y, cell)
@@ -371,119 +359,17 @@ class WindowManager(fo.FuncObject):
             resultEd = resultWin.getEditor()
 
             if resultEd == 'UNDO':
-                return self.cmdUndo()
+                return cmdUndo(self)
 
             else:
                 return self.replaceWindow(resultWin)
-
-
-
-    def cmdWinDown(self):
-        try:
-            return self.update('winTree', self.winTree.curNext())
-        except ValueError:
-            return self
-
-    def cmdWinUp(self):
-        try:
-            return self.update('winTree', self.winTree.curPrev())
-        except ValueError:
-
-            return self
-
-    def cmdWinDel(self):
-        if self.winTree.length() > 1:
-            return self.update('winTree', self.winTree.deleteAtCursor())
-        else:
-            return self
-
-    def cmdWinSplit(self):
-        curWin = self.winTree.getCurrent()
-        newEd = curWin.getEditor().clone()
-        newWin = curWin.addEditor(newEd)
-        return self.addWindow(newWin)
-
-    def cmdUndo(self):
-        if self.hist.next:
-            self.hist = self.hist.next
-            self.ImageRoot = tn.TNode(self.hist.child)
-
-            syncedEditorList = syncEditorsToImage(self.editorList, self.ImageRoot)
-
-            return self.updateList(
-                ('editorList', syncedEditorList),
-                ('winTree', syncWindowsToEditorList(self.winTree, syncedEditorList)))
-
-    def cmdWinNext(self):
-        return self.updateList(
-            ('winTree', self.winTree.curCycle()),
-            ('winCmd', False))
-
-    def cmdRunProg(self):
-        return self.addWindow(self.curWin().cmdEditorRunProg())
-
-    def cmdOpenWinOnCursor(self):
-        return self.addWindow(self.curWin().cmdNewEditorOnCursor())
-
-    def cmdOpenWinInspectProc(self):
-        try:
-            return self.addWindow(self.curWin().cmdInspectProcedureCall2())
-        except ex.UnappliedProcedureException:
-            return self
-
-    # elif key.code == iop.KEY_F5:
-    #     self.winCmd = False
-    #     #return self.replaceWindow(curWin.cmdRunProg())
-    #     return self.addWindow(curWin.cmdInspectProcedureCall(["abc"]))
-
-    def cmdExitWinMode(self):
-        return self.update('winCmd', False)
-
-    def cmdToggleFullscreen(self):
-        print 'fullscreen'
-        iop.toggleFullScreen()
-        return self.update('winCmd', False)
-
-    def cmdPlayMedia(self):
-        self.app.playMedia()
-
-    def cmdSave(self):
-        self.writeImage()
-        self.writeEditor()
-        print "saving"
-        return self.update('message', "Saving Image")
-
-    def cmdStartWinMode(self):
-        return self.updateList(
-            ('message', 'Window Mode'),
-            ('winCmd', True))
-
-    def cmdStartCmdBar(self):
-        return self.update('cmdBar', CmdBar())
-
-    def cmdScreenEditor(self):
-        print "changing to screen mode"
-        return self.replaceWindow(self.curWin().cmdNewScreenEditor())
-
-    def cmdFileEditor(self):
-        print "changing to file edit mode"
-        return self.replaceWindow(self.curWin().cmdNewFileEditor())
-
-    def cmdTextPager(self):
-        print "changing to text paging mode"
-        return self.replaceWindow(self.curWin().cmdNewPager())
-
-    def cmdReplEditor(self):
-        print 'starting repl'
-        return self.replaceWindow(self.curWin().cmdNewRepl())
-
 
     def cmdWriteAll(self):
         self.cmdWriteImageTS()
         self.cmdWriteEditorSettingsTS()
         return self.update('message', "Image and editor settings saved")
-
-
+    
+    
     def cmdWriteEditorSettingsTS(self):
         # bit of a hack, but basically change the persistence definition at save time as currently difficult to
         # retain with the way objects are set up.
@@ -492,46 +378,143 @@ class WindowManager(fo.FuncObject):
         pyObj = self.serialise()
         text = reader.to_string(pyObj)
         reader.writeLatestFile('filefs/', 'EditorSettings', text)
-
+    
         return self.update('message', "Saving Editor settings")
-
+    
     def cmdWriteImageTS(self):
         pyObj = self.ImageRoot.child.toPyNumberedExp()
         text = reader.to_string(pyObj)
         reader.writeLatestFile('imagefs/', 'image', text)
-
+    
         return self.update('message', "Saving Latest Image")
-
+    
     def cmdLoadLatestAll(self):
         pyEditorLoad = reader.readLatestFile('filefs/')
         newWM = self.loadEditorSettingsFromPyExp(pyEditorLoad)
         newWM.app = self.app
         return newWM.cmdLoadLatestImage()
-
+    
     def cmdLoadLatestImage(self):
         pyImageLoad = reader.readLatestFile('imagefs/')
-
+    
         pyImage = [0]
         pyImage.append(pyImageLoad)
         imageRoot = tn.createTNodeExpFromPyNumberedExp(pyImage)
-
+    
         return self.loadNewImage(imageRoot)
-
+    
     def loadEditorSettingsFromPyExp(self, pyExp):
         root = tn.TNode(tn.createTNodeExpFromPyExp(pyExp))
         newBuff = buffer.BufferSexp(root)
-
+    
         return eval.eval(newBuff)
-
-
+    
+    
     def cmdLoadEditorSettings(self):
         pyEditorLoad = reader.readLatestFile('filefs/')
         newWM = self.loadEditorSettingsFromPyExp(pyEditorLoad)
         newWM2 = newWM.loadNewImage(self.ImageRoot)
         return newWM2
 
-        # newEditor = CodeEditor.CodeEditor(newBuff).update('_isRootImageEditor', False)
-        # newWin = self.curWin().addEditor(newEditor)
-        # return self.addWindow(newWin)
 
-        #newEditor = self.createListEdFromEditorSettings(self.ImageRoot, latestFile)
+
+
+
+def cmdWinDown(wm):
+    try:
+        return wm.update('winTree', wm.winTree.curNext())
+    except ValueError:
+        return wm
+
+def cmdWinUp(wm):
+    try:
+        return wm.update('winTree', wm.winTree.curPrev())
+    except ValueError:
+
+        return wm
+
+def cmdWinDel(wm):
+    if wm.winTree.length() > 1:
+        return wm.update('winTree', wm.winTree.deleteAtCursor())
+    else:
+        return wm
+
+def cmdWinSplit(wm):
+    curWin = wm.winTree.getCurrent()
+    newEd = curWin.getEditor().clone()
+    newWin = curWin.addEditor(newEd)
+    return wm.addWindow(newWin)
+
+def cmdUndo(wm):
+    if wm.hist.next:
+        wm.hist = wm.hist.next
+        wm.ImageRoot = tn.TNode(wm.hist.child)
+
+        syncedEditorList = syncEditorsToImage(wm.editorList, wm.ImageRoot)
+
+        return wm.updateList(
+            ('editorList', syncedEditorList),
+            ('winTree', syncWindowsToEditorList(wm.winTree, syncedEditorList)))
+
+def cmdWinNext(wm):
+    return wm.updateList(
+        ('winTree', wm.winTree.curCycle()),
+        ('winCmd', False))
+
+def cmdRunProg(wm):
+    return wm.addWindow(window.cmdEditorRunProg(wm.curWin()))
+
+def cmdOpenWinOnCursor(wm):
+    return wm.addWindow(window.cmdNewEditorOnCursor(wm.curWin()))
+
+def cmdOpenWinInspectProc(wm):
+    try:
+        return wm.addWindow(window.cmdInspectProcedureCall2(wm.curWin()))
+    except ex.UnappliedProcedureException:
+        return wm
+
+# elif key.code == iop.KEY_F5:
+#     wm.winCmd = False
+#     #return wm.replaceWindow(curWin.cmdRunProg())
+#     return wm.addWindow(curWin.cmdInspectProcedureCall(["abc"]))
+
+def cmdExitWinMode(wm):
+    return wm.update('winCmd', False)
+
+def cmdToggleFullscreen(wm):
+    print 'fullscreen'
+    iop.toggleFullScreen()
+    return wm.update('winCmd', False)
+
+def cmdPlayMedia(wm):
+    wm.app.playMedia()
+
+def cmdSave(wm):
+    wm.writeImage()
+    wm.writeEditor()
+    print "saving"
+    return wm.update('message', "Saving Image")
+
+def cmdStartWinMode(wm):
+    return wm.updateList(
+        ('message', 'Window Mode'),
+        ('winCmd', True))
+
+def cmdStartCmdBar(wm):
+    return wm.update('cmdBar', CmdBar())
+
+def cmdScreenEditor(wm):
+    print "changing to screen mode"
+    return wm.replaceWindow(window.cmdNewScreenEditor(wm.curWin()))
+
+def cmdFileEditor(wm):
+    print "changing to file edit mode"
+    return wm.replaceWindow(window.cmdNewFileEditor(wm.curWin()))
+
+def cmdTextPager(wm):
+    print "changing to text paging mode"
+    return wm.replaceWindow(window.cmdNewPager(wm.curWin()))
+
+def cmdReplEditor(wm):
+    print 'starting repl'
+    return wm.replaceWindow(window.cmdNewRepl(wm.curWin()))

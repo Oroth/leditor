@@ -94,8 +94,6 @@ class LineList(list, fo.FuncObject):
                 elif newBottomLine is not None:
                     break
 
-        print 'tb', newTopLine, newBottomLine
-
         return self.updateList(
             ('cursorAdd', add),
             ('cursorTopLine', newTopLine),
