@@ -201,8 +201,7 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive, indentWidth
     hlcol = colScheme.activeHiCol if isActive else colScheme.idleHiCol
     prevLine = None
     y = 0
-    #curx, cury = 0, 0
-    curx, cury = None, None
+    cursorx, cursory = None, None
 
 
     for line in lineList[:winHeight]:
@@ -222,9 +221,9 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive, indentWidth
             if cursorMatch(lineList.cursorAdd, item.nodeAddress):
             #if item.isCursor:
                 #if not prevItem or not prevItem.isCursor:
-                if curx is None:
-                    curx = x
-                cury = y
+                if cursorx is None:
+                    cursorx = x
+                cursory = y
 
             drawItem(item, prevItem, colScheme, hlcol, image, x, y, winWidth, winHeight, lineList.cursorAdd)
             x += len(item.nodeToString())
@@ -233,7 +232,7 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive, indentWidth
 
         y += 1
 
-    return image, curx, cury
+    return image, cursorx, cursory
 
 
 def makeLineIndentList(editor, winWidth, winHeight):
@@ -452,7 +451,7 @@ def makeLineIndentList(editor, winWidth, winHeight):
         lines = [LineNode(0, 0)]
         cursorTopLine = None
         cursorBottomLine = None
-        newTopLine = editor.topLine
+        #newTopLine = editor.topLine
 
         for node in stream:
             currentLineNumber = len(lines)

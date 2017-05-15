@@ -289,68 +289,45 @@ class TreeEditor(DisplayEditor):
         self.statusBar.updateStatus([self.statusDescription, self.buffer.viewAdd, self.buffer.cursorAdd,
                              Symbol('nodeID'), self.buffer.cursor.nodeID])
 
-    def updateBuffer(self, newBuffer):
-        newEditor = self.update('buffer', newBuffer)
-        return newEditor.updateImage()
-
     def updateSize(self, newMaxx, newMaxy):
         if (self.maxx, self.maxy) != (newMaxx, newMaxy):
-            self.maxx = newMaxx
-            self.maxy = newMaxy
+            newEditor = self.updateList(
+                ('maxx', newMaxx),
+                ('maxy', newMaxy))
 
-            return self.updateImage()
+            return newEditor.refreshImage()
         else:
             return self
 
+    def updateBuffer(self, newBuffer):
+        newEditor = self.update('buffer', newBuffer)
+        return newEditor.refreshImage()
+
+    def refreshImage(self):
+        lineList = printsexp.makeLineIndentList(self, self.maxx, self.maxy)
+        return self.updateLineList(lineList)
+
     def updateLineList(self, newLineList):
-        newTopLine = printsexp.getTopLine(newLineList, self.topLine, self.maxy-1)
-        toppedLineList = newLineList[newTopLine:]
+        newEditor = self.update('lineList', newLineList)
+        return newEditor.updateToppedLineList(self.topLine)
 
-        isActive = True
-        image, self.cursorx, self.cursory = \
-            printsexp.drawLineList(
-                toppedLineList, self.maxx, self.maxy, self.colourScheme, isActive, self.indentWidth)
-
-        return self.updateList(
-            ('image', image),
-            ('topLine', newTopLine),
-            ('lineList', newLineList))
-
-
-    #def updateWrappedLineList(self, maxy):
-
-    def updateTopLine(self, newTopLine):
+    def updateToppedLineList(self, newTopLine):
         checkedTopLine = printsexp.getTopLine(self.lineList, newTopLine, self.maxy-1)
         toppedLineList = self.lineList[checkedTopLine:]
-        #self.lineList.topLine = checkedTopLine
         isActive = True
-        image, self.cursorx, self.cursory = \
-            printsexp.drawLineList(
+        image, cursorx, cursory = printsexp.drawLineList(
                 toppedLineList, self.maxx, self.maxy, self.colourScheme, isActive, self.indentWidth)
 
         return self.updateList(
+            ('topLine', checkedTopLine),
             ('image', image),
-            ('topLine', checkedTopLine))
+            ('cursorx', cursorx),
+            ('cursory', cursory))
 
-    def updateImage(self):
-        lineList = printsexp.makeLineIndentList(self, self.maxx, self.maxy)
-        topLine = printsexp.getTopLine(lineList, self.topLine, self.maxy-1)
-
-        toppedLineList = lineList[topLine:]
-        lineList.topLine = topLine
-        isActive = True
-        self.image, self.cursorx, self.cursory = \
-            printsexp.drawLineList(
-                toppedLineList, self.maxx, self.maxy, self.colourScheme, isActive, self.indentWidth)
-
-        return self.updateList(
-            ('lineList', lineList),
-            ('topLine', topLine))
 
     def handleKeys(self, key):
         result = self.handleKeysInitial(key)
         return result
-
 
     # split out for flexibility when inheriting
     def handleKeysInitial(self, key):
@@ -367,17 +344,17 @@ class TreeEditor(DisplayEditor):
         #    self.drawMode = 'cursor'
 
         if self.editing:
-            return self.handleCellEditor(key).updateImage()
+            return self.handleCellEditor(key).refreshImage()
 
         elif self.changeMode:
-            return self.handleKeysChangeMode(key).updateImage()
+            return self.handleKeysChangeMode(key).refreshImage()
 
         elif key.char == 't':
-            return self.updateTopLine(self.topLine + 1)
+            return self.updateToppedLineList(self.topLine + 1)
 
         elif key.char == 'T':
             if self.topLine > 0:
-                return self.updateTopLine(self.topLine - 1)
+                return self.updateToppedLineList(self.topLine - 1)
             else:
                 return self
 
@@ -389,7 +366,7 @@ class TreeEditor(DisplayEditor):
             newLineList = self.lineList.newCursorAdd(result.buffer.cursorAdd)
             return result.updateLineList(newLineList)
 
-        return result.updateImage()
+        return result.refreshImage()
 
     def handleMouse(self, mouse):
         if mouse.lbuttonPressed():
@@ -420,7 +397,7 @@ class TreeEditor(DisplayEditor):
             else:
                 newTopLine = 0
 
-            return self.updateTopLine(newTopLine)
+            return self.updateToppedLineList(newTopLine)
 
         return self
 
@@ -808,7 +785,7 @@ class TreeEditor(DisplayEditor):
 
                 elif key.code == iop.KEY_UP or key.char == 'k':
                     if self.topLine > 0 and self.cursory == 0:
-                        newEd = self.updateTopLine(self.topLine-1)
+                        newEd = self.updateToppedLineList(self.topLine-1)
                         return newEd.cursorToScreenPos(self.cursorx, 0)
                     elif self.cursory > 0:
                         return self.cursorToScreenPos(self.cursorx, self.cursory - 1)
