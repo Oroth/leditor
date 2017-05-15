@@ -132,19 +132,17 @@ def cursorMatch(cursorAdd, checkAdd):
     return cursorAdd == checkAdd[:len(cursorAdd)]
 
 
-def drawItem(item, prevItem, colScheme, hlcol, image, x, y, winWidth, winHeight, cursorAdd):
-    fgcol = lookupItemFGColour(item, colScheme)
-    text = item.nodeToString()
+def drawToken(token, prevToken, colScheme, hlcol, image, x, y, winWidth, winHeight, cursorAdd):
+    fgcol = colScheme.lookupTokenFGColour(token)
+    text = token.nodeToString()
 
-    #if item.isCursor and not item.isEditing:
-    if cursorMatch(cursorAdd, item.nodeAddress) and not item.isEditing:
-    #if cursorAdd == item.nodeAddress and not item.isEditing:
+    if cursorMatch(cursorAdd, token.nodeAddress) and not token.isEditing:
         bgcol = hlcol
 
     elif \
             text in ('.', ')') \
-            and prevItem and prevItem.printRule in [ 'cellEditorString', 'cellEditorNonString'] \
-            and prevItem.highlightIndex == len(prevItem.nodeToString()):
+            and prevToken and prevToken.printRule in ['cellEditorString', 'cellEditorNonString'] \
+            and prevToken.highlightIndex == len(prevToken.nodeToString()):
         bgcol = hlcol
 
     else:
@@ -154,34 +152,15 @@ def drawItem(item, prevItem, colScheme, hlcol, image, x, y, winWidth, winHeight,
     if len(text) >= winWidth:
         text = text[0:winWidth - 7] + '...'
 
-    putNodeOnImage(image, x, y, text, item, bgcol, fgcol)
+    putNodeOnImage(image, x, y, text, token, bgcol, fgcol)
 
     # highlight the current character if we are using the cell editor
-    if item.printRule in [ 'cellEditorString', 'cellEditorNonString']:
-        if item.highlightIndex is not None:
-            (image[y][x+item.highlightIndex]).bgColour = hlcol
+    if token.printRule in ['cellEditorString', 'cellEditorNonString']:
+        if token.highlightIndex is not None:
+            (image[y][x + token.highlightIndex]).bgColour = hlcol
             x += 1
 
 
-
-def lookupItemFGColour(item, colScheme):
-   if isinstance(item.nodeReference.child, reader.Symbol):
-        if item.nodeToString() in ("'", '.', '(', ')', '#'):
-            fgcol = colScheme.symbolCol
-        elif item.nodeToString() in ('=', '+', '-', '*', '/', '>', '>=', '<', '=<', '!='):
-            fgcol = colScheme.operatorCol
-        elif item.nodeToString() in ('obj', '^', 'let', 'if'):
-            fgcol = colScheme.keyWordCol
-        else:
-            fgcol = colScheme.identifierCol
-   elif isinstance(item.nodeReference.child, str) and item.printRule != 'cellEditorNonString':
-       fgcol = colScheme.stringCol
-   elif isinstance(item.nodeReference.child, int) or isinstance(item.nodeReference.child, float):
-       fgcol = colScheme.numberCol
-   else:
-       fgcol = colScheme.symbolCol
-
-   return fgcol
 
 def drawSymbolSpace(item, prevItem, colScheme, hlcol, image, x, y, cursorAdd):
     #if item.isCursor and prevItem.isCursor:
@@ -196,39 +175,43 @@ def drawSymbolSpace(item, prevItem, colScheme, hlcol, image, x, y, cursorAdd):
     putNodeOnImage(image, x, y, ' ', item, bgcol, colScheme.symbolCol)
 
 
-def drawLineList(lineList, winWidth, winHeight, colScheme, isActive, indentWidth):
-    image = createBlank(winWidth, winHeight, colScheme.bgCol, colScheme.symbolCol)
-    hlcol = colScheme.activeHiCol if isActive else colScheme.idleHiCol
+def drawLineList(lineList, editor, isActive):
+    cursorx, cursory = None, None
+    winWidth = editor.maxx
+    winHeight = editor.maxy
+    colScheme = editor.colourScheme
+    indentWidth = editor.indentWidth
+    #lineList = editor.lineList
+
     prevLine = None
     y = 0
-    cursorx, cursory = None, None
 
+    image = createBlank(winWidth, winHeight, colScheme.bgCol, colScheme.symbolCol)
+    hlcol = colScheme.activeHiCol if isActive else colScheme.idleHiCol
 
     for line in lineList[:winHeight]:
         x = drawIndentSpace(line, prevLine, indentWidth, colScheme, hlcol, image, 0, y, lineList.cursorAdd)
 
         prevLine = line
-        prevItem = None
+        prevToken = None
 
-        for item in line.tokenList:
-            if prevItem and prevItem.nodeToString() not in ("'", '.', '(', '#') \
-                        and item.nodeToString() not in ('.', ')'):
+        for token in line.tokenList:
+            if prevToken and prevToken.nodeToString() not in ("'", '.', '(', '#') \
+                        and token.nodeToString() not in ('.', ')'):
 
-                drawSymbolSpace(item, prevItem, colScheme, hlcol, image, x, y, lineList.cursorAdd)
+                drawSymbolSpace(token, prevToken, colScheme, hlcol, image, x, y, lineList.cursorAdd)
                 x += 1
 
             # cursor tracking
-            if cursorMatch(lineList.cursorAdd, item.nodeAddress):
-            #if item.isCursor:
-                #if not prevItem or not prevItem.isCursor:
+            if cursorMatch(lineList.cursorAdd, token.nodeAddress):
                 if cursorx is None:
                     cursorx = x
                 cursory = y
 
-            drawItem(item, prevItem, colScheme, hlcol, image, x, y, winWidth, winHeight, lineList.cursorAdd)
-            x += len(item.nodeToString())
+            drawToken(token, prevToken, colScheme, hlcol, image, x, y, winWidth, winHeight, lineList.cursorAdd)
+            x += len(token.nodeToString())
 
-            prevItem = item
+            prevToken = token
 
         y += 1
 

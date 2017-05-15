@@ -168,6 +168,25 @@ class ColourScheme(fo.FuncObject):
         self.idleHiCol = idleHiCol
         self.operatorCol = operatorCol
         self.keyWordCol = keyWordCol
+        
+    def lookupTokenFGColour(self, token):
+        if isinstance(token.nodeReference.child, reader.Symbol):
+            if token.nodeToString() in ("'", '.', '(', ')', '#'):
+                fgcol = self.symbolCol
+            elif token.nodeToString() in ('=', '+', '-', '*', '/', '>', '>=', '<', '=<', '!='):
+                fgcol = self.operatorCol
+            elif token.nodeToString() in ('obj', '^', 'let', 'if'):
+                fgcol = self.keyWordCol
+            else:
+                fgcol = self.identifierCol
+        elif isinstance(token.nodeReference.child, str) and token.printRule != 'cellEditorNonString':
+           fgcol = self.stringCol
+        elif isinstance(token.nodeReference.child, int) or isinstance(token.nodeReference.child, float):
+           fgcol = self.numberCol
+        else:
+           fgcol = self.symbolCol
+
+        return fgcol
 
 class DisplayEditor(fo.FuncObject):
     editors = 0
@@ -186,6 +205,8 @@ class DisplayEditor(fo.FuncObject):
         self.indentWidth = 2
         self.cursorx = 0
         self.cursory = 0
+        self.maxx = 120
+        self.maxy = 68
 
         self.statusDescription = reader.Symbol(self.__class__.__name__)
         self.id = DisplayEditor.editors
@@ -232,15 +253,13 @@ class DisplayEditor(fo.FuncObject):
         return self.nodeIsZipped(buffer.cursor)
 
     def draw(self, maxx, maxy, isActive):
-        lineList = printsexp.makeLineIndentList(self, maxx, maxy)
-        #if cursorTopLine is None:
-        #    cursorTopLine, cursorBottomLine = 0, 0
-        #self.topLine = printsexp.getTopLine(lineList, self.topLine, maxy)
-        #toppedLineList = lineList.lines[self.topLine:]
+        self.lineList = printsexp.makeLineIndentList(self, maxx, maxy)
+        self.maxx = maxx
+        self.maxy = maxy
 
         self.image, self.cursorx, self.cursory = \
-            printsexp.drawLineList(
-                lineList, maxx, maxy, self.colourScheme, isActive, self.indentWidth)
+            printsexp.drawLineList(self.lineList, self, isActive)
+                #lineList, maxx, maxy, self.colourScheme, isActive, self.indentWidth)
 
         return self.image
 
@@ -271,8 +290,8 @@ class TreeEditor(DisplayEditor):
         self.lineList.topLine = self.topLine
         isActive = True
         self.image, self.cursorx, self.cursory = \
-            printsexp.drawLineList(
-                self.lineList, self.maxx, self.maxy, self.colourScheme, isActive, self.indentWidth)
+            printsexp.drawLineList(self.lineList, self, isActive)
+               # self.lineList, self.maxx, self.maxy, self.colourScheme, , self.indentWidth)
 
     def nodeIsRevealed(self, node):
         return node in self.revealedNodes and self.revealedNodes[node]
@@ -316,7 +335,7 @@ class TreeEditor(DisplayEditor):
         toppedLineList = self.lineList[checkedTopLine:]
         isActive = True
         image, cursorx, cursory = printsexp.drawLineList(
-                toppedLineList, self.maxx, self.maxy, self.colourScheme, isActive, self.indentWidth)
+                toppedLineList, self, isActive)
 
         return self.updateList(
             ('topLine', checkedTopLine),
