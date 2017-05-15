@@ -235,6 +235,98 @@ def drawLineList(lineList, winWidth, winHeight, colScheme, isActive, indentWidth
     return image, cursorx, cursory
 
 
+# Takes a string and tries to split it across two or more lines depending on where the spaces are in
+# the string and how much space is left to the end of the line and on subsequent lines
+def splitStringAcrossLines(string, curLineSpaceLeft, maxLineLength):
+    stringList = []
+    curLineStartIndex = 0                # The position in string from which to start taking words
+    curLineLastSpaceIndex = string.rfind(' ', curLineStartIndex, curLineSpaceLeft)
+
+    # if there is space on the current line, append the maximum number of words
+    if curLineLastSpaceIndex != -1:
+        stringList.append(string[:curLineLastSpaceIndex])
+        curLineStartIndex = curLineLastSpaceIndex + 1
+    # Otherwise start from the next line
+    else:
+        stringList.append('')
+
+    # Find the index of the rightmost space within the search index
+    curLineMaxSpaceIndex = string.rfind(' ', curLineStartIndex, curLineStartIndex+maxLineLength)
+
+    # While we can find words that will fit and not everything will fit on the line
+    while curLineMaxSpaceIndex != -1 and curLineStartIndex+maxLineLength < len(string):
+        stringList.append(string[curLineStartIndex:curLineMaxSpaceIndex])
+        curLineStartIndex = curLineMaxSpaceIndex+1
+        curLineMaxSpaceIndex = string.rfind(' ', curLineStartIndex, curLineStartIndex + maxLineLength)
+
+    stringList.append(string[curLineStartIndex:])
+
+    return stringList
+
+def findHighlightPosition(stringList, highlightIndex):
+    currentLen = 0
+    for stringIndex, string in enumerate(stringList):
+        if currentLen + len(string) <  highlightIndex:
+            currentLen += len(string) +1
+        else:
+            return stringIndex, highlightIndex - currentLen
+
+def appendStringTokenToLineList(lines, node, winWidth):
+    currentLineLength = lines[-1].length()
+    lineLengthLeft = winWidth - currentLineLength
+    stringList = splitStringAcrossLines(node.text, lineLengthLeft, winWidth)
+    nodeList = [node.updateList(('text', string), ('highlightIndex', None)) for string in stringList]
+
+    if node.highlightIndex:
+        hlStringListIndex, hlIndex = findHighlightPosition(stringList, node.highlightIndex)
+        nodeList[hlStringListIndex].highlightIndex = hlIndex
+
+    if stringList[0] != '':
+        lines[-1].addToken(nodeList[0])
+
+    for node in nodeList[1:]:
+        lines.append(LineNode(lines[-1].indent, lines[-1].parenAlignment))
+        lines[-1].addToken(node)
+
+
+# Walk through the stream of line and token nodes, assigning tokens to lines
+def makeLineList(stream, winWidth):
+    lines = [LineNode(0, 0)]
+    cursorTopLine = None
+    cursorBottomLine = None
+    cursorAddress = None
+
+    for node in stream:
+        currentLineNumber = len(lines)
+        currentLine = lines[-1]
+        currentLineLength = currentLine.length()
+
+        if isinstance(node, LineNode):
+            lines.append(LineNode(node.indent, node.parenAlignment))
+
+        # TokenNode
+        else:
+            if node.isCursor:
+                if cursorTopLine is None:
+                    cursorAddress = node.nodeAddress
+                    cursorTopLine = currentLineNumber
+                cursorBottomLine = currentLineNumber
+
+            tokenLength = len(node.nodeToString()) + 1  ## technically parens will only be 1 char
+
+            if (currentLineLength + tokenLength) > winWidth:
+                if isinstance(node.nodeReference.child, str):
+                    appendStringTokenToLineList(lines, node, winWidth)
+                else:
+                    newLine = LineNode(0)
+                    newLine.addToken(node)
+                    lines.append(newLine)
+
+            else:
+                currentLine.addToken(node)
+
+    return LineList(lines, cursorTopLine, cursorBottomLine, cursorAddress)
+
 def makeLineIndentList(editor, winWidth, winHeight):
 
     # filter lst?, flatten, filter lst?-
@@ -392,99 +484,6 @@ def makeLineIndentList(editor, winWidth, winHeight):
         return ret
 
 
-    # Takes a string and tries to split it across two or more lines depending on where the spaces are in
-    # the string and how much space is left to the end of the line and on subsequent lines
-    def splitStringAcrossLines(string, curLineSpaceLeft, maxLineLength):
-        stringList = []
-        curLineStartIndex = 0                # The position in string from which to start taking words
-        curLineLastSpaceIndex = string.rfind(' ', curLineStartIndex, curLineSpaceLeft)
-
-        # if there is space on the current line, append the maximum number of words
-        if curLineLastSpaceIndex != -1:
-            stringList.append(string[:curLineLastSpaceIndex])
-            curLineStartIndex = curLineLastSpaceIndex + 1
-        # Otherwise start from the next line
-        else:
-            stringList.append('')
-
-        # Find the index of the rightmost space within the search index
-        curLineMaxSpaceIndex = string.rfind(' ', curLineStartIndex, curLineStartIndex+maxLineLength)
-
-        # While we can find words that will fit and not everything will fit on the line
-        while curLineMaxSpaceIndex != -1 and curLineStartIndex+maxLineLength < len(string):
-            stringList.append(string[curLineStartIndex:curLineMaxSpaceIndex])
-            curLineStartIndex = curLineMaxSpaceIndex+1
-            curLineMaxSpaceIndex = string.rfind(' ', curLineStartIndex, curLineStartIndex + maxLineLength)
-
-        stringList.append(string[curLineStartIndex:])
-
-        return stringList
-
-    def findHighlightPosition(stringList, highlightIndex):
-        currentLen = 0
-        for stringIndex, string in enumerate(stringList):
-            if currentLen + len(string) <  highlightIndex:
-                currentLen += len(string) +1
-            else:
-                return stringIndex, highlightIndex - currentLen
-
-    def appendStringTokenToLineList(lines, node):
-        currentLineLength = lines[-1].length()
-        lineLengthLeft = winWidth - currentLineLength
-        stringList = splitStringAcrossLines(node.text, lineLengthLeft, winWidth)
-        nodeList = [node.updateList(('text', string), ('highlightIndex', None)) for string in stringList]
-
-        if node.highlightIndex:
-            hlStringListIndex, hlIndex = findHighlightPosition(stringList, node.highlightIndex)
-            nodeList[hlStringListIndex].highlightIndex = hlIndex
-
-        if stringList[0] != '':
-            lines[-1].addToken(nodeList[0])
-
-        for node in nodeList[1:]:
-            lines.append(LineNode(lines[-1].indent, lines[-1].parenAlignment))
-            lines[-1].addToken(node)
-
-
-    # Walk through the stream of line and token nodes, assigning tokens to lines
-    def makeLineList(stream):
-        lines = [LineNode(0, 0)]
-        cursorTopLine = None
-        cursorBottomLine = None
-        #newTopLine = editor.topLine
-
-        for node in stream:
-            currentLineNumber = len(lines)
-            currentLine = lines[-1]
-            currentLineLength = currentLine.length()
-
-            if isinstance(node, LineNode):
-                lines.append(LineNode(node.indent, node.parenAlignment))
-
-            # TokenNode
-            else:
-                if node.isCursor:
-                    if cursorTopLine is None:
-                        cursorTopLine = currentLineNumber
-                    cursorBottomLine = currentLineNumber
-                    #print cursorTopLine, cursorBottomLine
-
-                tokenLength = len(node.nodeToString()) + 1  ## technically parens will only be 1 char
-
-                if (currentLineLength + tokenLength) > winWidth:
-                    if isinstance(node.nodeReference.child, str):
-                        appendStringTokenToLineList(lines, node)
-                    else:
-                        newLine = LineNode(0)
-                        newLine.addToken(node)
-                        lines.append(newLine)
-
-                else:
-                    currentLine.addToken(node)
-
-        return LineList(lines, cursorTopLine, cursorBottomLine, editor.buffer.cursorAdd)
-
-
     recurModes = {
             'code': recurCode,
             'horizontal': recurHorizontal,
@@ -496,7 +495,7 @@ def makeLineIndentList(editor, winWidth, winHeight):
     viewNode = editor.buffer.view
     parseState = ParseState(editor.buffer.view, [0])
     lineTokenStream = makeLineTokenStream(parseState)
-    lineList = makeLineList(lineTokenStream)
+    lineList = makeLineList(lineTokenStream, winWidth)
 
     return lineList
 
