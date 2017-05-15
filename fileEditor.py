@@ -18,6 +18,18 @@ def dirToList(path):
 
     return f
 
+class fileTNode(tn.TNode):
+    def __init__(self, *args, **kwargs):
+        super(fileTNode, self).__init__(*args, **kwargs)
+        #path
+
+class file(object):
+    def __init__(self):
+        self.path = ''
+        self.name = ''
+        self.type = ''
+        self.size = 0
+        self.dateModified = None
 
 class FileEditor(Editors.TreeEditor):
     def __init__(self, *args, **kwargs):

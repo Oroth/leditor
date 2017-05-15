@@ -117,7 +117,6 @@ def drawIndentSpace(line, prevLine, indentWidth, colScheme, hlcol, image, x, y, 
     if line.indent > 0:
         firstItem = line.tokenList[0]
         # highlight the indented space if it carries over from the previous line
-        #if firstItem.isCursor and prevLine and prevLine.tokenList[-1].isCursor:
         if cursorMatch(cursorAdd, firstItem.nodeAddress) \
                 and prevLine and cursorMatch(cursorAdd, prevLine.tokenList[-1].nodeAddress):
             bgcol = hlcol
@@ -163,7 +162,6 @@ def drawToken(token, prevToken, colScheme, hlcol, image, x, y, winWidth, winHeig
 
 
 def drawSymbolSpace(item, prevItem, colScheme, hlcol, image, x, y, cursorAdd):
-    #if item.isCursor and prevItem.isCursor:
     if cursorMatch(cursorAdd, item.nodeAddress) and cursorMatch(cursorAdd, prevItem.nodeAddress):
         bgcol = hlcol
     elif prevItem.printRule in [ 'cellEditorString', 'cellEditorNonString'] \
@@ -181,7 +179,7 @@ def drawLineList(lineList, editor, isActive):
     winHeight = editor.maxy
     colScheme = editor.colourScheme
     indentWidth = editor.indentWidth
-    #lineList = editor.lineList
+
 
     prevLine = None
     y = 0
@@ -352,12 +350,6 @@ def makeLineIndentList(editor, winWidth, winHeight):
 
         else:
             return ps.update('parenAlignment', 1)
-            #if node.isSubNode():
-            #    return ps.update('parenAlignment', 1)
-            #else:
-            #return ps.incNesting()
-
-        #return ps
 
 
     def recurCode(parseState):
@@ -380,19 +372,9 @@ def makeLineIndentList(editor, winWidth, winHeight):
             ps = parseState.setNewline()
             # if the first node is a list, assume it is part of a let-syntax, so we know not to reindent
             if node.isSubNode():
-                #return ps
                 return ps.update('parenAlignment', 1)
             else:
                 return ps.incNesting()
-
-
-
-        # if 'letState' in parseState.codeState and parseState.codeState['letState'] != 'off':
-        #     if parseState.codeState['letState'] == parseState.nesting and not parseState.startOfLine:
-        #        return parseState.setNewline()
-        #     elif parseState.codeState['letState'] < parseState.nesting:
-        #       parseState.codeState['letState'] = 'off'
-
 
         return parseState.reset('startOfLine')
 
