@@ -221,7 +221,7 @@ class DisplayEditor(fo.FuncObject):
         return self.nodeIsZipped(buffer.cursor)
 
     def draw(self, maxx, maxy, isActive):
-        self.lineList = printsexp.makeLineIndentList(self, maxx, maxy)
+        self.lineList = printsexp.makeIndentedLineList(self, maxx, maxy)
         self.maxx = maxx
         self.maxy = maxy
 
@@ -252,7 +252,7 @@ class TreeEditor(DisplayEditor):
 
         self.maxx = 120
         self.maxy = 68
-        self.lineList = printsexp.makeLineIndentList(self, self.maxx, self.maxy)
+        self.lineList = printsexp.makeIndentedLineList(self, self.maxx, self.maxy)
 
         #toppedLineList = self.lineList[self.topLine:]
         self.lineList.topLine = self.topLine
@@ -291,7 +291,7 @@ class TreeEditor(DisplayEditor):
         return newEditor.refreshImage()
 
     def refreshImage(self):
-        lineList = printsexp.makeLineIndentList(self, self.maxx, self.maxy)
+        lineList = printsexp.makeIndentedLineList(self, self.maxx, self.maxy)
         return self.updateLineList(lineList)
 
     def updateLineList(self, newLineList):

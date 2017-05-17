@@ -161,16 +161,16 @@ def drawToken(token, prevToken, colScheme, hlcol, image, x, y, winWidth, winHeig
 
 
 
-def drawSymbolSpace(item, prevItem, colScheme, hlcol, image, x, y, cursorAdd):
-    if cursorMatch(cursorAdd, item.nodeAddress) and cursorMatch(cursorAdd, prevItem.nodeAddress):
+def drawSymbolSpace(token, prevToken, colScheme, hlcol, image, x, y, cursorAdd):
+    if cursorMatch(cursorAdd, token.nodeAddress) and cursorMatch(cursorAdd, prevToken.nodeAddress):
         bgcol = hlcol
-    elif prevItem.printRule in [ 'cellEditorString', 'cellEditorNonString'] \
-                and prevItem.highlightIndex == len(prevItem.nodeToString()):
+    elif prevToken.printRule in ['cellEditorString', 'cellEditorNonString'] \
+                and prevToken.highlightIndex == len(prevToken.nodeToString()):
         bgcol = hlcol
     else:
         bgcol = colScheme.bgCol
 
-    putNodeOnImage(image, x, y, ' ', item, bgcol, colScheme.symbolCol)
+    putNodeOnImage(image, x, y, ' ', token, bgcol, colScheme.symbolCol)
 
 
 def drawLineList(lineList, editor, isActive):
@@ -308,7 +308,7 @@ def makeLineList(stream, winWidth):
 
     return LineList(lines, cursorTopLine, cursorBottomLine, cursorAddress)
 
-def makeLineIndentList(editor, winWidth, winHeight):
+def makeIndentedLineList(editor, winWidth, winHeight):
 
     # filter lst?, flatten, filter lst?-
     def isComplex(node):
@@ -379,7 +379,7 @@ def makeLineIndentList(editor, winWidth, winHeight):
         return parseState.reset('startOfLine')
 
 
-    def makeLineTokenStream(parseState):
+    def makeMixedLineTokenList(parseState):
         if parseState.cursor == editor.buffer.cursor:
             ps = parseState.update('isCursor', True)
         else:
@@ -404,10 +404,10 @@ def makeLineIndentList(editor, winWidth, winHeight):
         elif ps.onSubNode():
             if tn.isMethodCallExp(ps.cursor.child):
                 methodChainps = ps.curChild().reset('newline', 'reindent').set('isMethodChain')
-                ret = makeLineTokenStream(methodChainps)
+                ret = makeMixedLineTokenList(methodChainps)
             else:
                 ret = [TokenNode(ps, '(')]
-                ret.extend(makeLineTokenStream(ps.curChild().reset('newline', 'reindent', 'isMethodChain')))
+                ret.extend(makeMixedLineTokenList(ps.curChild().reset('newline', 'reindent', 'isMethodChain')))
                 ret.append(TokenNode(ps, ')'))
 
         elif ps.cursor.child is None:
@@ -444,7 +444,7 @@ def makeLineIndentList(editor, winWidth, winHeight):
             if modeps.newline:
                 ret.append(LineNode(modeps.nesting, modeps.parenAlignment))
 
-            ret.extend(makeLineTokenStream(modeps.curNext()))
+            ret.extend(makeMixedLineTokenList(modeps.curNext()))
 
         return ret
 
@@ -459,8 +459,8 @@ def makeLineIndentList(editor, winWidth, winHeight):
 
     viewNode = editor.buffer.view
     parseState = ParseState(editor.buffer.view, [0])
-    lineTokenStream = makeLineTokenStream(parseState)
-    lineList = makeLineList(lineTokenStream, winWidth)
+    lineTokenList = makeMixedLineTokenList(parseState)
+    lineList = makeLineList(lineTokenList, winWidth)
 
     return lineList
 
