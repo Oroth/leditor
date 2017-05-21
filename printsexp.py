@@ -11,21 +11,15 @@ class ParseState(buffer.ViewBuffer):
         self.nesting = nesting
         self.isCursor = isCursor
         self.newline = False        # While True will start a newline at each node
-        self.reindent = False       # While true will increase the amount of nesting...
         self.parenAlignment = 0
-        self.letSyntax = False
         self.isMethodChain = isMethodChain
-        self.codeState = {}
-        self.startOfLine = False
         super(ParseState, self).__init__(node, [0], address)
 
     def incNesting(self):
         return self.update('nesting', self.nesting+1)
 
     def setNewline(self):
-        return self.updateList(
-            ('newline', True),
-            ('startOfLine', True))
+        return self.update('newline', True)
 
 
 class TokenNode(fo.FuncObject):
@@ -378,17 +372,8 @@ def makeIndentedLineList(editor, winWidth, winHeight):
             return ps.update('parenAlignment', 1)
 
     def recurFolders(parseState):
-        node = parseState.cursor
-
-
         ps = parseState.set('newline')
 
-        #if parseState.cursorAdd[-1] == 0:
-        #    return ps.incNesting()
-
-        # if parent is subnode and self is first
-
-        #else:
         return ps.update('parenAlignment', 1)
 
 
@@ -398,28 +383,28 @@ def makeIndentedLineList(editor, winWidth, winHeight):
         if editor.nodeIsZipped(node.next):
             return parseState
 
-        if node.child == 'let':
-            parseState.codeState['letState'] = parseState.nesting +1
+        #if node.child in ('^', 'if'):
+        #    return parseState.incNesting()
 
-        if node.child in ('^', 'if'):
-            return parseState.incNesting()
+        if parseState.cursorAdd[-1] == 0:
+            if (node.isSubNode() and isComplex(node.child)):
+                return parseState.setNewline().update('parenAlignment', 1)
 
-        if (node.isSubNode() and isComplex(node.child)):
-            return parseState.setNewline().update('parenAlignment', 1)
+            if isComplex(node.next) or (node.next.isSubNode() and isComplex(node.next.child)):
 
-        if isComplex(node.next) or (node.next.isSubNode() and isComplex(node.next.child)):
+                ps = parseState.setNewline()
+                # if the first node is a list, assume it is part of a let-syntax, so we know not to reindent
+                if node.isSubNode():
+                    return ps.update('parenAlignment', 1)
+                else:
+                    return ps.incNesting()
 
-            ps = parseState.setNewline()
-            # if the first node is a list, assume it is part of a let-syntax, so we know not to reindent
-            if node.isSubNode():
-                return ps.update('parenAlignment', 1)
-            else:
-                return ps.incNesting()
-
-        return parseState.reset('startOfLine')
+        return parseState
 
 
     def makeMixedLineTokenList(parseState):
+
+
         if parseState.cursor == editor.buffer.cursor:
             ps = parseState.update('isCursor', True)
         else:
@@ -443,15 +428,15 @@ def makeIndentedLineList(editor, winWidth, winHeight):
 
         elif ps.onSubNode():
             if tn.isMethodCallExp(ps.cursor.child):
-                methodChainps = ps.curChild().reset('newline', 'reindent').set('isMethodChain')
+                methodChainps = ps.curChild().reset('newline').set('isMethodChain')
                 ret = makeMixedLineTokenList(methodChainps)
             else:
                 ret = [TokenNode(ps, ps.cursor.startToken)]
                 if editor.printingMode == 'folders':
-                    ret.append(LineNode(ps.nesting, ps.parenAlignment))
+                    ret.append(LineNode(ps.nesting + 1, ps.parenAlignment))
                     psChild  = ps.curChild().incNesting()
                 else:
-                    psChild = ps.curChild().reset('newline', 'reindent', 'isMethodChain')
+                    psChild = ps.curChild().reset('newline', 'isMethodChain')
                 ret.extend(makeMixedLineTokenList(psChild))
                 ret.append(TokenNode(ps, ps.cursor.endToken))
 
