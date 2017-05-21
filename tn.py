@@ -290,6 +290,8 @@ class TNode(fo.FuncObject):
         self.child = self.parseValue(val)
         self.quoted = quoted
         self.persist = ['child', 'next']
+        self.startToken = '('
+        self.endToken = ')'
 
         if not id:
             self.nodeID = TNode.__nodes__

@@ -4,7 +4,7 @@ import tn
 import funobj as fo
 import reader
 from screen import createBlank, putNodeOnImage
-
+import textwrap
 
 class ParseState(buffer.ViewBuffer):
     def __init__(self, node, address, nesting=0, isCursor=False, isMethodChain=False):
@@ -215,32 +215,57 @@ def drawLineList(lineList, editor, isActive):
 
     return image, cursorx, cursory
 
+def getLine(string, lineLength, splitNoBlank=True):
+    finalBlankIndex = string.rfind(' ', 0, lineLength)
+    if finalBlankIndex == -1:
+        if splitNoBlank:
+            return string[:lineLength]
+        else:
+            return ''
+    else:
+        return string[:finalBlankIndex]
 
-# Takes a string and tries to split it across two or more lines depending on where the spaces are in
+def splitStringAcrossLines2(string, lineLength):
+    strings = []
+    totalLength = len(string)
+
+    firstLine = getLine(string, lineLength)
+    startIndex = len(firstLine)
+
+    while startIndex < totalLength:
+        remainingString = string[startIndex:]
+        nextLine = getLine(remainingString, lineLength)
+        strings.append(nextLine)
+        startIndex += len(nextLine)
+
+    return strings
+
+
+# Takes a string and tries to split it across two or more lines depending on where the blanks are in
 # the string and how much space is left to the end of the line and on subsequent lines
-def splitStringAcrossLines(string, curLineSpaceLeft, maxLineLength):
+def splitStringAcrossLines(string, remainingSpace, lineLength):
     stringList = []
-    curLineStartIndex = 0                # The position in string from which to start taking words
-    curLineLastSpaceIndex = string.rfind(' ', curLineStartIndex, curLineSpaceLeft)
+    startIndex = 0                # The position in string from which to start taking words
+    finalBlankIndex = string.rfind(' ', startIndex, remainingSpace)
 
     # if there is space on the current line, append the maximum number of words
-    if curLineLastSpaceIndex != -1:
-        stringList.append(string[:curLineLastSpaceIndex])
-        curLineStartIndex = curLineLastSpaceIndex + 1
+    if finalBlankIndex != -1:
+        stringList.append(string[:finalBlankIndex])
+        startIndex = finalBlankIndex + 1
     # Otherwise start from the next line
     else:
         stringList.append('')
 
-    # Find the index of the rightmost space within the search index
-    curLineMaxSpaceIndex = string.rfind(' ', curLineStartIndex, curLineStartIndex+maxLineLength)
+    # Find the index of the rightmost blank within the search index
+    finalBlankIndex = string.rfind(' ', startIndex, startIndex + lineLength)
 
     # While we can find words that will fit and not everything will fit on the line
-    while curLineMaxSpaceIndex != -1 and curLineStartIndex+maxLineLength < len(string):
-        stringList.append(string[curLineStartIndex:curLineMaxSpaceIndex])
-        curLineStartIndex = curLineMaxSpaceIndex+1
-        curLineMaxSpaceIndex = string.rfind(' ', curLineStartIndex, curLineStartIndex + maxLineLength)
+    while finalBlankIndex != -1 and startIndex+lineLength < len(string):
+        stringList.append(string[startIndex:finalBlankIndex])
+        startIndex = finalBlankIndex+1
+        finalBlankIndex = string.rfind(' ', startIndex, startIndex + lineLength)
 
-    stringList.append(string[curLineStartIndex:])
+    stringList.append(string[startIndex:])
 
     return stringList
 
@@ -254,6 +279,7 @@ def findHighlightPosition(stringList, highlightIndex):
 
 def appendStringTokenToLineList(lines, node, winWidth):
     currentLineLength = lines[-1].length()
+    #stringList = textwrap.wrap(node.text, winWidth)
     lineLengthLeft = winWidth - currentLineLength
     stringList = splitStringAcrossLines(node.text, lineLengthLeft, winWidth)
     nodeList = [node.updateList(('text', string), ('highlightIndex', None)) for string in stringList]
@@ -351,6 +377,20 @@ def makeIndentedLineList(editor, winWidth, winHeight):
         else:
             return ps.update('parenAlignment', 1)
 
+    def recurFolders(parseState):
+        node = parseState.cursor
+
+
+        ps = parseState.set('newline')
+
+        #if parseState.cursorAdd[-1] == 0:
+        #    return ps.incNesting()
+
+        # if parent is subnode and self is first
+
+        #else:
+        return ps.update('parenAlignment', 1)
+
 
     def recurCode(parseState):
         node = parseState.cursor
@@ -406,9 +446,14 @@ def makeIndentedLineList(editor, winWidth, winHeight):
                 methodChainps = ps.curChild().reset('newline', 'reindent').set('isMethodChain')
                 ret = makeMixedLineTokenList(methodChainps)
             else:
-                ret = [TokenNode(ps, '(')]
-                ret.extend(makeMixedLineTokenList(ps.curChild().reset('newline', 'reindent', 'isMethodChain')))
-                ret.append(TokenNode(ps, ')'))
+                ret = [TokenNode(ps, ps.cursor.startToken)]
+                if editor.printingMode == 'folders':
+                    ret.append(LineNode(ps.nesting, ps.parenAlignment))
+                    psChild  = ps.curChild().incNesting()
+                else:
+                    psChild = ps.curChild().reset('newline', 'reindent', 'isMethodChain')
+                ret.extend(makeMixedLineTokenList(psChild))
+                ret.append(TokenNode(ps, ps.cursor.endToken))
 
         elif ps.cursor.child is None:
             ret = [TokenNode(ps, '('), TokenNode(ps, ')')]
@@ -453,7 +498,8 @@ def makeIndentedLineList(editor, winWidth, winHeight):
             'code': recurCode,
             'horizontal': recurHorizontal,
             'vertical': recurVertical,
-            'allVertical': recurAllVertical
+            'allVertical': recurAllVertical,
+            'folders': recurFolders
         }
     recurMode = recurModes[editor.printingMode]
 

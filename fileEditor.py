@@ -38,6 +38,8 @@ class FNode(tn.TNode):
         self.next = next
         self.nodeID = 0
         self.quoted = False
+        self.startToken = '(' + name
+        self.endToken = ')'
 
         if not id:
             self.nodeID = tn.TNode.__nodes__
@@ -75,7 +77,7 @@ def isFolder(val):
 def parseFileNode(car, cdr):
     if isFolder(car):
         val = car.next.child
-        newNode = FNode(val)
+        newNode = FNode(val, name=car.child.name)
         return tn.join(newNode, cdr)
     else:
         return FNode(car, next=cdr)
@@ -85,9 +87,10 @@ def createFNodeExpFromPyExp(pyexp):
 
 
 
-def isFile(token):
+def isDirectory(token):
     tokenRef = token.nodeReference
-    if tokenRef.next and tokenRef.next.isSubNode() and not tokenRef.next.next:
+    #if tokenRef.next and tokenRef.next.isSubNode() and not tokenRef.next.next:
+    if tokenRef.isSubNode():
         return True
     else:
         return False
@@ -98,17 +101,18 @@ class FileEditorColourScheme(colourScheme.ColourScheme):
         self.fileCol = iop.light_green
 
     def lookupTokenFGColour(self, token):
-        if isFile(token):
+        if isDirectory(token):
             return self.fileCol
         else:
-            return super(FileEditorColourScheme, self).lookupTokenFGColour(token)
+            return self.identifierCol
+            #return super(FileEditorColourScheme, self).lookupTokenFGColour(token)
 
 
 class FileEditor(Editors.TreeEditor):
     def __init__(self, *args, **kwargs):
         super(FileEditor, self).__init__(*args, **kwargs)
-        self.printingMode = 'allVertical'
-        self.indentWidth = 4
+        self.printingMode = 'folders'
+        self.indentWidth = 2
         self.directory = None
         self.colourScheme = FileEditorColourScheme(bgCol=iop.black, symbolCol=iop.grey,
             identifierCol=iop.white, stringCol=iop.light_green,
