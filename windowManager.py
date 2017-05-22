@@ -4,7 +4,6 @@ import buffer
 import reader
 import screen
 import CodeEditor
-from window import Window
 import window
 from cmdBar import CmdBar
 import os.path
@@ -83,6 +82,7 @@ class WindowManager(fo.FuncObject):
         return eval.Env.fromList([
             ('screenEditor', lambda:cmdScreenEditor(self)),
             ('fileEditor', lambda:cmdFileEditor(self)),
+            ('sfe', lambda:cmdSFE(self)),
             ('repl', lambda:cmdReplEditor(self)),
             ('save', lambda:cmdSave(self)),
             ('winNext', lambda:cmdWinNext(self)),
@@ -509,3 +509,6 @@ def cmdTextPager(wm):
 def cmdReplEditor(wm):
     print 'starting repl'
     return wm.replaceWindow(window.cmdNewRepl(wm.curWin()))
+
+def cmdSFE(wm):
+    return wm.replaceWindow(window.cmdNewSFE(wm.curWin()))

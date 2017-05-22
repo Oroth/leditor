@@ -1,17 +1,12 @@
-import CodeEditor
-import buffer
-import cmdList
-import eval
-import fileEditor
 import funobj as fo
 import iop
+from iop import Key
 import leditor_exceptions as ex
-import lispObjEditor
-import pager
-import reader
-import repl
-import screenEditor
-from iop_libtcod import Key
+import reader, buffer, eval, lispObjEditor, CodeEditor
+import cmdList
+import fileEditor, screenEditor, pager, repl
+import simpleFileEditor as sfe
+
 
 
 class Window(fo.FuncObject):
@@ -107,6 +102,10 @@ def cmdNewScreenEditor(window):
 
 def cmdNewFileEditor(window):
     newEd = fileEditor.FileEditor.fromPath('./')
+    return window.addEditor(newEd)
+
+def cmdNewSFE(window):
+    newEd = sfe.SimpleFileEditor.fromPath('./')
     return window.addEditor(newEd)
 
 def cmdNewPager(window):
