@@ -11,6 +11,10 @@ class FileObj(object):
         return os.path.basename(self.fullpath)
 
     @property
+    def dirname(self):
+        return os.path.dirname(self.fullpath)
+
+    @property
     def isdir(self):
         return os.path.isdir(self.fullpath)
 
@@ -23,8 +27,8 @@ class FileObj(object):
 def dirToFileList(path):
     return [FileObj(f) for f in os.listdir(path)]
 
-def isDirectory(token):
-    fileRef = token.nodeReference.child
+def isDirectory(node):
+    fileRef = node.child
     return hasattr(fileRef, 'isdir') and fileRef.isdir
 
 
@@ -34,7 +38,7 @@ class FileEditorColourScheme(colourScheme.ColourScheme):
         self.dirCol = iop.light_green
 
     def lookupTokenFGColour(self, token):
-        if isDirectory(token):
+        if isDirectory(token.nodeReference):
             return self.dirCol
         else:
             return self.identifierCol
@@ -55,6 +59,21 @@ class SimpleFileEditor(Editors.TreeEditor):
         fileRoot = tn.createTNodeExpFromPyExp([fileList])
         fileBuffer = buffer.BufferSexp(fileRoot)
         return cls(fileBuffer)
+
+    def handleKeysMain(self, key):
+        if key.code == iop.KEY_ENTER:
+            cursor =  self.buffer.cursor
+            if isDirectory(cursor):
+                return SimpleFileEditor.fromPath(cursor.child.fullpath)
+            else:
+                return self
+
+        elif key.code == iop.KEY_BACKSPACE:
+            firstChild = self.buffer.first().child
+            return SimpleFileEditor.fromPath(firstChild.dirname)
+
+        else:
+            return super(SimpleFileEditor, self).handleKeysMain(key)
 
 
     def syncWithImage(self, newImage):
