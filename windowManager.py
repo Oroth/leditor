@@ -380,7 +380,7 @@ class WindowManager(fo.FuncObject):
         self.windowList.persist.append('root')
         pyObj = self.serialise()
         text = reader.to_string(pyObj)
-        reader.writeLatestFile('filefs/', 'EditorSettings', text)
+        reader.writeLatestFile('editor-settings-fs/', 'EditorSettings', text)
     
         return self.update('message', "Saving Editor settings")
     
@@ -392,7 +392,7 @@ class WindowManager(fo.FuncObject):
         return self.update('message', "Saving Latest Image")
     
     def cmdLoadLatestAll(self):
-        pyEditorLoad = reader.readLatestFile('filefs/')
+        pyEditorLoad = reader.readLatestFile('editor-settings-fs/')
         newWM = self.loadEditorSettingsFromPyExp(pyEditorLoad)
         newWM.app = self.app
         return newWM.cmdLoadLatestImage()
@@ -407,7 +407,7 @@ class WindowManager(fo.FuncObject):
         return self.loadNewImage(imageRoot)
 
     def cmdLoadEditorSettings(self):
-        pyEditorLoad = reader.readLatestFile('filefs/')
+        pyEditorLoad = reader.readLatestFile('editor-settings-fs/')
         newWM = self.loadEditorSettingsFromPyExp(pyEditorLoad)
         newWM2 = newWM.loadNewImage(self.ImageRoot)
         return newWM2

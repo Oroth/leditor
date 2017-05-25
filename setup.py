@@ -37,7 +37,7 @@ def get_data_files(base_dir, target_dir, list=[]):
 
 # The directory of assets to include.
 #my_files = get_data_files(sys.path[0] + '\\', assets_dir)
-my_files = [('filefs', ['build-settings/EditorSettings']),
+my_files = [('editor-settings-fs', ['build-settings/EditorSettings']),
             ('imagefs', ['build-settings/image']),
             ('fonts', ['fonts/terminal8x14_gs_ro.png']),
             ('.', ['lib/libtcod-mingw.dll', 'lib/SDL.dll'])]
