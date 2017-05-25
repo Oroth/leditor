@@ -1,27 +1,32 @@
 import unittest
 from unittest import TestCase, main
-import os, sys
 
 import tn
 from tn import createTNodeExpFromPyExp, replaceAdd, insertAdd, deleteAdd
 
 
+class TestParseTree(unittest.TestCase):
+    def __init__(self, input, output):
+        super(TestParseTree, self).__init__()
+        self.input = input
+        self.output = output
+
+    def runTest(self):
+        self.assertEqual(createTNodeExpFromPyExp(self.input).toPyExp(), self.output)
+
+def getTests(testCaseClass):
+    return unittest.TestLoader().loadTestsFromTestCase(testCaseClass)
+
 def suite():
-
-    class KnownGood(unittest.TestCase):
-        def __init__(self, input, output):
-            super(KnownGood, self).__init__()
-            self.input = input
-            self.output = output
-        def runTest(self):
-            self.assertEqual(createTNodeExpFromPyExp(self.input).toPyExp(), self.output)
-
     suite = unittest.TestSuite()
-    vals = [[11], [11, 15], [11, 15, 17], 7]
-    suite.addTests(KnownGood(val, val) for val in vals)
+    vals = [[11], [11, 15], [11, 15, 17], [[10]], [22, [33, 44]], [22, [11, 10, [9]], [33, 44], 17]]
+    suite.addTests(TestParseTree(val, val) for val in vals)
+
+    suite.addTest(getTests(TestPyListFuncs))
+    suite.addTest(getTests(TestParseNumberedExp))
+    suite.addTest(getTests(TestOpAtAdd))
     return suite
 
-test_suiteTest = suite()
 
 class TestCreateTreeFromSexp(TestCase):
 
@@ -30,40 +35,8 @@ class TestCreateTreeFromSexp(TestCase):
         tree = createTNodeExpFromPyExp(val)
         self.assertEqual(tree, val)
 
-    def test_createTree2(self):
-        vals = [[11], [11, 15], [11, 15, 17]]
-        val = [11]
-        tree = createTNodeExpFromPyExp(val)
-        self.assertEqual(tree.toPyExp(), val)
 
-
-    def test_createTree3(self):
-        val = [11, 15]
-        tree = createTNodeExpFromPyExp(val)
-        self.assertEqual(tree.toPyExp(), val)
-
-    def test_createTree4(self):
-        val = [11, 15, 17]
-        tree = createTNodeExpFromPyExp(val)
-        self.assertEqual(tree.toPyExp(), val)
-
-    def test_createTreeRec(self):
-        val = [[10]]
-        tree = createTNodeExpFromPyExp(val)
-        self.assertEqual(tree.toPyExp(), val)
-
-    def test_createTreeRec2(self):
-        val = [22, [33, 44]]
-        tree = createTNodeExpFromPyExp(val)
-        self.assertEqual(tree.toPyExp(), val)
-
-    def test_createTreeRec3(self):
-        val = [22, [11, 10, [9]], [33, 44], 17]
-        tree = createTNodeExpFromPyExp(val)
-        self.assertEqual(tree.toPyExp(), val)
-
-
-class testPyListFuncs(TestCase):
+class TestPyListFuncs(TestCase):
     def test_foldrpy(self):
         lst = [1, 2, 3, 4, 5]
         tlst = tn.foldrpy(tn.cons, lst)
@@ -76,7 +49,6 @@ class testPyListFuncs(TestCase):
 
 
 class TestParseNumberedExp(TestCase):
-
     def test_pne1(self):
         input = ['#', ['#', 2, 'val2']]
         output = ['val2']
@@ -192,21 +164,4 @@ class TestOpAtAdd(TestCase):
 
 if __name__ == '__main__':
 
-    # unit_dir='.'
-    # test_modules=[filename.replace('.py','') for filename in os.listdir(unit_dir)
-    #               if filename.endswith('.py') and filename.startswith('test_')]
-    # map(__import__,test_modules)
-    #
-    # suite = unittest.TestSuite()
-    # for mod in [sys.modules[modname] for modname in test_modules]:
-    #     suite.addTest(unittest.TestLoader().loadTestsFromModule(mod))
-    # unittest.TextTestRunner(verbosity=2).run(suite)
-
-
-
-    #suite = unittest.TestSuite()
-    #suite.addTest(unittest.TestLoader().loadTestsFromModule(test_eval))
-    #unittest.TextTestRunner(verbosity=2).run(suite)
-    #unittest.
     unittest.TextTestRunner(verbosity=2).run(suite())
-    #main()
