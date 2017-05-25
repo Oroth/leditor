@@ -6,132 +6,99 @@ import tn
 from tn import createTNodeExpFromPyExp, replaceAdd, insertAdd, deleteAdd
 
 
-__author__ = 'chephren'
+def suite():
 
-# class TestCursor(TestCase):
-#     def setUp(self):
-#         self.tree = createTreeFromSexp([2, 4, 6, [11, [101, 202], 33], 8, 9])
-#
-#     def test_next(self):
-#         c = Buffer(self.tree, [0]).next()
-#         self.assertEqual(c.get().child, 4)
-#
-#     def test_next2(self):
-#         c = Buffer(self.tree, [0]).next().next()
-#         self.assertEqual(c.get().child, 6)
-#
-#     def test_next3(self):
-#         c = Buffer(self.tree, [3, 0]).next()
-#         self.assertEqual(c.BufferToPySexp(), [101, 202])
-#
-#     def test_prev(self):
-#         c = Buffer(self.tree, [2]).prev()
-#         self.assertEqual(c.get().child, 4)
-#
-#     def test_prev2(self):
-#         c = Buffer(self.tree, [3]).prev().prev()
-#         self.assertEqual(c.get().child, 4)
-#
-#     def test_prev3(self):
-#         c = Buffer(self.tree, [3, 1]).prev()
-#         self.assertEqual(c.get().child, 11)
-#
-#     def test_up(self):
-#         c = Buffer(self.tree, [3, 1]).up()
-#         self.assertEqual(c.BufferToPySexp(), [11, [101, 202], 33])
-#
-#     def test_up2(self):
-#         c = Buffer(self.tree, [3, 2, 0]).up().up()
-#         self.assertEqual(c.BufferToPySexp(), [11, [101, 202], 33])
-#
-#     #    def test_up3(self):
-#     #        tree = createTreeFromSexp([11, 15, [101, 202], 17])
-#     #        c = Buffer(tree, [2, 1]).prev()
-#     #        self.assertEqual(c.get().child, 101)
-#
-#     def test_child(self):
-#         tree = createTreeFromSexp([11, 15, [55, 66], 19])
-#         c = Buffer(tree, [2]).child()
-#         self.assertEqual(c.get().child, 55)
-#
-#     def test_child2(self):
-#         tree = createTreeFromSexp([11, [101, 404, [1100, 2200, 3300]], 19])
-#         c = Buffer(tree, [1]).child().next().next().child()
-#         self.assertEqual(c.get().child, 1100)
-#
-#     def test_refreshToNearest(self):
-#         tree = createTreeFromSexp([11, [101, 404, [1100, 2200, 3300]], 19])
-#         c = Buffer(tree, [1])
-#         self.assertEqual(c.get().child.toPySexp(), [101, 404, [1100, 2200, 3300]])
-#
-#     def test_refreshToNearest2(self):
-#         tree = createTreeFromSexp([11, [101, 404, [1100, 2200, 3300]], 19])
-#         c = Buffer(tree, [1, 0])
-#         self.assertEqual(c.get().child, 101)
+    class KnownGood(unittest.TestCase):
+        def __init__(self, input, output):
+            super(KnownGood, self).__init__()
+            self.input = input
+            self.output = output
+        def runTest(self):
+            self.assertEqual(createTNodeExpFromPyExp(self.input).toPyExp(), self.output)
+
+    suite = unittest.TestSuite()
+    vals = [[11], [11, 15], [11, 15, 17], 7]
+    suite.addTests(KnownGood(val, val) for val in vals)
+    return suite
+
+test_suiteTest = suite()
 
 class TestCreateTreeFromSexp(TestCase):
 
     def test_createTree(self):
-        tree = createTNodeExpFromPyExp(22)
-        self.assertEqual(tree, 22)
+        val = 22
+        tree = createTNodeExpFromPyExp(val)
+        self.assertEqual(tree, val)
 
     def test_createTree2(self):
-        tree = createTNodeExpFromPyExp([11])
-        self.assertEqual(tree.toPyExp(), [11])
+        vals = [[11], [11, 15], [11, 15, 17]]
+        val = [11]
+        tree = createTNodeExpFromPyExp(val)
+        self.assertEqual(tree.toPyExp(), val)
+
 
     def test_createTree3(self):
-        tree = createTNodeExpFromPyExp([11, 15])
-        self.assertEqual(tree.toPyExp(), [11, 15])
+        val = [11, 15]
+        tree = createTNodeExpFromPyExp(val)
+        self.assertEqual(tree.toPyExp(), val)
 
     def test_createTree4(self):
-        tree = createTNodeExpFromPyExp([11, 15, 17])
-        self.assertEqual(tree.toPyExp(), [11, 15, 17])
+        val = [11, 15, 17]
+        tree = createTNodeExpFromPyExp(val)
+        self.assertEqual(tree.toPyExp(), val)
 
     def test_createTreeRec(self):
-        tree = createTNodeExpFromPyExp([[10]])
-        self.assertEqual(tree.toPyExp(), [[10]])
+        val = [[10]]
+        tree = createTNodeExpFromPyExp(val)
+        self.assertEqual(tree.toPyExp(), val)
 
     def test_createTreeRec2(self):
-        tree = createTNodeExpFromPyExp([22, [33, 44]])
-        self.assertEqual(tree.toPyExp(), [22, [33, 44]])
+        val = [22, [33, 44]]
+        tree = createTNodeExpFromPyExp(val)
+        self.assertEqual(tree.toPyExp(), val)
 
-class TestTNodeFunctions(TestCase):
-    def test_tnodeList(self):
-        tree = tn.createTNodeExpFromPyExp([11, 15, 17, 19])
-        self.assertEqual(tree.toPyExp(), [11, 15, 17, 19])
-
-    def test_tnodeExpFromPyExp(self):
-        tree = tn.createTNodeExpFromPyExp([22, [33, 44]])
-        self.assertEqual(tree.toPyExp(), [22, [33, 44]])
-
-    def test_tnodeExpFromPyExp2(self):
-        tree = tn.createTNodeExpFromPyExp([22, [11, 10, [9]], [33, 44], 17])
-        self.assertEqual(tree.toPyExp(), [22, [11, 10, [9]], [33, 44], 17])
+    def test_createTreeRec3(self):
+        val = [22, [11, 10, [9]], [33, 44], 17]
+        tree = createTNodeExpFromPyExp(val)
+        self.assertEqual(tree.toPyExp(), val)
 
 
+class testPyListFuncs(TestCase):
+    def test_foldrpy(self):
+        lst = [1, 2, 3, 4, 5]
+        tlst = tn.foldrpy(tn.cons, lst)
+        self.assertEqual(tlst.toPyExp(), lst)
+
+    def test_foldrtpy(self):
+        lst = [[1, 33], 5, ["string", 7], 41]
+        tlst = tn.foldrtpy(tn.cons, lst)
+        self.assertEqual(tlst.toPyExp(), lst)
+
+
+class TestParseNumberedExp(TestCase):
+
+    def test_pne1(self):
+        input = ['#', ['#', 2, 'val2']]
+        output = ['val2']
+        tree = tn.createTNodeExpFromPyNumberedExp(input)
+        self.assertEqual(tree.toPyExp(), output)
+
+    def test_pne2(self):
+        input = ['#', ['#', 2, 'val2'], ['#', 3, 'val3']]
+        output = ['val2', 'val3']
+        tree = tn.createTNodeExpFromPyNumberedExp(input)
+        self.assertEqual(tree.toPyExp(), output)
+
+
+    def test_pne3(self):
+        input = ['#', [['#', 2, 106], ['#', 3, 'notstring'], ['#', 4, 207], ['#', 5, 'gime']]]
+        output = [[106, "notstring", 207, 'gime']]
+        tree = tn.createTNodeExpFromPyNumberedExp(input)
+        self.assertEqual(tree.toPyExp(), output)
 
 
 
-# class TestMiscTNode(TestCase):
-#     def test_list1(self):
-#         tree = unusedListFuncs.foldrpy(unusedListFuncs.cons, [1, 5, "string", 41])
-#         self.assertEqual(tree.toPyExp(), [1, 5, "string", 41])
-#
-#     def test_list2(self):
-#         tree = unusedListFuncs.foldrtpy(unusedListFuncs.cons, [[1, 33], 5, ["string", 7], 41])
-#         self.assertEqual(tree.toPyExp(), [[1, 33], 5, ["string", 7], 41])
-#
-#     def test_list3(self):
-#         tree = unusedListFuncs.parseNumberedExp(['#', 1, [['#', 2, "string"]]])
-#         self.assertEqual(tree.toPyExp(), ["string"])
-#
-#     def test_list4(self):
-#         tree = unusedListFuncs.parseNumberedExp(['#', 1, [['#', 2, 106], ['#', 3, 'notstring'], ['#', 4, 207], ['#', 5, 'gime']]])
-#         self.assertEqual(tree.toPyExp(), [106, "notstring", 207, 'gime'])
-
-
-
-class TestFunctional(TestCase):
+class TestOpAtAdd(TestCase):
     def setUp(self):
         self.tree1 = createTNodeExpFromPyExp([1, 2, 3, 4])
         self.tree2 = createTNodeExpFromPyExp([1, 2, [11, 22, 33], 3, 4])
@@ -240,4 +207,6 @@ if __name__ == '__main__':
     #suite = unittest.TestSuite()
     #suite.addTest(unittest.TestLoader().loadTestsFromModule(test_eval))
     #unittest.TextTestRunner(verbosity=2).run(suite)
-    main()
+    #unittest.
+    unittest.TextTestRunner(verbosity=2).run(suite())
+    #main()
