@@ -43,19 +43,11 @@ def dropLast(lst):
     curLast.next = None
     return newLst
 
-def tnodeIndex(lst, ind):
-    curNode = lst
-    retInd = 0
-    while curNode.next and ind > 0:
-        curNode = curNode.next
-        ind = ind - 1
-        retInd = retInd + 1
-    return curNode, retInd
-
-def tnodeIndex2(lst, ind):
-    for retInd, node in enumerate(lst):
-        if retInd==ind or not node.next:
-            return node, retInd
+def tnodeIndex(list, index):
+    """ Find and return <tnode, index> at index, otherwise return the last <tnode, index> """
+    for nodeIndex, node in enumerate(list):
+        if nodeIndex==index or not node.next:
+            return node, nodeIndex
 
 
 def tnodeFindChild(lst, val):
