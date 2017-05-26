@@ -56,26 +56,39 @@ def tnodeFindValue(list, targetValue):
         if node.child == targetValue or not node.next:
             return node, nodeIndex
 
-def tnodeMatch(lst, toMatch, defaultInd):
+def tnodeFindNodeOrIndex(list, targetNode, defaultIndex):
+    """ Find and return <tnode, index> from list which matches the targetNode,
+    otherwise return the <tnode, index> at defaultIndex"""
+    defaultNode = list
+    for nodeIndex, node in enumerate(list):
+        if nodeIndex == defaultIndex:
+            defaultNode = node
+        if node == targetNode:
+            return node, nodeIndex
+
+    return defaultNode, defaultIndex
+
+def tnodeMatch(lst, matchNode, defaultInd):
     ind = 0
     defaultRet = lst
-    for i in lst:
+    for node in lst:
         if ind == defaultInd:
-            defaultRet = i
-        if i == toMatch:
-            return i, ind
+            defaultRet = node
+        if node == matchNode:
+            return node, ind
         ind = ind + 1
 
     return defaultRet, defaultInd
 
-def tnodeAddress(exp, add, acc=[]):
-    cur, curPos = tnodeIndex(exp, add[0])
-    accInd = list(acc)
-    accInd.append(curPos)
-    if add[1:] and cur.isSubNode():
-        return tnodeAddress(cur.child, add[1:], accInd)
+def tnodeAddress(tree, targetAddress, savedAddress=[]):
+    """ Find and return <tnode, address> at targetAddress """
+    node, nodeIndex = tnodeIndex(tree, targetAddress[0])
+    newSavedAddress = list(savedAddress)
+    newSavedAddress.append(nodeIndex)
+    if targetAddress[1:] and node.isSubNode():
+        return tnodeAddress(node.child, targetAddress[1:], newSavedAddress)
     else:
-        return cur, accInd
+        return node, newSavedAddress
 
 def tnodeGetNVSFromAdd(exp, add, acc=[]):
     cur, curPos = tnodeIndex(exp, add[0])
