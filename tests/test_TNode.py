@@ -6,13 +6,32 @@ from tn import createTNodeExpFromPyExp, replaceAdd, insertAdd, deleteAdd
 
 
 class TestParseTree(unittest.TestCase):
-    def __init__(self, input, output):
+    def __init__(self, correctValue, input):
         super(TestParseTree, self).__init__()
-        self.input = input
-        self.output = output
+        self.correctValue = correctValue
+        self.result = self.test(input)
+
+    def test(self, input):
+        return createTNodeExpFromPyExp(input).toPyExp()
 
     def runTest(self):
-        self.assertEqual(createTNodeExpFromPyExp(self.input).toPyExp(), self.output)
+        self.assertEqual(self.result, self.correctValue)
+
+class TestTnodeIndex(TestCase):
+    def __init__(self, correctValue, inputArray, inputIndex):
+        super(TestTnodeIndex, self).__init__()
+        self.correctAnswer = correctValue
+        self.result = self.test(inputArray, inputIndex)
+
+    def test(self, inputArray, inputIndex):
+        tree = createTNodeExpFromPyExp(inputArray)
+        node, index = tn.tnodeIndex(tree, inputIndex)
+        return node.child
+
+    def runTest(self):
+        self.assertEqual(self.result, self.correctAnswer)
+
+
 
 def getTests(testCaseClass):
     return unittest.TestLoader().loadTestsFromTestCase(testCaseClass)
@@ -21,6 +40,9 @@ def suite():
     suite = unittest.TestSuite()
     vals = [[11], [11, 15], [11, 15, 17], [[10]], [22, [33, 44]], [22, [11, 10, [9]], [33, 44], 17]]
     suite.addTests(TestParseTree(val, val) for val in vals)
+
+    vals = [0, 1, 2, 3, 4]
+    suite.addTests(TestTnodeIndex(val, vals, val) for val in vals)
 
     suite.addTest(getTests(TestPyListFuncs))
     suite.addTest(getTests(TestParseNumberedExp))
@@ -159,6 +181,8 @@ class TestOpAtAdd(TestCase):
     def test_delete13(self):
         newTree = deleteAdd(self.tree3, [2, 2, 0])
         self.assertEqual(newTree.toPyExp(), [1, 2, [11, 22, None, 33], 3, 4])
+
+
 
 
 

@@ -52,6 +52,12 @@ def tnodeIndex(lst, ind):
         retInd = retInd + 1
     return curNode, retInd
 
+def tnodeIndex2(lst, ind):
+    for retInd, node in enumerate(lst):
+        if retInd==ind or not node.next:
+            return node, retInd
+
+
 def tnodeFindChild(lst, val):
     curNode = lst
     retInd = 0
