@@ -49,14 +49,12 @@ def tnodeIndex(list, index):
         if nodeIndex==index or not node.next:
             return node, nodeIndex
 
-
-def tnodeFindChild(lst, val):
-    curNode = lst
-    retInd = 0
-    while curNode.next and curNode.child != val:
-        curNode = curNode.next
-        retInd = retInd + 1
-    return curNode, retInd
+def tnodeFindValue(list, targetValue):
+    """ Find and return <tnode, index> for first node which has a child matching targetValue,
+    otherwise return the last <tnode, index> """
+    for nodeIndex, node in enumerate(list):
+        if node.child == targetValue or not node.next:
+            return node, nodeIndex
 
 def tnodeMatch(lst, toMatch, defaultInd):
     ind = 0
@@ -93,7 +91,7 @@ def tnodeGetNVSFromAdd(exp, add, acc=[]):
         return cur, accNVS
 
 def tnodeNVS(exp, nvs, acc=[]):
-    cur, curPos = tnodeFindChild(exp, nvs[0])
+    cur, curPos = tnodeFindValue(exp, nvs[0])
     accInd = list(acc)
     accInd.append(curPos)
     if nvs[1:] and cur.isSubNode():

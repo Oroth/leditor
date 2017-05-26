@@ -4,32 +4,36 @@ from unittest import TestCase, main
 import tn
 from tn import createTNodeExpFromPyExp, replaceAdd, insertAdd, deleteAdd
 
-
-class TestParseTree(unittest.TestCase):
-    def __init__(self, correctValue, input):
-        super(TestParseTree, self).__init__()
+class MultiTest(unittest.TestCase):
+    def __init__(self, correctValue, *inputArgs):
+        super(MultiTest, self).__init__()
         self.correctValue = correctValue
-        self.result = self.test(input)
+        self.result = self.test(*inputArgs)
 
-    def test(self, input):
-        return createTNodeExpFromPyExp(input).toPyExp()
+    def test(self, *input):
+        return input
 
     def runTest(self):
         self.assertEqual(self.result, self.correctValue)
 
-class TestTnodeIndex(TestCase):
-    def __init__(self, correctValue, inputArray, inputIndex):
-        super(TestTnodeIndex, self).__init__()
-        self.correctAnswer = correctValue
-        self.result = self.test(inputArray, inputIndex)
 
+class TestParseTree(MultiTest):
+    def test(self, input):
+        return createTNodeExpFromPyExp(input).toPyExp()
+
+
+class TestTnodeIndex(MultiTest):
     def test(self, inputArray, inputIndex):
         tree = createTNodeExpFromPyExp(inputArray)
         node, index = tn.tnodeIndex(tree, inputIndex)
         return node.child
 
-    def runTest(self):
-        self.assertEqual(self.result, self.correctAnswer)
+class TestTnodeFindChild(MultiTest):
+    def test(self, inputArray, inputValue):
+        tree = createTNodeExpFromPyExp(inputArray)
+        node, index = tn.tnodeFindValue(tree, inputValue)
+        return node.child
+
 
 
 
@@ -43,6 +47,11 @@ def suite():
 
     vals = [0, 1, 2, 3, 4]
     suite.addTests(TestTnodeIndex(val, vals, val) for val in vals)
+
+    inputArray = [0, 1, 2, 3]
+    testVals = [0, 1, 2, 3, 4]
+    resultVals = [0, 1, 2, 3, 3]
+    suite.addTests(TestTnodeFindChild(resultVal, inputArray, testVal) for testVal,resultVal in zip(testVals, resultVals))
 
     suite.addTest(getTests(TestPyListFuncs))
     suite.addTest(getTests(TestParseNumberedExp))
