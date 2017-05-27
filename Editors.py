@@ -238,24 +238,52 @@ class DisplayEditor(fo.FuncObject):
 
         return self.image
 
+def lineLastSymbolPos(line, maxx=None):
+    if not maxx: maxx = len(line)
+    lastSymbolPos = 0
+    for x, cell in enumerate(line):
+        if cell.lineItemNodeReference and x != maxx:
+            if cell.character != ')':
+                lastSymbolPos = x
+        else:
+            return lastSymbolPos
+
+
+class StatusBar(DisplayEditor):
+    def __init__(self, aBuffer=None):
+        if aBuffer:
+            statusBuffer = aBuffer
+        else:
+            self.status = [reader.Symbol('Editor')]
+            statusBuffer = buffer.BufferSexp(tn.createTNodeExpFromPyExp(self.status))
+
+        super(StatusBar, self).__init__(statusBuffer)
+
+        self.colourScheme = ColourScheme(
+            bgCol=iop.white, symbolCol=iop.black,
+            identifierCol=iop.black, stringCol=iop.darker_green,
+            numberCol=iop.darker_sky, activeHiCol=iop.white, idleHiCol=iop.white)
+
+    @classmethod
+    def fromStatusList(cls, statusList):
+        statusBuffer = buffer.BufferSexp.fromPyExp(statusList)
+        return cls(statusBuffer)
+
+
 
 
 class TreeEditor(DisplayEditor):
     def __init__(self, aBuffer=None, zippedNodes={}):
         super(TreeEditor, self).__init__(aBuffer)
-
         self.editing = False
         self.changeMode = False
         self.cellEditor = None
         self.yankBuffer = None
-        #self.syncWithRoot = True
         self.updateUndo = False
         self.revealedNodes = {}
         self.zippedNodes = dict(zippedNodes)
         initialViewHistoryNode = tn.TNode(tn.TNode(View(self.buffer.viewAdd)))
         self.viewHistory = buffer.SimpleBuffer(initialViewHistoryNode, [0, 0])
-        #self.drawMode = 'cursor'
-        #self.statusBar = StatusBar()
 
         self.maxx = 120
         self.maxy = 68
@@ -281,7 +309,6 @@ class TreeEditor(DisplayEditor):
         else:
             return self
 
-    #@DisplayEditor.message.getter
     @property
     def message(self):
         if self.editing:
@@ -334,7 +361,6 @@ class TreeEditor(DisplayEditor):
 
     def handleKeys(self, key):
         result = self.handleKeysInitial(key)
-        #result.statusBar = StatusBar.fromStatusList(result.status())
         return result
 
     # split out for flexibility when inheriting
@@ -500,7 +526,6 @@ class TreeEditor(DisplayEditor):
                 ('cellEditor', CellEditor(Symbol(''))))
 
         else:
-            #self.statusBar.updateMessage("Editing")
             return self
 
     def handleKeysChangeMode(self, key):
@@ -814,58 +839,10 @@ class TreeEditor(DisplayEditor):
         return self
 
     def draw(self, maxx, maxy, isActive):
-
         return self.image
 
-        # finalImage =[None] * maxy
-        #
-        # screen.overlayLinesOnImage(finalImage, 0, self.image)
-        #
-        # if self.statusBar:
-        #     statusImage = self.statusBar.draw(maxx, 1, isActive=False)
-        #     screen.overlayLinesOnImage(finalImage, maxy - 1, statusImage)
-        #
-        # return finalImage
 
 
 
-def lineLastSymbolPos(line, maxx=None):
-    if not maxx: maxx = len(line)
-    lastSymbolPos = 0
-    for x, cell in enumerate(line):
-        if cell.lineItemNodeReference and x != maxx:
-            if cell.character != ')':
-                lastSymbolPos = x
-        else:
-            return lastSymbolPos
-
-
-class StatusBar(DisplayEditor):
-    def __init__(self, aBuffer=None):
-        if aBuffer:
-            statusBuffer = aBuffer
-        else:
-            self.status = [reader.Symbol('Editor')]
-            statusBuffer = buffer.BufferSexp(tn.createTNodeExpFromPyExp(self.status))
-
-        super(StatusBar, self).__init__(statusBuffer)
-
-        self.colourScheme = ColourScheme(
-            bgCol=iop.white, symbolCol=iop.black,
-            identifierCol=iop.black, stringCol=iop.darker_green,
-            numberCol=iop.darker_sky, activeHiCol=iop.white, idleHiCol=iop.white)
-
-    @classmethod
-    def fromStatusList(cls, statusList):
-        statusBuffer = buffer.BufferSexp.fromPyExp(statusList)
-        return cls(statusBuffer)
-
-    def refreshBuffer(self):
-        statusList = list(self.status)
-        newBuff = buffer.BufferSexp.fromPyExp(statusList)
-        return self.update('buffer', newBuff)
-
-    def updateStatus(self, status):
-        self.status = status
 
 

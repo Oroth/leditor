@@ -9,11 +9,6 @@ class ScreenEditor(Editors.Editor):
         self.maxx = maxx; self.maxy = maxy
         super(ScreenEditor, self).__init__()
 
-    def syncWithImage(self, newImage):
-        return self
-
-    def isRootImageEditor(self):
-        return False
 
     def draw(self, maxx, maxy, isActive):
         screen.setCellColour(self.image, self.x, self.y, iop.light_sky, iop.white)
