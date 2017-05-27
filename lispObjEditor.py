@@ -7,8 +7,6 @@ class LispObjEditor(fo.FuncObject):
     def __init__(self, obj):
         self.lispObj = obj
         #self.image = screen.createBlank(maxx, maxy)
-        self.statusBar = Editors.StatusBar()
-
 
     def syncWithImage(self, newImage):
         return self

@@ -6,7 +6,8 @@ import reader, buffer, eval, lispObjEditor, CodeEditor
 import cmdList
 import fileEditor, screenEditor, pager, repl
 import simpleFileEditor as sfe
-
+import Editors
+import screen
 
 
 class Window(fo.FuncObject):
@@ -16,6 +17,7 @@ class Window(fo.FuncObject):
         self.editorList = editorList
 
         self.winMessage = None
+        self.statusBar = Editors.StatusBar()
         self.persist = ['editorList']
 
     def setPosition(self, newPosx, newPosy, newMaxx, newMaxy):
@@ -26,7 +28,22 @@ class Window(fo.FuncObject):
             ('maxy', newMaxy))
 
     def draw(self, posx, posy, maxx, maxy, isActive):
-        return self.editor.draw(maxx, maxy, isActive)
+        #return self.editor.draw(maxx, maxy, isActive)
+        editorImage = self.editor.draw(maxx, maxy, isActive)
+
+        finalImage =[None] * maxy
+
+        screen.overlayLinesOnImage(finalImage, 0, editorImage)
+
+        statusBar = Editors.StatusBar.fromStatusList(self.status())
+        #if self.statusBar:
+        statusImage = statusBar.draw(maxx, 1, isActive=False)
+        screen.overlayLinesOnImage(finalImage, maxy - 1, statusImage)
+
+        return finalImage
+
+    def status(self):
+        return self.editor.status()
 
     @property
     def message(self):

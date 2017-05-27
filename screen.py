@@ -27,17 +27,14 @@ def createBlank(maxx, maxy, bgColour=iop.defaultBG, fgColour=iop.defaultFG):
 
 
 def fnPutNodeOnImage(image, x, y, text):
-    newImage = [list(line) for line in image]
+    #newImage = [list(line) for line in image]
+    newImage = image
     for cdx, c in enumerate(text):
-        #if x < maxx:
-        (newImage[y][x+cdx]).character = c
-        #(image[y][x]).characterReference = cdx
-        #(image[y][x]).lineItemNodeReference = lineItemNodeRef
-        #(image[y][x]).bgColour = bgcol
-        #(image[y][x]).fgColour = fgcol
-        #x += 1
+        newImage[y][x+cdx] = Cell(c)
 
     return newImage
+
+
 
 def putNodeOnImage(image, x, y, text, lineItemNodeRef, bgcol, fgcol):
     maxx = len(image[0])
@@ -52,8 +49,10 @@ def putNodeOnImage(image, x, y, text, lineItemNodeRef, bgcol, fgcol):
             x += 1
 
 def setCellColour(image, x, y, bgcol, fgcol):
-    (image[y][x]).bgColour = bgcol
-    (image[y][x]).fgColour = fgcol
+    image[y][x] = image[y][x].updateList(('bgColour', bgcol), ('fgColour', fgcol))
+
+    # (image[y][x]).bgColour = bgcol
+    # (image[y][x]).fgColour = fgcol
 
 def overlayLinesOnImage(bottomImage, y, topImage):
     for line in topImage:

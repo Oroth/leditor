@@ -36,11 +36,13 @@ class IntAtom(EditorAtom):
 
 class Editor(fo.FuncObject):
     def __init__(self):
-        self.statusBar = StatusBar()
         self.maxx = 125
         self.maxy = 75
         self.image = screen.createBlank(self.maxx, self.maxy)
-        #self.message = ''
+        self.message = ''
+
+    def status(self):
+        return [Symbol(self.__class__.__name__)]
 
     def syncWithImage(self, newImage):
         return self
@@ -252,8 +254,8 @@ class TreeEditor(DisplayEditor):
         self.zippedNodes = dict(zippedNodes)
         initialViewHistoryNode = tn.TNode(tn.TNode(View(self.buffer.viewAdd)))
         self.viewHistory = buffer.SimpleBuffer(initialViewHistoryNode, [0, 0])
-        self.drawMode = 'cursor'
-        self.statusBar = StatusBar()
+        #self.drawMode = 'cursor'
+        #self.statusBar = StatusBar()
 
         self.maxx = 120
         self.maxy = 68
@@ -294,10 +296,6 @@ class TreeEditor(DisplayEditor):
                 Symbol('nodeID'),
                 self.buffer.cursor.nodeID]
 
-    def updateStatusBar(self):
-        self.statusBar.updateStatus([self.statusDescription, self.buffer.viewAdd, self.buffer.cursorAdd,
-                             Symbol('nodeID'), self.buffer.cursor.nodeID])
-
     def updateSize(self, newMaxx, newMaxy):
         if (self.maxx, self.maxy) != (newMaxx, newMaxy):
             newEditor = self.updateList(
@@ -336,7 +334,7 @@ class TreeEditor(DisplayEditor):
 
     def handleKeys(self, key):
         result = self.handleKeysInitial(key)
-        result.statusBar = StatusBar.fromStatusList(result.status())
+        #result.statusBar = StatusBar.fromStatusList(result.status())
         return result
 
     # split out for flexibility when inheriting
@@ -816,16 +814,18 @@ class TreeEditor(DisplayEditor):
         return self
 
     def draw(self, maxx, maxy, isActive):
-        #finalImage = screen.createBlank(maxx, maxy)
-        finalImage =[None] * maxy
 
-        screen.overlayLinesOnImage(finalImage, 0, self.image)
+        return self.image
 
-        if self.statusBar:
-            statusImage = self.statusBar.draw(maxx, 1, isActive=False)
-            screen.overlayLinesOnImage(finalImage, maxy - 1, statusImage)
-
-        return finalImage
+        # finalImage =[None] * maxy
+        #
+        # screen.overlayLinesOnImage(finalImage, 0, self.image)
+        #
+        # if self.statusBar:
+        #     statusImage = self.statusBar.draw(maxx, 1, isActive=False)
+        #     screen.overlayLinesOnImage(finalImage, maxy - 1, statusImage)
+        #
+        # return finalImage
 
 
 

@@ -67,21 +67,12 @@ class CodeEditor(Editors.TreeEditor):
             [Symbol('nodeID'), self.buffer.cursor.nodeID],
             [Symbol('=>'), self.getNodeValue(self.buffer.cursor)]]
 
-    def updateStatusBar(self):
-        self.statusBar.updateStatus(
-            [self.statusDescription, self.buffer.viewAdd, self.buffer.cursorAdd,
-            [Symbol('nodeID'), self.buffer.cursor.nodeID],
-            [Symbol('=>'), self.getNodeValue(self.buffer.cursor)]])
-
-
     # a bit of a hack, necessary because everything is handled in handleKeys. We need to make sure that
     # the codeEditor returns with a newly evaluated buffer if there were any significant changes.
     def handleKeys(self, key):
         result = self.handleKeysInitial(key)
         if result != 'UNDO' and result.updateUndo:
             result.evalBuffer()  # updating imperatively
-
-        result.statusBar = Editors.StatusBar.fromStatusList(result.status())
 
         return result
 
@@ -150,11 +141,10 @@ class InspectionEditor(CodeEditor):
     def evalBuffer(self):
         eval.eval(buffer.BufferSexp(self.buffer.root, self.buffer.viewAdd), self.env, self.storeNodeValue)
 
-    def updateStatusBar(self):
-        self.statusBar.updateStatus(
-            [self.statusDescription,
-            [[Symbol(key), value] for key, value in self.env.items()],
-            [Symbol('='), self.getNodeValue(self.buffer.cursor)]])
+    def status(self):
+        return [self.statusDescription,
+        [[Symbol(key), value] for key, value in self.env.items()],
+        [Symbol('='), self.getNodeValue(self.buffer.cursor)]]
 
 
 class ProgInspectionEditor(InspectionEditor):
@@ -222,8 +212,7 @@ class evalIOHandler(CodeEditor):
         else:
             return super(evalIOHandler, self).draw(maxx, maxy, isActive)
 
-    def updateStatusBar(self):
-        self.statusBar.updateStatus(
-            [self.statusDescription,
+    def status(self):
+        return [self.statusDescription,
             [[Symbol(key), value] for key, value in self.env.items()],
-            [Symbol('='), self.getNodeValue(self.buffer.cursor)]])
+            [Symbol('='), self.getNodeValue(self.buffer.cursor)]]
