@@ -1,5 +1,4 @@
 __author__ = 'chephren'
-import copy
 import funobj as fo
 import reader
 
@@ -8,40 +7,23 @@ def isPyList(lst):
     return isinstance(lst, list)
 
 def cons(value, cdr):
-    car = TNode(value)
-    car.next = cdr
-    return car
+    return TNode(value, next=cdr)
 
 def join(node1, node2):
-    car = copy.copy(node1)
-    car.next = node2
-    return car
+    return node1.update('next', node2)
 
 def joinList(lst, node):
-    newLst = copy.deepcopy(lst)
-    curLast = newLst
-
-    if curLast is None:
+    if lst is None:
         return node
 
-    while curLast.next:
-        curLast = curLast.next
-
-    curLast.next = node
-    return newLst
+    return joinNodeAdd(lst, [lst.len()-1], node)
 
 def dropLast(lst):
-    newLst = copy.deepcopy(lst)
-    curLast = newLst
-
-    if curLast.next is None:
+    if lst.next is None:
         return None
 
-    while curLast.next and curLast.next.next:
-        curLast = curLast.next
+    return copyToAdd(lst, [lst.len()-2])
 
-    curLast.next = None
-    return newLst
 
 def tnodeIndex(list, index):
     """ Find and return <tnode, index> at index, otherwise return the last <tnode, index> """
@@ -59,32 +41,17 @@ def tnodeFindValue(list, targetValue):
 def tnodeFindNodeOrIndex(list, targetNode, defaultIndex):
     """ Find and return <tnode, index> from list which matches the targetNode,
     otherwise return the <tnode, index> at defaultIndex"""
-    defaultNode = list
     for nodeIndex, node in enumerate(list):
-        if nodeIndex == defaultIndex:
-            defaultNode = node
         if node == targetNode:
             return node, nodeIndex
 
-    return defaultNode, defaultIndex
+    return tnodeIndex(list, defaultIndex)
 
-def tnodeMatch(lst, matchNode, defaultInd):
-    ind = 0
-    defaultRet = lst
-    for node in lst:
-        if ind == defaultInd:
-            defaultRet = node
-        if node == matchNode:
-            return node, ind
-        ind = ind + 1
-
-    return defaultRet, defaultInd
 
 def tnodeAddress(tree, targetAddress, savedAddress=[]):
     """ Find and return <tnode, address> at targetAddress """
     node, nodeIndex = tnodeIndex(tree, targetAddress[0])
-    newSavedAddress = list(savedAddress)
-    newSavedAddress.append(nodeIndex)
+    newSavedAddress = list(savedAddress) + [nodeIndex]
     if targetAddress[1:] and node.isSubNode():
         return tnodeAddress(node.child, targetAddress[1:], newSavedAddress)
     else:
@@ -143,7 +110,7 @@ def tnodeSearchPred(exp, searchPred, acc=[]):
 
 def tnodeSyncAddress(newexp, oldexp, oldadd, acc=[]):
     oldNode, oldPos = tnodeIndex(oldexp, oldadd[0])
-    curNode, curPos = tnodeMatch(newexp, oldNode, oldadd[0])
+    curNode, curPos = tnodeFindNodeOrIndex(newexp, oldNode, oldadd[0])
     accInd = list(acc)
     accInd.append(curPos)
     if oldadd[1:] and curNode.isSubNode():
@@ -247,6 +214,9 @@ def insertAdd(node, add, value):
 def appendAdd(node, add, value):
     return opAtAdd(node, add, lambda addNode: join(addNode, cons(value, addNode.next)))
 
+def joinNodeAdd(node, add, node2):
+    return opAtAdd(node, add, lambda addNode: join(addNode, node2))
+
 def deleteAdd(node, add):
     return opAtAdd(node, add, lambda addNode: addNode.next)
 
@@ -278,6 +248,9 @@ def methodChainAdd(node, add):
     return opAtAdd(node, add, methodChainOp)
 
 def slurpOp(addNode):
+    if addNode.next is None:
+        return addNode
+
     slurpNode = addNode.next.update('next', None)
     newNode = joinList(addNode.child, slurpNode)
     return cons(newNode, addNode.next.next)
@@ -328,6 +301,7 @@ class TNode(fo.FuncObject):
         if isinstance(other, TNode):
             return self.nodeID == other.nodeID
         else: return False
+
 
     def parseValue(self, val):
         if isPyList(val):
@@ -397,6 +371,12 @@ class TNode(fo.FuncObject):
         if isinstance(self.child, TNode):
             return True
         return False
+
+    def len(self, currentLength=1):
+        if self.next:
+            return self.next.len(currentLength + 1)
+        else:
+            return currentLength
 
     def last(self):
         if self.next:
