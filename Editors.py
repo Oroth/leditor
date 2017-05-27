@@ -1,16 +1,10 @@
-from colourScheme import ColourScheme
-
-__author__ = 'chephren'
 import operator
-import cmdList
-import buffer
+
 import funobj as fo
-import iop
-import misc
-import printsexp
-import reader
-import screen
-import tn
+import tn, buffer
+import iop, screen, printsexp
+import cmdList, misc, reader
+from colourScheme import ColourScheme
 from reader import Symbol
 from iop import Key
 
@@ -18,21 +12,6 @@ class View(object):
     def __init__(self, address):
         self.address = address
 
-class EditorAtom(object):
-    def __init__(self, atom):
-        self.atom = atom
-
-    def toPyExp(self):
-        pass
-
-    def toString(self):
-        pass
-
-    def __getslice__(self, *args, **kargs):
-        return self.atom.__getslice__(*args, **kargs)
-
-class IntAtom(EditorAtom):
-    pass
 
 class Editor(fo.FuncObject):
     def __init__(self):
@@ -59,9 +38,6 @@ class Editor(fo.FuncObject):
 
         else:
             return self
-
-    #def updateImage(self):
-    #   newImage = screen.createBlank(maxx, maxy)
 
     def draw(self, maxx, maxy, isActive):
         return screen.createBlank(maxx, maxy)
@@ -304,7 +280,7 @@ class TreeEditor(DisplayEditor):
             (Key.c('G'), cmdGotoAddressAtCursor),
             (Key.c('('), cmdNestCursor),
             (Key.c(')'), cmdDenestCursor),
-            (Key.c('o', ctrl=True), cmdAppendListAtCursor),
+            (Key.c('o'), cmdAppendListAtCursor),
             (Key.c('O'), cmdInsertListAtCursor),
             (Key.c('m'), cmdCyclePrintMode),
             (Key.c('N'), cmdViewNewListAtEndOfBuffer),

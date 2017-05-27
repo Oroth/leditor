@@ -1,6 +1,5 @@
-import screen
+import iop, screen
 import Editors
-import iop
 
 class ScreenEditor(Editors.Editor):
     def __init__(self, maxx, maxy):

@@ -1,18 +1,12 @@
-__author__ = 'chephren'
-import tn
-import buffer
-import reader
-import screen
-import CodeEditor
-import window
-from cmdBar import CmdBar
 import os.path
-import iop
-from iop import Key
+
 import funobj as fo
-import eval
-import leditor_exceptions as ex
+import tn, buffer, CodeEditor
+import iop, screen, window
+import reader, eval, leditor_exceptions as ex
 import cmdList
+from cmdBar import CmdBar
+from iop import Key
 
 
 def syncWindowsToEditorList(windowList, newEditorList):
@@ -20,7 +14,6 @@ def syncWindowsToEditorList(windowList, newEditorList):
 
 def syncEditorsToImage(editorList, newImage):
     return editorList.mapRoot(lambda node: node.syncWithImage(newImage))
-
 
 
 class WindowManager(fo.FuncObject):

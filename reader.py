@@ -3,7 +3,6 @@ import re
 import os
 import StringIO
 from datetime import datetime
-__author__ = 'chephren'
 
 def parse(inport):
     "Parse a program: read and expand/error-check it."

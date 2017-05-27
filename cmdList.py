@@ -13,5 +13,3 @@ class CmdList(fo.FuncObject):
             return cmd(caller)
 
         return False
-
-

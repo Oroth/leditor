@@ -1,12 +1,10 @@
-__author__ = 'chephren'
-import reader
-#import iop
-import buffer
-import funobj as fo
-import tn
-import leditor_exceptions as ex
 import sys
 import traceback
+
+import funobj as fo
+import tn, buffer
+import reader
+import leditor_exceptions as ex
 
 
 wm = None

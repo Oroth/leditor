@@ -1,11 +1,6 @@
-__author__ = 'chephren'
-import Editors
-import screen
-import buffer
-import iop
-import reader
-import eval
-import misc
+import iop, screen
+import buffer, Editors
+import reader, eval, misc
 from reader import Symbol
 
 
