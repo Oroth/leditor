@@ -111,14 +111,16 @@ class StdWindow(Window):
                 return self
 
         elif key.char == 'b' and key.ctrl():
-            return self.updateList(
-                ('editorCmd', True),
-                ('winMessage', "--Buffer Command--"))
+            return cmdStartBufferCommand(self)
 
         else:
             return super(StdWindow, self).handleKeys(key)
 
 
+def cmdStartBufferCommand(window):
+    return window.updateList(
+        ('editorCmd', True),
+        ('winMessage', "--Buffer Command--"))
 
 def cmdNewScreenEditor(window):
     newEd = screenEditor.ScreenEditor(window.maxx, window.maxy)

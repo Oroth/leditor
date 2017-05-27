@@ -289,12 +289,10 @@ class TreeEditor(DisplayEditor):
         self.maxy = 68
         self.lineList = printsexp.makeIndentedLineList(self, self.maxx, self.maxy)
 
-        #toppedLineList = self.lineList[self.topLine:]
         self.lineList.topLine = self.topLine
         isActive = True
         self.image, self.cursorx, self.cursory = \
             printsexp.drawLineList(self.lineList, self, isActive)
-               # self.lineList, self.maxx, self.maxy, self.colourScheme, , self.indentWidth)
 
         self._message = ''
 
@@ -327,7 +325,6 @@ class TreeEditor(DisplayEditor):
         ])
 
         self.moveCommands = cmdList.CmdList([
-
             (Key.c('j', ctrl=True), cmdViewToCursor),
             (Key.c('o', ctrl=True), cmdViewFuturePostion),
             (Key.c('h', ctrl=True), cmdViewPastPosition),
@@ -356,7 +353,6 @@ class TreeEditor(DisplayEditor):
         if newImageRoot != self.buffer.root:
             newBuffer = self.buffer.syncToNewRoot(newImageRoot)
             return self.updateBuffer(newBuffer)
-            #return self.update('buffer', self.buffer.syncToNewRoot(newImageRoot))
         else:
             return self
 
@@ -364,6 +360,9 @@ class TreeEditor(DisplayEditor):
     def message(self):
         if self.editing:
             return '--editing--'
+
+        if self.changeMode:
+            return '--Change Mode--'
 
         return self._message
 
@@ -426,13 +425,10 @@ class TreeEditor(DisplayEditor):
             return self.handleKeysChangeMode(key).refreshImage()
 
         elif key.char == 't':
-            return self.updateToppedLineList(self.topLine + 1)
+            return cmdScrollDown(self)
 
         elif key.char == 'T':
-            if self.topLine > 0:
-                return self.updateToppedLineList(self.topLine - 1)
-            else:
-                return self
+            return cmdScrollUp(self)
 
         result =  self.handleKeysMain(key)
 
@@ -447,36 +443,52 @@ class TreeEditor(DisplayEditor):
 
     def handleMouse(self, mouse):
         if mouse.lbuttonPressed():
-
-            cell = self.image[mouse.y][mouse.x]
-
-            if self.editing:
-                if cell.lineItemNodeReference and cell.lineItemNodeReference.nodeReference == self.buffer.cursor:
-                    self.cellEditor.handleClick(cell.characterReference)
-                else:
-                    print 'Clicked Outside'
-                    # still to do: finish editing and move cursor
-
-            elif cell.lineItemNodeReference:
-                newBuff = self.buffer.newCursorAdd(cell.lineItemNodeReference.nodeAddress)
-                return self.updateBuffer(newBuff)
-
-            else:
-                return self
+            return self.handleMouseButtonPressed(mouse)
 
         elif mouse.wheelScrolled():
-            if mouse.wheelDown():
-                newTopLine = self.topLine + 3
-
-            # scroll up
-            elif self.topLine > 2:
-                newTopLine = self.topLine - 3
-            else:
-                newTopLine = 0
-
-            return self.updateToppedLineList(newTopLine)
+            return self.handleMouseScroll(mouse)
 
         return self
+
+    def handleMouseButtonPressed(self, mouse):
+        cell = self.image[mouse.y][mouse.x]
+
+        if self.editing:
+            if self.cellInCursor(cell):
+                self.cellEditor.handleClick(cell.characterReference)
+            else:
+                print 'Clicked Outside'
+                # still to do: finish editing and move cursor
+
+        elif cell.lineItemNodeReference:
+            return self.cursorToCellAtom(cell)
+
+        else:
+            return self
+
+    def cellInCursor(self, cell):
+        if cell.lineItemNodeReference and \
+            cell.lineItemNodeReference.nodeReference == self.buffer.cursor:
+                return True
+
+        return False
+
+    def cursorToCellAtom(self, cell):
+        newBuff = self.buffer.newCursorAdd(cell.lineItemNodeReference.nodeAddress)
+        return self.updateBuffer(newBuff)
+
+
+    def handleMouseScroll(self, mouse):
+        if mouse.wheelDown():
+            newTopLine = self.topLine + 3
+
+        # scroll up
+        elif self.topLine > 2:
+            newTopLine = self.topLine - 3
+        else:
+            newTopLine = 0
+
+        return self.updateToppedLineList(newTopLine)
 
     def handleCellEditor(self, key):
         finished = self.cellEditor.handleKey(key)
@@ -571,7 +583,6 @@ class TreeEditor(DisplayEditor):
                     newBuff2 = newBuff.appendAtCursor('').curNext().quoteAtCursor()
             else:
                 return self
-                #newBuff2 = self.buffer.replaceAtCursor('').quoteAtCursor()
             return self.updateList(
                 ('buffer', newBuff2),
                 ('cellEditor', CellEditor(Symbol(''))))
@@ -580,49 +591,26 @@ class TreeEditor(DisplayEditor):
             return self
 
     def handleKeysChangeMode(self, key):
-
         if self.changeMode in ('from', 'to'):
             if key.isPrintable():
-                text = self.buffer.cursor.child
-                index = text.find(key.char)
-                if self.changeMode == 'from':
-                    newCellEditor =  CellEditor(text, index)
-                else:
-                    newCellEditor = CellEditor(text[index:])
-
-                return self.updateList(
-                    ('cellEditor', newCellEditor),
-                    ('editing', True),
-                    ('changeMode', False))
+                return cmdStartEditFromChangeMode(self, key)
             else:
                 return self.update('changeMode', False)
 
-        # change from start
         if key.char == 'i':
-            return self.updateList(
-                ('cellEditor', CellEditor(self.buffer.cursor.child)),
-                ('editing', True),
-                ('changeMode', False))
+            return cmdChangeFromStart(self)
 
-        # change from end
         elif key.char == 'a':
-            return self.updateList(
-                ('cellEditor', CellEditor(self.buffer.cursor.child, -1)),
-                ('editing', True),
-                ('changeMode', False))
+            return cmdChangeFromEnd(self)
 
-        # change to end
         elif key.char in ('e', 'l'):
-            return self.updateList(
-                ('cellEditor', CellEditor(Symbol(''))),
-                ('editing', True),
-                ('changeMode', False))
+            return cmdChangeToEnd(self)
 
         elif key.char == 'f':
-            return self.update('changeMode', 'from')
+            return cmdChangeFromMode(self)
 
         elif key.char == 't':
-            return self.update('changeMode', 'to')
+            return cmdChangeToMode(self)
 
         return self.update('changeMode', False)
 
@@ -666,8 +654,57 @@ class TreeEditor(DisplayEditor):
         return self.image
 
 
+##################################### Change Mode Commands ###############################################
 
-############################ Tree Editor Commands ####################################################
+def cmdChangeFromStart(editor):
+    return editor.updateList(
+        ('cellEditor', CellEditor(editor.buffer.cursor.child)),
+        ('editing', True),
+        ('changeMode', False))
+
+def cmdChangeFromEnd(editor):
+    return editor.updateList(
+        ('cellEditor', CellEditor(editor.buffer.cursor.child, -1)),
+        ('editing', True),
+        ('changeMode', False))
+
+def cmdChangeToEnd(editor):
+    return editor.updateList(
+        ('cellEditor', CellEditor(Symbol(''))),
+        ('editing', True),
+        ('changeMode', False))
+
+def cmdChangeFromMode(editor):
+    return editor.update('changeMode', 'from')
+
+def cmdChangeToMode(editor):
+    return editor.update('changeMode', 'to')
+
+def cmdStartEditFromChangeMode(editor, key):
+    text = editor.buffer.cursor.child
+    index = text.find(key.char)
+    if editor.changeMode == 'from':
+        newCellEditor =  CellEditor(text, index)
+    else:
+        newCellEditor = CellEditor(text[index:])
+
+    return editor.updateList(
+        ('cellEditor', newCellEditor),
+        ('editing', True),
+        ('changeMode', False))
+
+############################ Scrolling Commands ##########################################################
+
+def cmdScrollDown(editor):
+    return editor.updateToppedLineList(editor.topLine + 1)
+
+def cmdScrollUp(editor):
+    if editor.topLine > 0:
+        return editor.updateToppedLineList(editor.topLine - 1)
+    else:
+        return editor
+
+############################ Tree Editor Main Commands ####################################################
 
 
 def cmdDeleteAtCursor(editor):
