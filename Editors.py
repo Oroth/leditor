@@ -2,7 +2,7 @@ from colourScheme import ColourScheme
 
 __author__ = 'chephren'
 import operator
-
+import cmdList
 import buffer
 import funobj as fo
 import iop
@@ -12,7 +12,7 @@ import reader
 import screen
 import tn
 from reader import Symbol
-
+from iop import Key
 
 class View(object):
     def __init__(self, address):
@@ -298,6 +298,57 @@ class TreeEditor(DisplayEditor):
 
         self._message = ''
 
+        self.mainCommands = cmdList.CmdList([
+            (Key.c('d'), cmdDeleteAtCursor),
+            (Key.c('c'), cmdStartChangeMode),
+            (Key.c('a'), cmdAppendAtCursor),
+            (Key.c('i'), cmdInsertAtCursor),
+            (Key.c('G'), cmdGotoAddressAtCursor),
+            (Key.c('('), cmdNestCursor),
+            (Key.c(')'), cmdDenestCursor),
+            (Key.c('o', ctrl=True), cmdAppendListAtCursor),
+            (Key.c('O'), cmdInsertListAtCursor),
+            (Key.c('m'), cmdCyclePrintMode),
+            (Key.c('N'), cmdViewNewListAtEndOfBuffer),
+            (Key.c('p'), cmdPasteAfterCursor),
+            (Key.c('P'), cmdPasteBeforeCursor),
+            (Key.c('R'), cmdViewToRoot),
+            (Key.c('u'), cmdUndo),
+            (Key.c('y'), cmdYankAtCursor),
+            (Key.c('z'), cmdFoldAtCursor),
+            (Key.c("'"), cmdQuoteAtCursor),
+            (Key.c('.'), cmdMethodChainAtCursor),
+            (Key.c('>'), cmdSlurpAtCursor),
+            (Key.c('<'), cmdBarfAtCursor),
+            (Key.c('+'), cmdReplaceCursorWithSum),
+            (Key.c('"'), cmdToggleStringAtCursor),
+            (Key.c('/'), cmdSearchForMatchToCursor),
+            (Key.c('='), cmdToggleRevealedNode),
+        ])
+
+        self.moveCommands = cmdList.CmdList([
+
+            (Key.c('j', ctrl=True), cmdViewToCursor),
+            (Key.c('o', ctrl=True), cmdViewFuturePostion),
+            (Key.c('h', ctrl=True), cmdViewPastPosition),
+            (Key.c('k', ctrl=True), cmdViewUp),
+            (Key.c('H', ctrl=True), cmdViewPrevious),
+            (Key.c('L', ctrl=True), cmdViewNext),
+            (Key.c('J'), cmdCursorDownAlong),
+            (Key.c('H'), cmdCursorPreviousUpAlong),
+            (Key.c('K'), cmdCursorUp),
+            (Key.c('L'), cmdCursorNextUpAlong),
+            (Key.c('e'), cmdCursorToUnzippedLast),
+            (Key.vk(iop.KEY_RIGHT), cmdCursorToNextUnzippedSymbol),
+            (Key.vk(iop.KEY_LEFT), cmdCursorToPreviousUnzippedSymbol),
+            (Key.vk(iop.KEY_DOWN), cmdCursorToAboveSymbol),
+            (Key.vk(iop.KEY_UP), cmdCursorToBelowSymbol),
+            (Key.c('l'), cmdCursorToNextUnzippedSymbol),
+            (Key.c('h'), cmdCursorToPreviousUnzippedSymbol),
+            (Key.c('j'), cmdCursorToAboveSymbol),
+            (Key.c('k'), cmdCursorToBelowSymbol),
+        ])
+
     def nodeIsRevealed(self, node):
         return node in self.revealedNodes and self.revealedNodes[node]
 
@@ -577,244 +628,17 @@ class TreeEditor(DisplayEditor):
 
     def handleKeysMain(self, key):
 
-        if key.char == 'd':
-            if self.buffer.cursor != self.buffer.root:
-                return self.updateList(
-                    ('buffer', self.buffer.deleteAtCursor()),
-                    ('yankBuffer', self.buffer.cursorToPyExp()),
-                    ('updateUndo', True))
+        mainCommandResult = self.mainCommands.process(key, self)
 
-        elif key.char == 'c':
-            if not self.buffer.onSubNode():
-                print 'changeMode on'
-                return self.update('changeMode', True)
-
-        elif key.char == 'a':
-            if self.buffer.cursor != self.buffer.view:
-                newBuff = self.buffer.appendAtCursor('').curNext()
-                return self.updateList(
-                    ('buffer', newBuff),
-                    ('cellEditor', CellEditor(Symbol(''))),
-                    ('editing', True))
-
-        elif key.char == 'i':
-            if self.buffer.cursor != self.buffer.view:    # maybe the correct behaviour is to sub and ins
-                newBuff = self.buffer.insertAtCursor('').curPrev()
-                return self.updateList(
-                    ('buffer', newBuff),
-                    ('cellEditor', CellEditor(Symbol(''))),
-                    ('editing', True))
-
-
-        elif key.char == 'G':
-            lookupAddress = self.buffer.cursor.childToPyExp()
-            newBuff = buffer.BufferSexp(self.buffer.root, lookupAddress)
-            return self.update('buffer', newBuff)
-
-
-        elif key.char == '(':
-            return self.updateList(
-                ('buffer', self.buffer.nestCursor()),
-                ('updateUndo', True))
-
-        elif key.char == ')':
-            if self.buffer.onSubNode() and self.buffer.cursor != self.buffer.root:
-                return self.updateList(
-                    ('buffer', self.buffer.denestCursor()),
-                    ('updateUndo', True))
-
-        elif key.char == 'o' and not key.ctrl():
-            if self.buffer.cursor != self.buffer.view:
-                newBuff = self.buffer.appendAtCursor(['']).curNext().curChild()
-                return self.updateList(
-                    ('buffer', newBuff),
-                    ('cellEditor', CellEditor(Symbol(''))),
-                    ('editing', True))
-
-        elif key.char == 'O':
-            if self.buffer.cursor != self.buffer.view:
-                newBuff = self.buffer.insertAtCursor(['']).curPrev().curChild()
-                return self.updateList(
-                    ('buffer', newBuff),
-                    ('cellEditor', CellEditor(Symbol(''))),
-                    ('editing', True))
-
-        elif key.char == 'm':
-            newPrintingMode = misc.cycleThroughList(self.printingMode, self.printingModeOptions)
-            msg = "DisplayMode: " + newPrintingMode
-
-            return self.updateList(
-                ('printingMode', newPrintingMode),
-                ('_message', msg))
-
-
-        elif key.char == 'N':
-            newBuff = buffer.BufferSexp(self.buffer.root, [0], [0, 0]).curLast()
-            newBuff = newBuff.appendAtCursor([reader.Symbol('newNode')]).curNext()
-            newBuff = newBuff.viewToCursor().curChild()
-            self.topLine = 0
-            return self.update('buffer', newBuff)
-
-        elif key.char == 'p':
-            if self.yankBuffer:
-                toInsert = tn.createTNodeExpFromPyExp(self.yankBuffer)
-                return self.updateList(
-                    ('buffer', self.buffer.appendAtCursor(toInsert)),
-                    ('updateUndo', True))
-
-        elif key.char == 'P':
-            if self.yankBuffer:
-                toInsert = tn.createTNodeExpFromPyExp(self.yankBuffer)
-                return self.updateList(
-                    ('buffer', self.buffer.insertAtCursor(toInsert)),
-                    ('updateUndo', True))
-
-        elif key.char == 'R':
-            return self.update('buffer', self.buffer.viewToRoot())
-
-        elif key.char == 's':
-            return self.updateList(
-                ('cellEditor', CellEditor(Symbol(''))),
-                ('editing', True))
-
-        elif key.char == 'u':
-            return "UNDO"
-
-        elif key.char == 'y':
-            self.yankBuffer = self.buffer.cursorToPyExp()
-            print self.yankBuffer
-
-        elif key.char == 'z':
-            if self.buffer.cursor.nodeID in self.zippedNodes:
-                self.zippedNodes[self.buffer.cursor.nodeID] = not(self.zippedNodes[self.buffer.cursor.nodeID])
-            else:
-                self.zippedNodes[self.buffer.cursor.nodeID] = True
-
-        elif key.char == "'":
-            newBuff = self.buffer.quoteAtCursor()
-            return self.update('buffer', newBuff)
-
-        elif key.char == '.':
-            if self.buffer.cursor.next and not self.buffer.cursor.next.isSubNode():
-                newBuff = self.buffer.methodChainAtCursor()
-                return self.update('buffer', newBuff)
-
-        elif key.char == '>':
-            if self.buffer.onSubNode() or self.buffer.cursor.child is None:
-                newBuff = self.buffer.slurpAtCursor()
-                return self.update('buffer', newBuff)
-
-        elif key.char == '<':
-            if self.buffer.onSubNode() and self.buffer.cursor.child:
-                newBuff = self.buffer.barfAtCursor()
-                return self.update('buffer', newBuff)
-
-        elif key.char == '+':
-            numList = self.buffer.cursorToPyExp()
-            try:
-                result = reduce(operator.add, numList)
-            except TypeError:
-                newBuff = self.buffer
-            else:
-                newBuff = self.buffer.replaceAtCursor(result)
-
-            return self.updateList(
-                ('buffer', newBuff),
-                ('updateUndo', True))
-
-        elif key.char == '"':
-            return self.updateList(
-                ('buffer', self.buffer.toggleStringAtCursor()),
-                ('updateUndo', True))
-
-        elif key.char == '/':
-            if not self.buffer.onSubNode():
-                try:
-                    return self.update('buffer', self.buffer.search(self.buffer.getCurrent()))
-                except ValueError: pass
-
-        elif key.char == '=':
-            if self.buffer.cursor in self.revealedNodes:
-                self.revealedNodes[self.buffer.cursor] = not(self.revealedNodes[self.buffer.cursor])
-            else:
-                self.revealedNodes[self.buffer.cursor] = True
-
-
+        if mainCommandResult:
+            return mainCommandResult
         else:
             try:
-                if key.char == 'j' and key.ctrl():
-                    newBuff = self.buffer.viewToCursor()
-                    newHist = self.viewHistory.insertAtCursor(View(newBuff.viewAdd)).curPrev()
-                    newHist2 = newHist.rootToCursor()
-                    return self.updateList(
-                        ('buffer', newBuff),
-                        ('viewHistory', newHist2))
-
-                elif key.char == 'o' and key.ctrl():
-                    newHist = self.viewHistory.curNext()
-                    newBuff = self.buffer.newViewAdd(newHist.cursor.child.address)
-                    return self.updateList(
-                        ('viewHistory', newHist),
-                        ('buffer', newBuff))
-
-                elif key.char == 'h' and key.ctrl():
-                    newHist = self.viewHistory.curPrev()
-                    newBuff = self.buffer.newViewAdd(newHist.cursor.child.address)
-                    return self.updateList(
-                        ('viewHistory', newHist),
-                        ('buffer', newBuff))
-
-                elif key.char == 'k' and key.ctrl():
-                    return self.update('buffer', self.buffer.viewUp())
-
-                elif key.char == 'H' and key.ctrl():
-                    return self.update('buffer', self.buffer.viewPrev())
-
-                elif key.char == 'L' and key.ctrl():
-                    return self.update('buffer', self.buffer.viewNext())
-
-
-                elif key.char == 'J':
-                    if self.cursorIsZipped(self.buffer):
-                        raise ValueError
-                    return self.update('buffer', self.buffer.curDownAlong(self.nodeIsZipped))
-
-                elif key.char == 'H':
-                    return self.update('buffer', self.buffer.curPrevUpAlong())
-
-                elif key.char == 'K':
-                    return self.update('buffer', self.buffer.curUp())
-
-                elif key.char == 'L':
-                    if self.cursorIsZipped(self.buffer):
-                        newBuff = self.buffer.curUp().curNextUpAlong()
-                    else:
-                        newBuff = self.buffer.curNextUpAlong()
-                    return self.update('buffer', newBuff)
-
-
-                elif key.char == 'e': # and key.ctrl():
-                    return self.update('buffer', self.buffer.curUnzippedLast(self.nodeIsZipped))
-                #
-                #elif key.char == 'H':     # Go back to the first expression in the list
-                #     return self.update('buffer', self.buffer.curFirst())
-
-                elif key.code == iop.KEY_RIGHT or key.char == 'l':
-                    return self.update('buffer', self.buffer.curNextUnzippedSymbol(self.nodeIsZipped))
-
-                elif key.code == iop.KEY_LEFT or key.char == 'h':
-                    return self.update('buffer', self.buffer.curPrevUnzippedSymbol(self.nodeIsZipped))
-
-                elif key.code == iop.KEY_DOWN or key.char == 'j' and self.cursory +1 < len(self.image):
-                    return self.cursorToScreenPos(self.cursorx, self.cursory + 1)
-
-                elif key.code == iop.KEY_UP or key.char == 'k':
-                    if self.topLine > 0 and self.cursory == 0:
-                        newEd = self.updateToppedLineList(self.topLine-1)
-                        return newEd.cursorToScreenPos(self.cursorx, 0)
-                    elif self.cursory > 0:
-                        return self.cursorToScreenPos(self.cursorx, self.cursory - 1)
-
+                result = self.moveCommands.process(key, self)
+                if result:
+                    return result
+                # # #elif key.char == 'H':     # Go back to the first expression in the list
+                # # #     return self.update('buffer', self.buffer.curFirst())
 
             except ValueError:pass
 
@@ -843,6 +667,237 @@ class TreeEditor(DisplayEditor):
 
 
 
+############################ Tree Editor Commands ####################################################
+
+
+def cmdDeleteAtCursor(editor):
+    if editor.buffer.cursor != editor.buffer.root:
+        return editor.updateList(
+            ('buffer', editor.buffer.deleteAtCursor()),
+            ('yankBuffer', editor.buffer.cursorToPyExp()),
+            ('updateUndo', True))
+
+def cmdStartChangeMode(editor):
+    if not editor.buffer.onSubNode():
+        print 'changeMode on'
+        return editor.update('changeMode', True)
+
+def cmdAppendAtCursor(editor):
+    if editor.buffer.cursor != editor.buffer.view:
+        newBuff = editor.buffer.appendAtCursor('').curNext()
+        return editor.updateList(
+            ('buffer', newBuff),
+            ('cellEditor', CellEditor(Symbol(''))),
+            ('editing', True))
+
+def cmdInsertAtCursor(editor):
+    if editor.buffer.cursor != editor.buffer.view:    # maybe the correct behaviour is to sub and ins
+        newBuff = editor.buffer.insertAtCursor('').curPrev()
+        return editor.updateList(
+            ('buffer', newBuff),
+            ('cellEditor', CellEditor(Symbol(''))),
+            ('editing', True))
+
+def cmdGotoAddressAtCursor(editor):
+    lookupAddress = editor.buffer.cursor.childToPyExp()
+    newBuff = buffer.BufferSexp(editor.buffer.root, lookupAddress)
+    return editor.update('buffer', newBuff)
+
+def cmdNestCursor(editor):
+    return editor.updateList(
+        ('buffer', editor.buffer.nestCursor()),
+        ('updateUndo', True))
+
+def cmdDenestCursor(editor):
+    if editor.buffer.onSubNode() and editor.buffer.cursor != editor.buffer.root:
+        return editor.updateList(
+            ('buffer', editor.buffer.denestCursor()),
+            ('updateUndo', True))
+
+def cmdAppendListAtCursor(editor):
+    if editor.buffer.cursor != editor.buffer.view:
+        newBuff = editor.buffer.appendAtCursor(['']).curNext().curChild()
+        return editor.updateList(
+            ('buffer', newBuff),
+            ('cellEditor', CellEditor(Symbol(''))),
+            ('editing', True))
+
+def cmdInsertListAtCursor(editor):
+    if editor.buffer.cursor != editor.buffer.view:
+        newBuff = editor.buffer.insertAtCursor(['']).curPrev().curChild()
+        return editor.updateList(
+            ('buffer', newBuff),
+            ('cellEditor', CellEditor(Symbol(''))),
+            ('editing', True))
+
+def cmdCyclePrintMode(editor):
+    newPrintingMode = misc.cycleThroughList(editor.printingMode, editor.printingModeOptions)
+    msg = "DisplayMode: " + newPrintingMode
+    return editor.updateList(
+        ('printingMode', newPrintingMode),
+        ('_message', msg))
+
+
+def cmdViewNewListAtEndOfBuffer(editor):
+    newBuff = buffer.BufferSexp(editor.buffer.root, [0], [0, 0]).curLast()
+    newBuff = newBuff.appendAtCursor([reader.Symbol('newNode')]).curNext()
+    newBuff = newBuff.viewToCursor().curChild()
+    editor.topLine = 0
+    return editor.update('buffer', newBuff)
+
+def cmdPasteAfterCursor(editor):
+    if editor.yankBuffer:
+        toInsert = tn.createTNodeExpFromPyExp(editor.yankBuffer)
+        return editor.updateList(
+            ('buffer', editor.buffer.appendAtCursor(toInsert)),
+            ('updateUndo', True))
+
+def cmdPasteBeforeCursor(editor):
+    if editor.yankBuffer:
+        toInsert = tn.createTNodeExpFromPyExp(editor.yankBuffer)
+        return editor.updateList(
+            ('buffer', editor.buffer.insertAtCursor(toInsert)),
+            ('updateUndo', True))
+
+def cmdViewToRoot(editor):
+    return editor.update('buffer', editor.buffer.viewToRoot())
+
+def cmdReplaceAtCursor(editor):
+    return editor.updateList(
+        ('cellEditor', CellEditor(Symbol(''))),
+        ('editing', True))
+
+def cmdUndo(editor):
+    return "UNDO"
+
+def cmdYankAtCursor(editor):
+    editor.yankBuffer = editor.buffer.cursorToPyExp()
+    print editor.yankBuffer
+
+def cmdFoldAtCursor(editor):
+    if editor.buffer.cursor.nodeID in editor.zippedNodes:
+        editor.zippedNodes[editor.buffer.cursor.nodeID] = not(editor.zippedNodes[editor.buffer.cursor.nodeID])
+    else:
+        editor.zippedNodes[editor.buffer.cursor.nodeID] = True
+
+def cmdQuoteAtCursor(editor):
+    newBuff = editor.buffer.quoteAtCursor()
+    return editor.update('buffer', newBuff)
+
+def cmdMethodChainAtCursor(editor):
+    if editor.buffer.cursor.next and not editor.buffer.cursor.next.isSubNode():
+        newBuff = editor.buffer.methodChainAtCursor()
+        return editor.update('buffer', newBuff)
+
+def cmdSlurpAtCursor(editor):
+    if editor.buffer.onSubNode() or editor.buffer.cursor.child is None:
+        newBuff = editor.buffer.slurpAtCursor()
+        return editor.update('buffer', newBuff)
+
+def cmdBarfAtCursor(editor):
+    if editor.buffer.onSubNode() and editor.buffer.cursor.child:
+        newBuff = editor.buffer.barfAtCursor()
+        return editor.update('buffer', newBuff)
+
+def cmdReplaceCursorWithSum(editor):
+    numList = editor.buffer.cursorToPyExp()
+    try:
+        result = reduce(operator.add, numList)
+    except TypeError:
+        newBuff = editor.buffer
+    else:
+        newBuff = editor.buffer.replaceAtCursor(result)
+
+    return editor.updateList(
+        ('buffer', newBuff),
+        ('updateUndo', True))
+
+def cmdToggleStringAtCursor(editor):
+    return editor.updateList(
+        ('buffer', editor.buffer.toggleStringAtCursor()),
+        ('updateUndo', True))
+
+def cmdSearchForMatchToCursor(editor):
+    if not editor.buffer.onSubNode():
+        try:
+            return editor.update('buffer', editor.buffer.search(editor.buffer.getCurrent()))
+        except ValueError: pass
+
+def cmdToggleRevealedNode(editor):
+    if editor.buffer.cursor in editor.revealedNodes:
+        editor.revealedNodes[editor.buffer.cursor] = not(editor.revealedNodes[editor.buffer.cursor])
+    else:
+        editor.revealedNodes[editor.buffer.cursor] = True
 
 
 
+def cmdViewToCursor(editor):
+    newBuff = editor.buffer.viewToCursor()
+    newHist = editor.viewHistory.insertAtCursor(View(newBuff.viewAdd)).curPrev()
+    newHist2 = newHist.rootToCursor()
+    return editor.updateList(
+        ('buffer', newBuff),
+        ('viewHistory', newHist2))
+
+def cmdViewFuturePostion(editor):
+    newHist = editor.viewHistory.curNext()
+    newBuff = editor.buffer.newViewAdd(newHist.cursor.child.address)
+    return editor.updateList(
+        ('viewHistory', newHist),
+        ('buffer', newBuff))
+
+def cmdViewPastPosition(editor):
+    newHist = editor.viewHistory.curPrev()
+    newBuff = editor.buffer.newViewAdd(newHist.cursor.child.address)
+    return editor.updateList(
+        ('viewHistory', newHist),
+        ('buffer', newBuff))
+
+def cmdViewUp(editor):
+    return editor.update('buffer', editor.buffer.viewUp())
+
+def cmdViewPrevious(editor):
+    return editor.update('buffer', editor.buffer.viewPrev())
+
+def cmdViewNext(editor):
+    return editor.update('buffer', editor.buffer.viewNext())
+
+
+def cmdCursorDownAlong(editor):
+    if editor.cursorIsZipped(editor.buffer):
+        raise ValueError
+    return editor.update('buffer', editor.buffer.curDownAlong(editor.nodeIsZipped))
+
+def cmdCursorPreviousUpAlong(editor):
+    return editor.update('buffer', editor.buffer.curPrevUpAlong())
+
+def cmdCursorUp(editor):
+    return editor.update('buffer', editor.buffer.curUp())
+
+def cmdCursorNextUpAlong(editor):
+    if editor.cursorIsZipped(editor.buffer):
+        newBuff = editor.buffer.curUp().curNextUpAlong()
+    else:
+        newBuff = editor.buffer.curNextUpAlong()
+    return editor.update('buffer', newBuff)
+
+
+def cmdCursorToUnzippedLast(editor):
+    return editor.update('buffer', editor.buffer.curUnzippedLast(editor.nodeIsZipped))
+
+def cmdCursorToNextUnzippedSymbol(editor):
+    return editor.update('buffer', editor.buffer.curNextUnzippedSymbol(editor.nodeIsZipped))
+
+def cmdCursorToPreviousUnzippedSymbol(editor):
+    return editor.update('buffer', editor.buffer.curPrevUnzippedSymbol(editor.nodeIsZipped))
+
+def cmdCursorToAboveSymbol(editor):
+    if editor.cursory +1 < len(editor.image):
+        return editor.cursorToScreenPos(editor.cursorx, editor.cursory + 1)
+
+def cmdCursorToBelowSymbol(editor):
+    if editor.topLine > 0 and editor.cursory == 0:
+        newEd = editor.updateToppedLineList(editor.topLine-1)
+        return newEd.cursorToScreenPos(editor.cursorx, 0)
+    elif editor.cursory > 0:
+        return editor.cursorToScreenPos(editor.cursorx, editor.cursory - 1)
