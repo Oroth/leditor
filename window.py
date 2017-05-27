@@ -15,7 +15,7 @@ class Window(fo.FuncObject):
         self.maxx, self.maxy = width, height
         self.editorList = editorList
 
-        self.message = None
+        self.winMessage = None
         self.persist = ['editorList']
 
     def setPosition(self, newPosx, newPosy, newMaxx, newMaxy):
@@ -27,6 +27,13 @@ class Window(fo.FuncObject):
 
     def draw(self, posx, posy, maxx, maxy, isActive):
         return self.editor.draw(maxx, maxy, isActive)
+
+    @property
+    def message(self):
+        if self.winMessage:
+            return self.winMessage
+        else:
+            return self.editor.message
 
     @property
     def editor(self):
@@ -77,19 +84,19 @@ class StdWindow(Window):
             if result:
                 return result.updateList(
                     ('editorCmd', False),
-                    ('message', None))
+                    ('winMessage', None))
 
-            if key.isPrintable():
+            if key.isPrintable() or key.code == iop.KEY_ESCAPE:
                 return self.updateList(
                     ('editorCmd', False),
-                    ('message', None))
+                    ('winMessage', None))
             else:
                 return self
 
         elif key.char == 'b' and key.ctrl():
             return self.updateList(
                 ('editorCmd', True),
-                ('message', "--Buffer Command--"))
+                ('winMessage', "--Buffer Command--"))
 
         else:
             return super(StdWindow, self).handleKeys(key)

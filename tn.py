@@ -200,7 +200,6 @@ def opAtAdd(node, add, op):
             newAdd = add[1:]
             newDest = add[0]
             return node.update('child', opAtAdd2(node.child, newAdd, newDest))
-            #return TNode(opAtAdd2(node.child, newAdd, newDest), node.nodeID, node.next)
         else:
             return op(node)
 

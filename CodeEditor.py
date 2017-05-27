@@ -62,6 +62,11 @@ class CodeEditor(Editors.TreeEditor):
         else:
             return self
 
+    def status(self):
+        return [self.statusDescription, self.buffer.viewAdd, self.buffer.cursorAdd,
+            [Symbol('nodeID'), self.buffer.cursor.nodeID],
+            [Symbol('=>'), self.getNodeValue(self.buffer.cursor)]]
+
     def updateStatusBar(self):
         self.statusBar.updateStatus(
             [self.statusDescription, self.buffer.viewAdd, self.buffer.cursorAdd,
@@ -75,6 +80,8 @@ class CodeEditor(Editors.TreeEditor):
         result = self.handleKeysInitial(key)
         if result != 'UNDO' and result.updateUndo:
             result.evalBuffer()  # updating imperatively
+
+        result.statusBar = Editors.StatusBar.fromStatusList(result.status())
 
         return result
 
@@ -90,8 +97,9 @@ class CodeEditor(Editors.TreeEditor):
                     ('yankBuffer', nodeValue),
                     ('updateUndo', True))
             else:
-                self.statusBar.updateMessage('Result to buffer')
-                result = self.update('yankBuffer', nodeValue)
+                result = self.updateList(
+                    ('yankBuffer', nodeValue),
+                    ('_message', "Result to buffer"))
 
         elif key.code == iop.KEY_F2:
             newCursorMode = misc.cycleThroughList(self.evalCursorMode, self.evalCursorModeOptions)

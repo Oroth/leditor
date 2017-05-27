@@ -40,6 +40,7 @@ class Editor(fo.FuncObject):
         self.maxx = 125
         self.maxy = 75
         self.image = screen.createBlank(self.maxx, self.maxy)
+        #self.message = ''
 
     def syncWithImage(self, newImage):
         return self
@@ -175,6 +176,7 @@ class DisplayEditor(fo.FuncObject):
         self.cursory = 0
         self.maxx = 120
         self.maxy = 68
+        self._message = ''
 
         self.statusDescription = reader.Symbol(self.__class__.__name__)
         self.id = DisplayEditor.editors
@@ -193,6 +195,9 @@ class DisplayEditor(fo.FuncObject):
 
         self.persist = ['printingMode', 'topLine', 'buffer', 'zippedNodes']
 
+    @property
+    def message(self):
+        return self._message
 
     def isRootImageEditor(self):
         return self._isRootImageEditor
@@ -261,6 +266,8 @@ class TreeEditor(DisplayEditor):
             printsexp.drawLineList(self.lineList, self, isActive)
                # self.lineList, self.maxx, self.maxy, self.colourScheme, , self.indentWidth)
 
+        self._message = ''
+
     def nodeIsRevealed(self, node):
         return node in self.revealedNodes and self.revealedNodes[node]
 
@@ -271,6 +278,21 @@ class TreeEditor(DisplayEditor):
             #return self.update('buffer', self.buffer.syncToNewRoot(newImageRoot))
         else:
             return self
+
+    #@DisplayEditor.message.getter
+    @property
+    def message(self):
+        if self.editing:
+            return '--editing--'
+
+        return self._message
+
+    def status(self):
+        return [self.statusDescription,
+                self.buffer.viewAdd,
+                self.buffer.cursorAdd,
+                Symbol('nodeID'),
+                self.buffer.cursor.nodeID]
 
     def updateStatusBar(self):
         self.statusBar.updateStatus([self.statusDescription, self.buffer.viewAdd, self.buffer.cursorAdd,
@@ -314,21 +336,13 @@ class TreeEditor(DisplayEditor):
 
     def handleKeys(self, key):
         result = self.handleKeysInitial(key)
+        result.statusBar = StatusBar.fromStatusList(result.status())
         return result
 
     # split out for flexibility when inheriting
     def handleKeysInitial(self, key):
         self.updateUndo = False
-        self.drawMode = 'uncursor'
-        self.updateStatusBar()
-
-        if key.code != 0:
-            self.statusBar.clearMessage()
-        self.statusBar = self.statusBar.refreshBuffer()
-
-        # Reset the screen to include the cursor if we aren't scrolling
-        #if key.char not in ('t', 'T'):
-        #    self.drawMode = 'cursor'
+        self._message = ''
 
         if self.editing:
             return self.handleCellEditor(key).refreshImage()
@@ -352,6 +366,7 @@ class TreeEditor(DisplayEditor):
             #newLineList = self.lineList.update('cursorAdd', result.buffer.cursorAdd)
             newLineList = self.lineList.newCursorAdd(result.buffer.cursorAdd)
             return result.updateLineList(newLineList)
+
 
         return result.refreshImage()
 
@@ -487,7 +502,7 @@ class TreeEditor(DisplayEditor):
                 ('cellEditor', CellEditor(Symbol(''))))
 
         else:
-            self.statusBar.updateMessage("Editing")
+            #self.statusBar.updateMessage("Editing")
             return self
 
     def handleKeysChangeMode(self, key):
@@ -603,9 +618,11 @@ class TreeEditor(DisplayEditor):
 
         elif key.char == 'm':
             newPrintingMode = misc.cycleThroughList(self.printingMode, self.printingModeOptions)
-            self.statusBar.updateMessage("DisplayMode: " + newPrintingMode)
+            msg = "DisplayMode: " + newPrintingMode
 
-            return self.update('printingMode', newPrintingMode)
+            return self.updateList(
+                ('printingMode', newPrintingMode),
+                ('_message', msg))
 
 
         elif key.char == 'N':
@@ -759,8 +776,6 @@ class TreeEditor(DisplayEditor):
                 #elif key.char == 'H':     # Go back to the first expression in the list
                 #     return self.update('buffer', self.buffer.curFirst())
 
-
-
                 elif key.code == iop.KEY_RIGHT or key.char == 'l':
                     return self.update('buffer', self.buffer.curNextUnzippedSymbol(self.nodeIsZipped))
 
@@ -800,8 +815,6 @@ class TreeEditor(DisplayEditor):
 
         return self
 
-
-
     def draw(self, maxx, maxy, isActive):
         #finalImage = screen.createBlank(maxx, maxy)
         finalImage =[None] * maxy
@@ -828,29 +841,31 @@ def lineLastSymbolPos(line, maxx=None):
 
 
 class StatusBar(DisplayEditor):
-    def __init__(self, *args, **kwargs):
-        self.status = [reader.Symbol('Editor')]
-        newBuffer = buffer.BufferSexp(tn.createTNodeExpFromPyExp(self.status))
-        super(StatusBar, self).__init__(newBuffer)
-        self.message = None
+    def __init__(self, aBuffer=None):
+        if aBuffer:
+            statusBuffer = aBuffer
+        else:
+            self.status = [reader.Symbol('Editor')]
+            statusBuffer = buffer.BufferSexp(tn.createTNodeExpFromPyExp(self.status))
+
+        super(StatusBar, self).__init__(statusBuffer)
+
         self.colourScheme = ColourScheme(
             bgCol=iop.white, symbolCol=iop.black,
             identifierCol=iop.black, stringCol=iop.darker_green,
             numberCol=iop.darker_sky, activeHiCol=iop.white, idleHiCol=iop.white)
 
+    @classmethod
+    def fromStatusList(cls, statusList):
+        statusBuffer = buffer.BufferSexp.fromPyExp(statusList)
+        return cls(statusBuffer)
+
     def refreshBuffer(self):
         statusList = list(self.status)
-        if self.message:
-            statusList.append(self.message)
         newBuff = buffer.BufferSexp.fromPyExp(statusList)
         return self.update('buffer', newBuff)
 
     def updateStatus(self, status):
         self.status = status
 
-    def updateMessage(self, message):
-        self.message = message
-
-    def clearMessage(self):
-        self.message = None
 
