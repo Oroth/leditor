@@ -3,10 +3,11 @@ import iop, colourScheme
 import tn, buffer, Editors
 import cmdList
 from iop import Key
+import pyglet
 
 class FileObj(object):
-    def __init__(self, path):
-        self.fullpath = os.path.abspath(path)
+    def __init__(self, file, path):
+        self.fullpath = os.path.join(path, file)
 
     @property
     def basename(self):
@@ -20,6 +21,10 @@ class FileObj(object):
     def isdir(self):
         return os.path.isdir(self.fullpath)
 
+    @property
+    def ismusic(self):
+        return self.basename.endswith(('mp3', 'flac'))
+
     def __repr__(self):
         return '<FileObj ' + str(self.basename) + '>'
 
@@ -27,7 +32,7 @@ class FileObj(object):
         return str(self.basename)
 
 def dirToFileList(path):
-    return [FileObj(f) for f in os.listdir(path)]
+    return [FileObj(file, path) for file in os.listdir(path)]
 
 def isDirectory(node):
     fileRef = node.child
@@ -46,11 +51,12 @@ class FileEditorColourScheme(colourScheme.ColourScheme):
             return self.identifierCol
 
 class SimpleFileEditor(Editors.TreeEditor):
-    def __init__(self, *args, **kwargs):
-        super(SimpleFileEditor, self).__init__(*args, **kwargs)
+    def __init__(self, aBuffer=None, directory='./'):
+        super(SimpleFileEditor, self).__init__(aBuffer)
         self.printingMode = 'allVertical'
         self.indentWidth = 2
         self.colourScheme = FileEditorColourScheme()
+        self.directory = directory
 
         self.moveCommands = cmdList.CmdList([
             ((Key.c('l'), Key.c('j'), Key.vk(iop.KEY_RIGHT), Key.vk(iop.KEY_DOWN)),
@@ -68,19 +74,30 @@ class SimpleFileEditor(Editors.TreeEditor):
 
     def handleKeysMain(self, key):
         if key.code == iop.KEY_ENTER:
-            cursor =  self.buffer.cursor
-            if isDirectory(cursor):
-                return SimpleFileEditor.fromPath(cursor.child.fullpath)
-            else:
-                return self
+            return self.handleDefaultAction()
 
         elif key.code == iop.KEY_BACKSPACE:
-            firstChild = self.buffer.first().child
-            return SimpleFileEditor.fromPath(firstChild.dirname)
+            parentDir = os.path.dirname(self.directory)
+            return SimpleFileEditor.fromPath(parentDir)
 
         else:
             return self.handleKeysMovement(key)
 
+
+    def handleDefaultAction(self):
+        if self.buffer.onSubNode():
+            return self
+
+        file = self.buffer.getCurrent()
+        if file.isdir:
+            return SimpleFileEditor.fromPath(file.fullpath)
+        elif file.ismusic:
+            source = pyglet.media.load(file.fullpath)
+            source.play()
+            return self
+
+        else:
+            return self
 
 
     def syncWithImage(self, newImage):

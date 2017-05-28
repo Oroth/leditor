@@ -7,6 +7,7 @@ import reader, eval, leditor_exceptions as ex
 import cmdList
 from cmdBar import CmdBar
 from iop import Key
+import repl, simpleFileEditor as sfe
 
 
 def syncWindowsToEditorList(windowList, newEditorList):
@@ -80,6 +81,7 @@ class WindowManager(fo.FuncObject):
             ('save', lambda:cmdSave(self)),
             ('winNext', lambda:cmdWinNext(self)),
             ('split', lambda:cmdWinSplit(self)),
+            ('music', lambda:cmdMusic(self)),
             ('we', self.cmdWriteEditorSettingsTS),
             ('le', self.cmdLoadEditorSettings),
             ('wi', self.cmdWriteImageTS),
@@ -113,7 +115,8 @@ class WindowManager(fo.FuncObject):
         curEd = curWin.editor
         return curEd.getEditorSettings()
 
-    def curWin(self):
+    @property
+    def activeWindow(self):
         return self.windowList.getCurrent()
 
     def writeEditor(self):
@@ -191,8 +194,8 @@ class WindowManager(fo.FuncObject):
     def calculateMsg(self):
         if self.message:
             return self.message
-        elif self.curWin().message:
-            return self.curWin().message
+        elif self.activeWindow.message:
+            return self.activeWindow.message
         else:
             return ''
 
@@ -344,7 +347,7 @@ class WindowManager(fo.FuncObject):
             return mainResult
 
         else:
-            resultWin = self.curWin().handleKeys(key)
+            resultWin = self.activeWindow.handleKeys(key)
             resultEd = resultWin.editor
 
             if resultEd == 'UNDO':
@@ -429,7 +432,7 @@ def cmdWinDel(wm):
         return wm
 
 def cmdWinSplit(wm):
-    curWin = wm.curWin()
+    curWin = wm.activeWindow
     newEd = curWin.editor.clone()
     newWin = curWin.addEditor(newEd)
     return wm.addWindow(newWin)
@@ -451,14 +454,14 @@ def cmdWinNext(wm):
         ('winCmd', False))
 
 def cmdRunProg(wm):
-    return wm.addWindow(window.cmdEditorRunProg(wm.curWin()))
+    return wm.addWindow(window.cmdEditorRunProg(wm.activeWindow))
 
 def cmdOpenWinOnCursor(wm):
-    return wm.addWindow(window.cmdNewEditorOnCursor(wm.curWin()))
+    return wm.addWindow(window.cmdNewEditorOnCursor(wm.activeWindow))
 
 def cmdOpenWinInspectProc(wm):
     try:
-        return wm.addWindow(window.cmdInspectProcedureCall2(wm.curWin()))
+        return wm.addWindow(window.cmdInspectProcedureCall2(wm.activeWindow))
     except ex.UnappliedProcedureException:
         return wm
 
@@ -489,19 +492,24 @@ def cmdStartCmdBar(wm):
 
 def cmdScreenEditor(wm):
     print "changing to screen mode"
-    return wm.replaceWindow(window.cmdNewScreenEditor(wm.curWin()))
+    return wm.replaceWindow(window.cmdNewScreenEditor(wm.activeWindow))
 
 def cmdFileEditor(wm):
     print "changing to file edit mode"
-    return wm.replaceWindow(window.cmdNewFileEditor(wm.curWin()))
+    return wm.replaceWindow(window.cmdNewFileEditor(wm.activeWindow))
 
 def cmdTextPager(wm):
     print "changing to text paging mode"
-    return wm.replaceWindow(window.cmdNewPager(wm.curWin()))
+    return wm.replaceWindow(window.cmdNewPager(wm.activeWindow))
 
 def cmdReplEditor(wm):
-    print 'starting repl'
-    return wm.replaceWindow(window.cmdNewRepl(wm.curWin()))
+    winCmd = window.createAddEditorCommand(repl.Repl)
+    return wm.replaceWindow(winCmd(wm.activeWindow))
+    #return wm.replaceWindow(window.cmdNewRepl(wm.curWin()))
 
 def cmdSFE(wm):
-    return wm.replaceWindow(window.cmdNewSFE(wm.curWin()))
+    return wm.replaceWindow(window.cmdNewSFE(wm.activeWindow))
+
+def cmdMusic(wm):
+    winCmd = window.createAddEditorCommand(sfe.SimpleFileEditor.fromPath, 'D:/Music')
+    return wm.replaceWindow(winCmd(wm.activeWindow))

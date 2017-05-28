@@ -410,7 +410,6 @@ class TreeEditor(DisplayEditor):
 
         if key.char in  ('j', 'k', 'l', 'h'):
             # this is reason enough to not subclass list (i.e. don't copy entire list)
-            #newLineList = self.lineList.update('cursorAdd', result.buffer.cursorAdd)
             newLineList = self.lineList.newCursorAdd(result.buffer.cursorAdd)
             return result.updateLineList(newLineList)
 
@@ -601,14 +600,10 @@ class TreeEditor(DisplayEditor):
     def handleKeysMovement(self, key):
         try:
             result = self.moveCommands.process(key, self)
-            if result:
-                return result
-                # # #elif key.char == 'H':     # Go back to the first expression in the list
-                # # #     return self.update('buffer', self.buffer.curFirst())
-            else:
-                return self
+            return result if result else self
 
-        except ValueError:pass
+        except ValueError:
+            return self
 
     def cursorToScreenPos(self, newx, newy):
         cell = self.image[newy][newx]
@@ -892,6 +887,9 @@ def cmdCursorNext(editor):
 
 def cmdCursorPrevious(editor):
     return editor.update('buffer', editor.buffer.curPrev())
+
+def cmdCursorFirst(editor):
+    return editor.update('buffer', editor.buffer.first())
 
 def cmdCursorDownAlong(editor):
     if editor.cursorIsZipped(editor.buffer):

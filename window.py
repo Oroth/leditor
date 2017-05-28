@@ -122,9 +122,20 @@ def cmdStartBufferCommand(window):
         ('editorCmd', True),
         ('winMessage', "--Buffer Command--"))
 
+####################################### New Editor Commands ###############################################
+
+def createAddEditorCommand(editorClass, *args):
+    def command(window):
+        return window.addEditor(editorClass(*args))
+        #return window.addEditor(editorClass(window))
+    return command
+
 def cmdNewScreenEditor(window):
     newEd = screenEditor.ScreenEditor(window.maxx, window.maxy)
     return window.addEditor(newEd)
+
+def cmdNewRepl(window):
+    return window.addEditor(repl.Repl())
 
 def cmdNewFileEditor(window):
     newEd = fileEditor.FileEditor.fromPath('./')
@@ -141,8 +152,7 @@ def cmdNewPager(window):
 
     return window.addEditor(newEd)
 
-def cmdNewRepl(window):
-    return window.addEditor(repl.Repl())
+############################### Tree Editor Commands ##################################################
 
 def cmdNewEditorOnCursor(window):
     newEd = window.editor.updateBuffer(window.editor.buffer.viewToCursor())
@@ -153,7 +163,6 @@ def cmdInspectProcedureCall(window):
         return window.cmdInspectProcedureCall2()
     except ex.UnappliedProcedureException:
         return window
-
 
 def cmdInspectProcedureCall2(window, proc=None, args=None):
     curEd = window.editor
@@ -178,7 +187,6 @@ def cmdInspectProcedureCall2(window, proc=None, args=None):
 
     else:
         raise ex.UnappliedProcedureException(procValue)
-
 
 def cmdEditorDisplayHelp(window):
     curEd = window.editor
@@ -213,6 +221,8 @@ def cmdRunEditorObj(window):
     prog = lispObjEditor.LispObjEditor(eval.eval(evalBuffer))
 
     return window.addEditor(prog)
+
+############################## Editor List Commands ##########################################################
 
 def cmdEditorNext(window):
     return window.update('editorList', window.editorList.curCycle())
