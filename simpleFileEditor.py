@@ -1,6 +1,8 @@
 import os
 import iop, colourScheme
-import tn,buffer, Editors
+import tn, buffer, Editors
+import cmdList
+from iop import Key
 
 class FileObj(object):
     def __init__(self, path):
@@ -48,16 +50,20 @@ class SimpleFileEditor(Editors.TreeEditor):
         super(SimpleFileEditor, self).__init__(*args, **kwargs)
         self.printingMode = 'allVertical'
         self.indentWidth = 2
-        self.directory = None
-        self.colourScheme = FileEditorColourScheme(bgCol=iop.black, symbolCol=iop.grey,
-            identifierCol=iop.white, stringCol=iop.light_green,
-            numberCol=iop.light_purple, activeHiCol=iop.azure, idleHiCol=iop.light_grey)
+        self.colourScheme = FileEditorColourScheme()
+
+        self.moveCommands = cmdList.CmdList([
+            ((Key.c('l'), Key.c('j'), Key.vk(iop.KEY_RIGHT), Key.vk(iop.KEY_DOWN)),
+                Editors.cmdCursorNext),
+            ((Key.c('h'), Key.c('k'), Key.vk(iop.KEY_LEFT), Key.vk(iop.KEY_UP)),
+                Editors.cmdCursorPrevious),
+        ])
 
     @classmethod
     def fromPath(cls, path='./'):
         fileList = dirToFileList(path)
         fileRoot = tn.createTNodeExpFromPyExp([fileList])
-        fileBuffer = buffer.BufferSexp(fileRoot)
+        fileBuffer = buffer.BufferSexp(fileRoot, cursorAdd=[0, 0])
         return cls(fileBuffer)
 
     def handleKeysMain(self, key):
@@ -73,7 +79,8 @@ class SimpleFileEditor(Editors.TreeEditor):
             return SimpleFileEditor.fromPath(firstChild.dirname)
 
         else:
-            return super(SimpleFileEditor, self).handleKeysMain(key)
+            return self.handleKeysMovement(key)
+
 
 
     def syncWithImage(self, newImage):

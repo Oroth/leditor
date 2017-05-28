@@ -335,7 +335,7 @@ class TreeEditor(DisplayEditor):
     @property
     def message(self):
         if self.editing:
-            return '--editing--'
+            return '--Editing--'
 
         if self.changeMode:
             return '--Change Mode--'
@@ -591,22 +591,24 @@ class TreeEditor(DisplayEditor):
         return self.update('changeMode', False)
 
     def handleKeysMain(self, key):
-
         mainCommandResult = self.mainCommands.process(key, self)
 
         if mainCommandResult:
             return mainCommandResult
         else:
-            try:
-                result = self.moveCommands.process(key, self)
-                if result:
-                    return result
+            return self.handleKeysMovement(key)
+
+    def handleKeysMovement(self, key):
+        try:
+            result = self.moveCommands.process(key, self)
+            if result:
+                return result
                 # # #elif key.char == 'H':     # Go back to the first expression in the list
                 # # #     return self.update('buffer', self.buffer.curFirst())
+            else:
+                return self
 
-            except ValueError:pass
-
-        return self
+        except ValueError:pass
 
     def cursorToScreenPos(self, newx, newy):
         cell = self.image[newy][newx]
@@ -842,7 +844,7 @@ def cmdToggleRevealedNode(editor):
     else:
         editor.revealedNodes[editor.buffer.cursor] = True
 
-
+################################ Movement Commands ###################################################
 
 def cmdViewToCursor(editor):
     newBuff = editor.buffer.viewToCursor()
@@ -875,6 +877,21 @@ def cmdViewPrevious(editor):
 def cmdViewNext(editor):
     return editor.update('buffer', editor.buffer.viewNext())
 
+############################ Cursor Commands ###########################################################
+
+# experimental
+def genBufferCommand(methodName, args):
+    def command(editor):
+        method = getattr(editor, methodName)
+        return editor.update('buffer', method())
+
+    return command
+
+def cmdCursorNext(editor):
+    return editor.update('buffer', editor.buffer.curNext())
+
+def cmdCursorPrevious(editor):
+    return editor.update('buffer', editor.buffer.curPrev())
 
 def cmdCursorDownAlong(editor):
     if editor.cursorIsZipped(editor.buffer):
@@ -903,6 +920,7 @@ def cmdCursorToNextUnzippedSymbol(editor):
 
 def cmdCursorToPreviousUnzippedSymbol(editor):
     return editor.update('buffer', editor.buffer.curPrevUnzippedSymbol(editor.nodeIsZipped))
+
 
 def cmdCursorToAboveSymbol(editor):
     if editor.cursory +1 < len(editor.image):

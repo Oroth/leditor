@@ -5,9 +5,10 @@ import reader
 
 class ColourScheme(fo.FuncObject):
     def __init__(self,
-                 bgCol, symbolCol, identifierCol,
-                 stringCol, numberCol,
-                 activeHiCol, idleHiCol,
+                 bgCol=iop.black, symbolCol=iop.grey,
+                 identifierCol=iop.white,
+                 stringCol=iop.light_green, numberCol=iop.light_purple,
+                 activeHiCol=iop.azure, idleHiCol=iop.light_grey,
                  operatorCol=iop.dark_red, keyWordCol=iop.light_sky):
         self.bgCol = bgCol
         self.symbolCol = symbolCol
