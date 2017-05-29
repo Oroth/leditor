@@ -4,9 +4,20 @@ from unittest import TestCase, main
 import tn
 from tn import createTNodeExpFromPyExp, replaceAdd, insertAdd, deleteAdd
 
-class MultiTest(unittest.TestCase):
+class GenericTest(unittest.TestCase):
+    testNum = {}
     def __init__(self, correctValue, *inputArgs):
-        super(MultiTest, self).__init__()
+        super(GenericTest, self).__init__()
+
+        name = self.__class__.__name__
+        if name in GenericTest.testNum:
+            GenericTest.testNum[name] += 1
+        else:
+            GenericTest.testNum[name] = 1
+
+        self.testNum = GenericTest.testNum[name]
+        self.inputs = inputArgs
+
         self.correctValue = correctValue
         self.result = self.test(*inputArgs)
 
@@ -14,21 +25,30 @@ class MultiTest(unittest.TestCase):
         return input
 
     def runTest(self):
-        self.assertEqual(self.result, self.correctValue)
+        try:
+            self.assertEqual(self.result, self.correctValue)
+        except AssertionError as e:
+            print self.__class__.__name__, self.testNum
+            print 'inputs: ', self.inputs
+            raise e
+
+    def __cmp__(self, other):
+        return self.testNum > other.testNum
 
 
-class TestParseTree(MultiTest):
+
+class TestParseTree(GenericTest):
     def test(self, input):
         return createTNodeExpFromPyExp(input).toPyExp()
 
 
-class TestTnodeIndex(MultiTest):
+class TestTnodeIndex(GenericTest):
     def test(self, inputArray, inputIndex):
         tree = createTNodeExpFromPyExp(inputArray)
         node, index = tn.tnodeIndex(tree, inputIndex)
         return node.child
 
-class TestTnodeFindChild(MultiTest):
+class TestTnodeFindChild(GenericTest):
     def test(self, inputArray, inputValue):
         tree = createTNodeExpFromPyExp(inputArray)
         node, index = tn.tnodeFindValue(tree, inputValue)
@@ -36,22 +56,36 @@ class TestTnodeFindChild(MultiTest):
 
 
 
+def nodeLoop(testClass, answers, inputArray, inputVals):
+    return [testClass(answer, inputArray, input) for answer, input in zip(answers, inputVals)]
+
+
+def loopTnodeFindChild():
+    inputArray = [0, 1, 2, 3]
+    testVals = [0, 1, 2, 3, 4]
+    resultVals = [0, 1, 2, 3, 3]
+    return [TestTnodeFindChild(resultVal, inputArray, testVal) for testVal,resultVal in zip(testVals, resultVals)]
+
 
 def getTests(testCaseClass):
     return unittest.TestLoader().loadTestsFromTestCase(testCaseClass)
 
 def suite():
     suite = unittest.TestSuite()
+
     vals = [[11], [11, 15], [11, 15, 17], [[10]], [22, [33, 44]], [22, [11, 10, [9]], [33, 44], 17]]
     suite.addTests(TestParseTree(val, val) for val in vals)
 
     vals = [0, 1, 2, 3, 4]
     suite.addTests(TestTnodeIndex(val, vals, val) for val in vals)
 
-    inputArray = [0, 1, 2, 3]
-    testVals = [0, 1, 2, 3, 4]
-    resultVals = [0, 1, 2, 3, 3]
-    suite.addTests(TestTnodeFindChild(resultVal, inputArray, testVal) for testVal,resultVal in zip(testVals, resultVals))
+    # inputArray = [0, 1, 2, 3]
+    # testVals = [0, 1, 2, 3, 4]
+    # resultVals = [0, 1, 2, 3, 3]
+    # suite.addTests(TestTnodeFindChild(resultVal, inputArray, testVal) for testVal,resultVal in zip(testVals, resultVals))
+
+    suite.addTests(loopTnodeFindChild())
+    suite.addTests(loopReplaceAdd())
 
     suite.addTest(getTests(TestPyListFuncs))
     suite.addTest(getTests(TestParseNumberedExp))
@@ -60,7 +94,6 @@ def suite():
 
 
 class TestCreateTreeFromSexp(TestCase):
-
     def test_createTree(self):
         val = 22
         tree = createTNodeExpFromPyExp(val)
@@ -92,12 +125,37 @@ class TestParseNumberedExp(TestCase):
         tree = tn.createTNodeExpFromPyNumberedExp(input)
         self.assertEqual(tree.toPyExp(), output)
 
-
     def test_pne3(self):
         input = ['#', [['#', 2, 106], ['#', 3, 'notstring'], ['#', 4, 207], ['#', 5, 'gime']]]
         output = [[106, "notstring", 207, 'gime']]
         tree = tn.createTNodeExpFromPyNumberedExp(input)
         self.assertEqual(tree.toPyExp(), output)
+
+
+
+class TestReplaceAdd(GenericTest):
+    def test(self, inputTree, inputAddress, inputVal):
+        newTree = tn.replaceAdd(inputTree, inputAddress, inputVal)
+        return newTree.toPyExp()
+
+def loopReplaceAdd():
+    tree1 = createTNodeExpFromPyExp([1, 2, 3, 4])
+    tree2 = createTNodeExpFromPyExp([1, 2, [11, 22, 33], 3, 4])
+    tree3 = createTNodeExpFromPyExp([1, 2, [11, 22, [101], 33], 3, 4])
+
+    input_answer = \
+        [ ((tree1, [0], 5), [5, 2, 3, 4]),
+          ((tree1, [1], 5), [1, 5, 3, 4]),
+          ((tree1, [3], 5), [1, 2, 3, 5]),
+          ((tree2, [1], 5), [1, 5, [11, 22, 33], 3, 4]),
+          ((tree2, [2], 5), [1, 2, 5, 3, 4]),
+          ((tree2, [2, 0], 5), [1, 2, [5, 22, 33], 3, 4]),
+          ((tree2, [2, 2], 5), [1, 2, [11, 22, 5], 3, 4]),
+          ((tree2, [2, 2], tree1), [1, 2, [11, 22, [1, 2, 3, 4]], 3, 4]),
+          ((tree3, [2, 2, 0], 5), [1, 2, [11, 22, [5], 33], 3, 4]),
+    ]
+
+    return [TestReplaceAdd(answer, *inputs) for inputs, answer in input_answer]
 
 
 
