@@ -4,8 +4,7 @@ from iop import Key
 import leditor_exceptions as ex
 import reader, buffer, eval, lispObjEditor, CodeEditor
 import cmdList
-import fileEditor, screenEditor, pager, repl
-import simpleFileEditor as sfe
+import screenEditor, pager
 import Editors
 import screen
 
@@ -28,7 +27,6 @@ class Window(fo.FuncObject):
             ('maxy', newMaxy))
 
     def draw(self, posx, posy, maxx, maxy, isActive):
-        #return self.editor.draw(maxx, maxy, isActive)
         editorImage = self.editor.draw(maxx, maxy, isActive)
 
         finalImage =[None] * maxy
@@ -36,7 +34,6 @@ class Window(fo.FuncObject):
         screen.overlayLinesOnImage(finalImage, 0, editorImage)
 
         statusBar = Editors.StatusBar.fromStatusList(self.status())
-        #if self.statusBar:
         statusImage = statusBar.draw(maxx, 1, isActive=False)
         screen.overlayLinesOnImage(finalImage, maxy - 1, statusImage)
 
@@ -92,35 +89,39 @@ class StdWindow(Window):
             (Key.c('?'), cmdEditorDisplayHelp),
             (Key.c('r'), cmdRunEditorObj),
             (Key.vk(iop.KEY_SPACE), cmdEditorRunProg),
-            (Key.vk(iop.KEY_ENTER), cmdNewEditorOnCursor)
         ])
 
     def handleKeys(self, key):
         if self.editorCmd:
             result = self.editModeCL.process(key, self)
             if result:
-                return result.updateList(
-                    ('editorCmd', False),
-                    ('winMessage', None))
+                return cmdStopBufferCommand(result)
+
+            editorResult = self.editor.windowCommands.process(key, self)
+            if editorResult:
+                return editorResult
 
             if key.isPrintable() or key.code == iop.KEY_ESCAPE:
-                return self.updateList(
-                    ('editorCmd', False),
-                    ('winMessage', None))
+                return cmdStopBufferCommand(self)
             else:
                 return self
 
         elif key.char == 'b' and key.ctrl():
             return cmdStartBufferCommand(self)
 
-        else:
-            return super(StdWindow, self).handleKeys(key)
+
+        return super(StdWindow, self).handleKeys(key)
 
 
 def cmdStartBufferCommand(window):
     return window.updateList(
         ('editorCmd', True),
         ('winMessage', "--Buffer Command--"))
+
+def cmdStopBufferCommand(window):
+    return window.updateList(
+        ('editorCmd', False),
+        ('winMessage', None))
 
 ####################################### New Editor Commands ###############################################
 
@@ -130,19 +131,13 @@ def createAddEditorCommand(editorClass, *args):
         #return window.addEditor(editorClass(window))
     return command
 
+def wrapEditorCmd(editorCmd):
+    def command(window):
+        return window.addEditor(editorCmd(window.editor))
+    return command
+
 def cmdNewScreenEditor(window):
     newEd = screenEditor.ScreenEditor(window.maxx, window.maxy)
-    return window.addEditor(newEd)
-
-def cmdNewRepl(window):
-    return window.addEditor(repl.Repl())
-
-def cmdNewFileEditor(window):
-    newEd = fileEditor.FileEditor.fromPath('./')
-    return window.addEditor(newEd)
-
-def cmdNewSFE(window):
-    newEd = sfe.SimpleFileEditor.fromPath('./')
     return window.addEditor(newEd)
 
 def cmdNewPager(window):
@@ -155,12 +150,14 @@ def cmdNewPager(window):
 ############################### Tree Editor Commands ##################################################
 
 def cmdNewEditorOnCursor(window):
-    newEd = window.editor.updateBuffer(window.editor.buffer.viewToCursor())
-    return window.addEditor(newEd)
+    command = createAddEditorCommand(Editors.cmdViewToCursor, window.editor)
+    return command(window)
+    # newEd = Editors.cmdViewToCursor(window.editor)
+    # return window.addEditor(newEd)
 
 def cmdInspectProcedureCall(window):
     try:
-        return window.cmdInspectProcedureCall2()
+        return cmdInspectProcedureCall2(window)
     except ex.UnappliedProcedureException:
         return window
 

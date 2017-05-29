@@ -272,6 +272,13 @@ class TreeEditor(DisplayEditor):
 
         self._message = ''
 
+        import window
+        self.windowCommands = cmdList.CmdList([
+            # (Key.vk(iop.KEY_ENTER), window.createAddEditorCommand(cmdViewToCursor, self))
+            #  (Key.vk(iop.KEY_ENTER), window.cmdNewEditorOnCursor)
+             (Key.vk(iop.KEY_ENTER), window.wrapEditorCmd(cmdViewToCursor))
+        ])
+
         self.mainCommands = cmdList.CmdList([
             (Key.c('d'), cmdDeleteAtCursor),
             (Key.c('c'), cmdStartChangeMode),
@@ -408,7 +415,7 @@ class TreeEditor(DisplayEditor):
 
         result =  self.handleKeysMain(key)
 
-        if key.char in  ('j', 'k', 'l', 'h'):
+        if key.char in  ('j', 'k', 'l', 'h') and not key.ctrl():
             # this is reason enough to not subclass list (i.e. don't copy entire list)
             newLineList = self.lineList.newCursorAdd(result.buffer.cursorAdd)
             return result.updateLineList(newLineList)
@@ -843,11 +850,12 @@ def cmdToggleRevealedNode(editor):
 
 def cmdViewToCursor(editor):
     newBuff = editor.buffer.viewToCursor()
-    newHist = editor.viewHistory.insertAtCursor(View(newBuff.viewAdd)).curPrev()
-    newHist2 = newHist.rootToCursor()
-    return editor.updateList(
-        ('buffer', newBuff),
-        ('viewHistory', newHist2))
+    return editor.updateBuffer(newBuff)
+    # newHist = editor.viewHistory.insertAtCursor(View(newBuff.viewAdd)).curPrev()
+    # newHist2 = newHist.rootToCursor()
+    # return editor.updateList(
+    #     ('buffer', newBuff),
+    #     ('viewHistory', newHist2))
 
 def cmdViewFuturePostion(editor):
     newHist = editor.viewHistory.curNext()

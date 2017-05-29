@@ -66,7 +66,6 @@ class WindowManager(fo.FuncObject):
             (Key.c(':'), cmdStartCmdBar),
             (Key.vk(iop.KEY_F5), cmdPlayMedia),
             (Key.vk(iop.KEY_F9, alt=True), cmdScreenEditor),
-            (Key.vk(iop.KEY_F10, alt=True), cmdFileEditor),
             (Key.vk(iop.KEY_F11, alt=True), cmdTextPager),
         ])
 
@@ -75,7 +74,6 @@ class WindowManager(fo.FuncObject):
     def getCmdBarEnv(self):
         return eval.Env.fromList([
             ('screenEditor', lambda:cmdScreenEditor(self)),
-            ('fileEditor', lambda:cmdFileEditor(self)),
             ('sfe', lambda:cmdSFE(self)),
             ('repl', lambda:cmdReplEditor(self)),
             ('save', lambda:cmdSave(self)),
@@ -494,10 +492,6 @@ def cmdScreenEditor(wm):
     print "changing to screen mode"
     return wm.replaceWindow(window.cmdNewScreenEditor(wm.activeWindow))
 
-def cmdFileEditor(wm):
-    print "changing to file edit mode"
-    return wm.replaceWindow(window.cmdNewFileEditor(wm.activeWindow))
-
 def cmdTextPager(wm):
     print "changing to text paging mode"
     return wm.replaceWindow(window.cmdNewPager(wm.activeWindow))
@@ -505,10 +499,10 @@ def cmdTextPager(wm):
 def cmdReplEditor(wm):
     winCmd = window.createAddEditorCommand(repl.Repl)
     return wm.replaceWindow(winCmd(wm.activeWindow))
-    #return wm.replaceWindow(window.cmdNewRepl(wm.curWin()))
 
 def cmdSFE(wm):
-    return wm.replaceWindow(window.cmdNewSFE(wm.activeWindow))
+    winCmd = window.createAddEditorCommand(sfe.SimpleFileEditor.fromPath, './')
+    return wm.replaceWindow(winCmd(wm.activeWindow))
 
 def cmdMusic(wm):
     winCmd = window.createAddEditorCommand(sfe.SimpleFileEditor.fromPath, 'D:/Music')
