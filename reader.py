@@ -14,6 +14,8 @@ def parse(inport):
 
     return read(newInport)
 
+def sexpToPythonList(string):
+    return read(parse(string))
 
 def loadFile(filename):
     f = open(filename, 'r')

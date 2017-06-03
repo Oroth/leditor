@@ -165,41 +165,41 @@ class TestOpAtAdd(TestCase):
         self.tree2 = createTNodeExpFromPyExp([1, 2, [11, 22, 33], 3, 4])
         self.tree3 = createTNodeExpFromPyExp([1, 2, [11, 22, [101], 33], 3, 4])
 
-    def test_replace(self):
-        newTree = replaceAdd(self.tree1, [0], 5)
-        self.assertEqual(newTree.toPyExp(), [5, 2, 3, 4])
-
-    def test_replace2(self):
-        newTree = replaceAdd(self.tree1, [1], 5)
-        self.assertEqual(newTree.toPyExp(), [1, 5, 3, 4])
-
-    def test_replace3(self):
-        newTree = replaceAdd(self.tree1, [3], 5)
-        self.assertEqual(newTree.toPyExp(), [1, 2, 3, 5])
-
-    def test_replace4(self):
-        newTree = replaceAdd(self.tree2, [1], 5)
-        self.assertEqual(newTree.toPyExp(), [1, 5, [11, 22, 33], 3, 4])
-
-    def test_replace5(self):
-        newTree = replaceAdd(self.tree2, [2], 5)
-        self.assertEqual(newTree.toPyExp(), [1, 2, 5, 3, 4])
-
-    def test_replace11(self):
-        newTree = replaceAdd(self.tree2, [2, 0], 5)
-        self.assertEqual(newTree.toPyExp(), [1, 2, [5, 22, 33], 3, 4])
-
-    def test_replace12(self):
-        newTree = replaceAdd(self.tree2, [2, 2], 5)
-        self.assertEqual(newTree.toPyExp(), [1, 2, [11, 22, 5], 3, 4])
-
-    def test_replaceRec(self):
-        newTree = replaceAdd(self.tree2, [2, 2], self.tree1)
-        self.assertEqual(newTree.toPyExp(), [1, 2, [11, 22, [1, 2, 3, 4]], 3, 4])
-
-    def test_replace13(self):
-        newTree = replaceAdd(self.tree3, [2, 2, 0], 5)
-        self.assertEqual(newTree.toPyExp(), [1, 2, [11, 22, [5], 33], 3, 4])
+    # def test_replace(self):
+    #     newTree = replaceAdd(self.tree1, [0], 5)
+    #     self.assertEqual(newTree.toPyExp(), [5, 2, 3, 4])
+    #
+    # def test_replace2(self):
+    #     newTree = replaceAdd(self.tree1, [1], 5)
+    #     self.assertEqual(newTree.toPyExp(), [1, 5, 3, 4])
+    #
+    # def test_replace3(self):
+    #     newTree = replaceAdd(self.tree1, [3], 5)
+    #     self.assertEqual(newTree.toPyExp(), [1, 2, 3, 5])
+    #
+    # def test_replace4(self):
+    #     newTree = replaceAdd(self.tree2, [1], 5)
+    #     self.assertEqual(newTree.toPyExp(), [1, 5, [11, 22, 33], 3, 4])
+    #
+    # def test_replace5(self):
+    #     newTree = replaceAdd(self.tree2, [2], 5)
+    #     self.assertEqual(newTree.toPyExp(), [1, 2, 5, 3, 4])
+    #
+    # def test_replace11(self):
+    #     newTree = replaceAdd(self.tree2, [2, 0], 5)
+    #     self.assertEqual(newTree.toPyExp(), [1, 2, [5, 22, 33], 3, 4])
+    #
+    # def test_replace12(self):
+    #     newTree = replaceAdd(self.tree2, [2, 2], 5)
+    #     self.assertEqual(newTree.toPyExp(), [1, 2, [11, 22, 5], 3, 4])
+    #
+    # def test_replaceRec(self):
+    #     newTree = replaceAdd(self.tree2, [2, 2], self.tree1)
+    #     self.assertEqual(newTree.toPyExp(), [1, 2, [11, 22, [1, 2, 3, 4]], 3, 4])
+    #
+    # def test_replace13(self):
+    #     newTree = replaceAdd(self.tree3, [2, 2, 0], 5)
+    #     self.assertEqual(newTree.toPyExp(), [1, 2, [11, 22, [5], 33], 3, 4])
 
     def test_insert(self):
         newTree = insertAdd(self.tree1, [0], 5)

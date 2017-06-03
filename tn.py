@@ -49,7 +49,7 @@ def tnodeFindNodeOrIndex(list, targetNode, defaultIndex):
 
 
 def tnodeAddress(tree, targetAddress, savedAddress=[]):
-    """ Find and return <tnode, address> at targetAddress """
+    """ Find and return <tnode, address> at targetAddress with tree"""
     node, nodeIndex = tnodeIndex(tree, targetAddress[0])
     newSavedAddress = list(savedAddress) + [nodeIndex]
     if targetAddress[1:] and node.isSubNode():

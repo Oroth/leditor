@@ -274,8 +274,6 @@ class TreeEditor(DisplayEditor):
 
         import window
         self.windowCommands = cmdList.CmdList([
-            # (Key.vk(iop.KEY_ENTER), window.createAddEditorCommand(cmdViewToCursor, self))
-            #  (Key.vk(iop.KEY_ENTER), window.cmdNewEditorOnCursor)
              (Key.vk(iop.KEY_ENTER), window.wrapEditorCmd(cmdViewToCursor))
         ])
 

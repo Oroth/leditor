@@ -1,7 +1,5 @@
-__author__ = 'chephren'
-import buffer
-import tn
 import funobj as fo
+import tn, buffer
 import reader
 from screen import createBlank, putNodeOnImage
 import textwrap
