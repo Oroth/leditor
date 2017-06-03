@@ -46,6 +46,7 @@ class WindowManager(fo.FuncObject):
         self.cmdBar = None
         self.message = None
         self.persist = ['editorList', 'windowList']
+        self.track = None
 
         self.wincl = cmdList.CmdList([
             (Key.c('j'), cmdWinDown),
@@ -95,6 +96,15 @@ class WindowManager(fo.FuncObject):
     def quitWithoutSave(self):
         return False
 
+
+    def updateSound(self):
+        try:
+            track = self.activeWindow.editor.track
+            if track != self.track:
+                self.track = track
+                self.app.playMedia(track)
+        except AttributeError:
+            return self
 
 
     def getWinCount(self):

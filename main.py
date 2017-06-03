@@ -43,6 +43,7 @@ def handleMouse(mouse):
 
 def draw():
     wm.draw()
+    wm.updateSound()
     app.screenFlush()
 
 

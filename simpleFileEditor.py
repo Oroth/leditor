@@ -3,7 +3,6 @@ import iop, colourScheme
 import tn, buffer, Editors
 import cmdList
 from iop import Key
-import pyglet
 
 class FileObj(object):
     def __init__(self, file, path):
@@ -57,6 +56,7 @@ class SimpleFileEditor(Editors.TreeEditor):
         self.indentWidth = 2
         self.colourScheme = FileEditorColourScheme()
         self.directory = directory
+        self.track = None
 
         self.moveCommands = cmdList.CmdList([
             ((Key.c('l'), Key.c('j'), Key.vk(iop.KEY_RIGHT), Key.vk(iop.KEY_DOWN)),
@@ -92,9 +92,7 @@ class SimpleFileEditor(Editors.TreeEditor):
         if file.isdir:
             return SimpleFileEditor.fromPath(file.fullpath)
         elif file.ismusic:
-            source = pyglet.media.load(file.fullpath)
-            source.play()
-            return self
+            return self.playMusic(file)
 
         else:
             return self
@@ -105,3 +103,6 @@ class SimpleFileEditor(Editors.TreeEditor):
 
     def isRootImageEditor(self):
         return False
+
+    def playMusic(self, file):
+        return self.update('track', file.fullpath)

@@ -34,10 +34,16 @@ class Application(IOApplication):
 
         pyglet.options['audio'] = ('directsound', 'silent')
         self.screenGrid = screen.createBlank(screenCols, screenRows)
+        self.player = pyglet.media.Player()
 
-    def playMedia(self):
-        source = pyglet.media.load('Front Line Assembly - Caustic Grip - 01 - Resist.mp3')
-        source.play()
+    def playMedia(self, filePath):
+        source = pyglet.media.load(filePath)
+        self.player.queue(source)
+
+        if self.player.playing:
+            self.player.next_source()
+        else:
+            self.player.play()
 
 
     def screenPrint(self, x, y, cell):
