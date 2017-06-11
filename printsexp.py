@@ -37,8 +37,8 @@ class TokenNode(fo.FuncObject):
     def isEditing(self):
         return self.highlightIndex is not None
 
-    def nodeToString(self):
-        return self.text
+    def editingLastCell(self):
+        return self.highlightIndex is not None and self.highlightIndex == len(self.text)
 
 
 class LineNode(fo.FuncObject):
@@ -91,7 +91,6 @@ class LineList(list, fo.FuncObject):
             ('cursorTopLine', newTopLine),
             ('cursorBottomLine', newBottomLine))
 
-
     #def newCursor(self, start, end):
     #    for lineNode in self:
     #        for tokenNode in lineNode:
@@ -99,18 +98,18 @@ class LineList(list, fo.FuncObject):
 
     #def wrap(self, width)
 
+def spaceHighlighted(cursorAddress, tokenAddress):
+    return cursorMatch(cursorAddress, tokenAddress) and cursorAddress != tokenAddress
 
 # draws the indent space at the beginning of lines
 # returns the size of the indent
-def drawIndentSpace(line, prevLine, indentWidth, colScheme, hlcol, image, x, y, cursorAdd):
+def drawIndentSpace(line, indentWidth, colScheme, hlcol, image, x, y, cursorAdd):
     totalLineIndent = line.indent * indentWidth + line.parenAlignment
 
     # print the indentation space
     if line.indent > 0:
         firstItem = line.tokenList[0]
-        # highlight the indented space if it carries over from the previous line
-        if cursorMatch(cursorAdd, firstItem.nodeAddress) \
-                and prevLine and cursorMatch(cursorAdd, prevLine.tokenList[-1].nodeAddress):
+        if spaceHighlighted(cursorAdd, firstItem.nodeAddress):
             bgcol = hlcol
         else:
             bgcol = colScheme.bgCol
@@ -119,50 +118,50 @@ def drawIndentSpace(line, prevLine, indentWidth, colScheme, hlcol, image, x, y, 
 
     return totalLineIndent
 
-def cursorMatch(cursorAdd, checkAdd):
-    return cursorAdd == checkAdd[:len(cursorAdd)]
+def cursorMatch(cursorAddress, targetAddress):
+    return cursorAddress == targetAddress[:len(cursorAddress)]
 
 
-def drawToken(token, prevToken, colScheme, hlcol, image, x, y, winWidth, winHeight, cursorAdd):
+def drawToken(token, prevToken, colScheme, hlcol, image, x, y, cursorAddress):
     fgcol = colScheme.lookupTokenFGColour(token)
-    text = token.nodeToString()
+    text = token.text
 
-    if cursorMatch(cursorAdd, token.nodeAddress) and not token.isEditing:
+    if cursorMatch(cursorAddress, token.nodeAddress) and not token.isEditing:
         bgcol = hlcol
 
-    elif \
-            text in ('.', ')') \
-            and prevToken and prevToken.printRule in ['cellEditorString', 'cellEditorNonString'] \
-            and prevToken.highlightIndex == len(prevToken.nodeToString()):
+    elif text in ('.', ')') and prevToken.editingLastCell():
         bgcol = hlcol
 
     else:
         bgcol = colScheme.bgCol
 
     # Truncate long strings (e.g. evaluation results)
+    winWidth = len(image[0])
     if len(text) >= winWidth:
         text = text[0:winWidth - 7] + '...'
 
     putNodeOnImage(image, x, y, text, token, bgcol, fgcol)
 
     # highlight the current character if we are using the cell editor
-    if token.printRule in ['cellEditorString', 'cellEditorNonString']:
-        if token.highlightIndex is not None:
-            (image[y][x + token.highlightIndex]).bgColour = hlcol
-            x += 1
+    if token.isEditing:
+        (image[y][x + token.highlightIndex]).bgColour = hlcol
 
 
 
 def drawSymbolSpace(token, prevToken, colScheme, hlcol, image, x, y, cursorAdd):
-    if cursorMatch(cursorAdd, token.nodeAddress) and cursorMatch(cursorAdd, prevToken.nodeAddress):
+    if spaceHighlighted(cursorAdd, token.nodeAddress):
         bgcol = hlcol
-    elif prevToken.printRule in ['cellEditorString', 'cellEditorNonString'] \
-                and prevToken.highlightIndex == len(prevToken.nodeToString()):
+    elif prevToken.editingLastCell():
         bgcol = hlcol
     else:
         bgcol = colScheme.bgCol
 
     putNodeOnImage(image, x, y, ' ', token, bgcol, colScheme.symbolCol)
+
+def blankRequired(prevToken, currentToken):
+    if prevToken and prevToken.text not in ("'", '.', '(', '#') \
+            and currentToken.text not in ('.', ')'):
+        return True
 
 
 def drawLineList(lineList, editor, isActive):
@@ -172,23 +171,16 @@ def drawLineList(lineList, editor, isActive):
     colScheme = editor.colourScheme
     indentWidth = editor.indentWidth
 
-
-    prevLine = None
-    y = 0
-
     image = createBlank(winWidth, winHeight, colScheme.bgCol, colScheme.symbolCol)
     hlcol = colScheme.activeHiCol if isActive else colScheme.idleHiCol
 
-    for line in lineList[:winHeight]:
-        x = drawIndentSpace(line, prevLine, indentWidth, colScheme, hlcol, image, 0, y, lineList.cursorAdd)
+    for y, line in enumerate(lineList[:winHeight]):
+        x = drawIndentSpace(line, indentWidth, colScheme, hlcol, image, 0, y, lineList.cursorAdd)
 
-        prevLine = line
         prevToken = None
 
         for token in line.tokenList:
-            if prevToken and prevToken.nodeToString() not in ("'", '.', '(', '#') \
-                        and token.nodeToString() not in ('.', ')'):
-
+            if blankRequired(prevToken, token):
                 drawSymbolSpace(token, prevToken, colScheme, hlcol, image, x, y, lineList.cursorAdd)
                 x += 1
 
@@ -198,19 +190,17 @@ def drawLineList(lineList, editor, isActive):
                     cursorx = x
                 cursory = y
 
-            drawToken(token, prevToken, colScheme, hlcol, image, x, y, winWidth, winHeight, lineList.cursorAdd)
-            x += len(token.nodeToString())
+            drawToken(token, prevToken, colScheme, hlcol, image, x, y, lineList.cursorAdd)
+            x += len(token.text)
 
             prevToken = token
 
-        y += 1
-
     return image, cursorx, cursory
 
-def getLine(string, lineLength, splitNoBlank=True):
+def getLine(string, lineLength, splitMidWord=True):
     finalBlankIndex = string.rfind(' ', 0, lineLength)
     if finalBlankIndex == -1:
-        if splitNoBlank:
+        if splitMidWord:
             return string[:lineLength]
         else:
             return ''
@@ -232,6 +222,14 @@ def splitStringAcrossLines2(string, lineLength):
 
     return strings
 
+def splitStringAcrossLines1(string, lineLength, startingIndex):
+    initialLineLength = lineLength - startingIndex
+    firstLine = getLine(string, initialLineLength, splitMidWord=False)
+    firstLineLength = len(firstLine)
+
+    remainingLines = splitStringAcrossLines2(string[firstLineLength:], lineLength)
+
+    return [firstLine] + remainingLines
 
 # Takes a string and tries to split it across two or more lines depending on where the blanks are in
 # the string and how much space is left to the end of the line and on subsequent lines
@@ -271,7 +269,6 @@ def findHighlightPosition(stringList, highlightIndex):
 
 def appendStringTokenToLineList(lines, node, winWidth):
     currentLineLength = lines[-1].length()
-    #stringList = textwrap.wrap(node.text, winWidth)
     lineLengthLeft = winWidth - currentLineLength
     stringList = splitStringAcrossLines(node.text, lineLengthLeft, winWidth)
     nodeList = [node.updateList(('text', string), ('highlightIndex', None)) for string in stringList]
@@ -311,7 +308,7 @@ def makeLineList(stream, winWidth):
                     cursorTopLine = currentLineNumber
                 cursorBottomLine = currentLineNumber
 
-            tokenLength = len(node.nodeToString()) + 1  ## technically parens will only be 1 char
+            tokenLength = len(node.text) + 1  ## technically parens will only be 1 char
 
             if (currentLineLength + tokenLength) > winWidth:
                 if isinstance(node.nodeReference.child, str):

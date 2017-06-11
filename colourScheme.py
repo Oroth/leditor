@@ -22,11 +22,11 @@ class ColourScheme(fo.FuncObject):
 
     def lookupTokenFGColour(self, token):
         if isinstance(token.nodeReference.child, reader.Symbol):
-            if token.nodeToString() in ("'", '.', '(', ')', '#'):
+            if token.text in ("'", '.', '(', ')', '#'):
                 fgcol = self.symbolCol
-            elif token.nodeToString() in ('=', '+', '-', '*', '/', '>', '>=', '<', '=<', '!='):
+            elif token.text in ('=', '+', '-', '*', '/', '>', '>=', '<', '=<', '!='):
                 fgcol = self.operatorCol
-            elif token.nodeToString() in ('obj', '^', 'let', 'if'):
+            elif token.text in ('obj', '^', 'let', 'if'):
                 fgcol = self.keyWordCol
             else:
                 fgcol = self.identifierCol
