@@ -91,11 +91,6 @@ class LineList(list, fo.FuncObject):
             ('cursorTopLine', newTopLine),
             ('cursorBottomLine', newBottomLine))
 
-    #def newCursor(self, start, end):
-    #    for lineNode in self:
-    #        for tokenNode in lineNode:
-    #            if tokenNode.nodeReference == start:
-
     #def wrap(self, width)
 
 def spaceHighlighted(cursorAddress, tokenAddress):
@@ -129,7 +124,7 @@ def drawToken(token, prevToken, colScheme, hlcol, image, x, y, cursorAddress):
     if cursorMatch(cursorAddress, token.nodeAddress) and not token.isEditing:
         bgcol = hlcol
 
-    elif text in ('.', ')') and prevToken.editingLastCell():
+    elif text in ('.', ')') and prevToken and prevToken.editingLastCell():
         bgcol = hlcol
 
     else:
@@ -198,8 +193,11 @@ def drawLineList(lineList, editor, isActive):
     return image, cursorx, cursory
 
 def getLine(string, lineLength, splitMidWord=True):
+    if len(string) < lineLength:
+        return string[:lineLength]
+
     finalBlankIndex = string.rfind(' ', 0, lineLength)
-    if finalBlankIndex == -1:
+    if finalBlankIndex <= 1:
         if splitMidWord:
             return string[:lineLength]
         else:
@@ -271,6 +269,7 @@ def appendStringTokenToLineList(lines, node, winWidth):
     currentLineLength = lines[-1].length()
     lineLengthLeft = winWidth - currentLineLength
     stringList = splitStringAcrossLines(node.text, lineLengthLeft, winWidth)
+    #stringList = splitStringAcrossLines1(node.text, winWidth, currentLineLength)
     nodeList = [node.updateList(('text', string), ('highlightIndex', None)) for string in stringList]
 
     if node.highlightIndex:
