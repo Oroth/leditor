@@ -39,7 +39,7 @@ def get_data_files(base_dir, target_dir, list=[]):
 #my_files = get_data_files(sys.path[0] + '\\', assets_dir)
 my_files = [('editor-settings-fs', ['build-settings/EditorSettings']),
             ('imagefs', ['build-settings/image']),
-            ('fonts', ['fonts/terminal8x14_gs_ro.png']),
+            ('fonts', ['fonts/terminal8x14_gs_ro.png', 'fonts/terminal-transparent.png']),
             ('.', ['lib/libtcod-mingw.dll', 'lib/SDL.dll'])]
 
 
@@ -50,13 +50,12 @@ opts = {
         'ascii':'True',      # exclude unicode encodings
         'excludes':
             ['_ssl','_hashlib', 'doctest', 'pdb', 'unittest', 'difflib', 'optparse',
-             'subprocess', 'threading', 'pickle', 'random', 'collections',
-             'gettext', 'heapq'],
+             'subprocess', 'pickle', 'random', 'gettext', 'email', 'unicodedata'],
+        # 'collections', 'heapq', 'threading',      # needed for pyglet
         'includes' : ['encodings', 'encodings.string_escape'],
-        'bundle_files':'3',
+        'bundle_files':'3',         # 3=no bundling, 2=bundle all but python.dll, 1=bundle everything
         'dll_excludes': ['w9xpopen.exe'],       # only needed for win95/98
         #'optimize': 2,
-        #'bundle_files': 2,
         'compressed':'True'
 }}
 
@@ -65,6 +64,7 @@ setup(
     console=[target_file],
     #windows=[target_file],
     data_files=my_files,
-    zipfile=None,
+    #zipfile=None,
+    zipfile='library.zip',
     options=opts)
 
