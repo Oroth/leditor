@@ -5,6 +5,7 @@ import tn, buffer, CodeEditor
 import iop, screen, window
 import reader, eval, leditor_exceptions as ex
 import cmdList
+import refs
 from cmdBar import CmdBar
 from iop import Key
 import repl, simpleFileEditor as sfe
@@ -15,6 +16,9 @@ def syncWindowsToEditorList(windowList, newEditorList):
 
 def syncEditorsToImage(editorList, newImage):
     return editorList.mapRoot(lambda node: node.syncWithImage(newImage))
+
+def syncEditorsToStore(editorList, newStore):
+    return editorList.mapRoot(lambda node: node.syncToStore(newStore))
 
 
 class WindowManager(fo.FuncObject):
@@ -46,7 +50,10 @@ class WindowManager(fo.FuncObject):
         self.cmdBar = None
         self.message = None
         self.persist = ['editorList', 'windowList']
+
         self.track = None
+        self.store = refs.Store()
+        self.trackref = None
 
         self.wincl = cmdList.CmdList([
             (Key.c('j'), cmdWinDown),
@@ -70,6 +77,9 @@ class WindowManager(fo.FuncObject):
             (Key.vk(iop.KEY_F11, alt=True), cmdTextPager),
         ])
 
+    def initStore(self):
+        store, trackref = refs.Store().newValue(None)
+        return self.newStore(store).update('trackref', trackref)
 
 
     def getCmdBarEnv(self):
@@ -99,8 +109,9 @@ class WindowManager(fo.FuncObject):
 
     def updateSound(self):
         try:
-            track = self.activeWindow.editor.track
-            if track != self.track:
+            # track = self.activeWindow.editor.track
+            track = self.store.get(self.trackref)
+            if track and track != self.track:
                 self.track = track
                 self.app.playMedia(track)
         except AttributeError:
@@ -273,8 +284,11 @@ class WindowManager(fo.FuncObject):
         else:
             syncedEditorList = newEditorList
 
+        self.store = newEditor.store
+        storeSyncedEditorList = syncEditorsToStore(syncedEditorList, newEditor.store)
+
         return self.updateList(
-            ('editorList', syncedEditorList),
+            ('editorList', storeSyncedEditorList),
             ('windowList', syncWindowsToEditorList(newWinList, syncedEditorList)))
 
     def loadNewImage(self, newImage):
@@ -284,6 +298,15 @@ class WindowManager(fo.FuncObject):
         return self.updateList(
             ('ImageRoot', newImage),
             ('hist', newImage),
+            ('editorList', syncedEditorList),
+            ('windowList', syncedWindowList))
+
+    def newStore(self, newStore):
+        syncedEditorList = syncEditorsToStore(self.editorList, newStore)
+        syncedWindowList = syncWindowsToEditorList(self.windowList, syncedEditorList)
+
+        return self.updateList(
+            ('store', newStore),
             ('editorList', syncedEditorList),
             ('windowList', syncedWindowList))
 
@@ -399,7 +422,9 @@ class WindowManager(fo.FuncObject):
         pyEditorLoad = reader.readLatestFile('editor-settings-fs/')
         newWM = self.loadEditorSettingsFromPyExp(pyEditorLoad)
         newWM.app = self.app
-        return newWM.cmdLoadLatestImage()
+        syncedWM = newWM.initStore()
+        # syncedWM = newWM.newStore(newWM.store)
+        return syncedWM.cmdLoadLatestImage()
     
     def cmdLoadLatestImage(self):
         pyImageLoad = reader.readLatestFile('imagefs/')
@@ -515,5 +540,5 @@ def cmdSFE(wm):
     return wm.replaceWindow(winCmd(wm.activeWindow))
 
 def cmdMusic(wm):
-    winCmd = window.createAddEditorCommand(sfe.SimpleFileEditor.fromPath, 'D:/Music')
+    winCmd = window.createAddEditorCommand(sfe.SimpleFileEditor.fromPath, 'D:/Music', wm.store, wm.trackref)
     return wm.replaceWindow(winCmd(wm.activeWindow))

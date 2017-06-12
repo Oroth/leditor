@@ -50,7 +50,7 @@ opts = {
         'ascii':'True',      # exclude unicode encodings
         'excludes':
             ['_ssl','_hashlib', 'doctest', 'pdb', 'unittest', 'difflib', 'optparse',
-             'subprocess', 'pickle', 'random', 'gettext', 'email', 'unicodedata'],
+             'subprocess', 'pickle', 'random', 'gettext', 'email'],
         # 'collections', 'heapq', 'threading',      # needed for pyglet
         'includes' : ['encodings', 'encodings.string_escape'],
         'bundle_files':'3',         # 3=no bundling, 2=bundle all but python.dll, 1=bundle everything

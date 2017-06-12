@@ -271,6 +271,7 @@ class TreeEditor(DisplayEditor):
             printsexp.drawLineList(self.lineList, self, isActive)
 
         self._message = ''
+        self.store = None
 
         import window
         self.windowCommands = cmdList.CmdList([
@@ -334,6 +335,12 @@ class TreeEditor(DisplayEditor):
         if newImageRoot != self.buffer.root:
             newBuffer = self.buffer.syncToNewRoot(newImageRoot)
             return self.updateBuffer(newBuffer)
+        else:
+            return self
+
+    def syncToStore(self, newStore):
+        if newStore != self.store:
+            return self.update('store', newStore)
         else:
             return self
 

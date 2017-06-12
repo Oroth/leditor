@@ -50,13 +50,15 @@ class FileEditorColourScheme(colourScheme.ColourScheme):
             return self.identifierCol
 
 class SimpleFileEditor(Editors.TreeEditor):
-    def __init__(self, aBuffer=None, directory='./'):
+    def __init__(self, aBuffer=None, directory='./', store=None, trackref=None):
         super(SimpleFileEditor, self).__init__(aBuffer)
         self.printingMode = 'allVertical'
         self.indentWidth = 2
         self.colourScheme = FileEditorColourScheme()
         self.directory = directory
         self.track = None
+        self.trackref = trackref
+        self.store = store
 
         self.moveCommands = cmdList.CmdList([
             ((Key.c('l'), Key.c('j'), Key.vk(iop.KEY_RIGHT), Key.vk(iop.KEY_DOWN)),
@@ -66,11 +68,19 @@ class SimpleFileEditor(Editors.TreeEditor):
         ])
 
     @classmethod
-    def fromPath(cls, path='./'):
-        fileList = dirToFileList(path)
+    def fromPath(cls, path='./', store=None, trackref=None):
+        fileList = dirToFileList(path )
         fileRoot = tn.createTNodeExpFromPyExp([fileList])
         fileBuffer = buffer.BufferSexp(fileRoot, cursorAdd=[0, 0])
-        return cls(fileBuffer)
+        return cls(fileBuffer, path, store, trackref)
+
+    def newPath(self, path):
+        fileList = dirToFileList(path )
+        fileRoot = tn.createTNodeExpFromPyExp([fileList])
+        fileBuffer = buffer.BufferSexp(fileRoot, cursorAdd=[0, 0])
+        newSFE = self.updateBuffer(fileBuffer)
+
+        return newSFE.update('directory', path)
 
     def handleKeysMain(self, key):
         if key.code == iop.KEY_ENTER:
@@ -90,7 +100,7 @@ class SimpleFileEditor(Editors.TreeEditor):
 
         file = self.buffer.getCurrent()
         if file.isdir:
-            return SimpleFileEditor.fromPath(file.fullpath)
+            return self.newPath(file.fullpath)
         elif file.ismusic:
             return self.playMusic(file)
 
@@ -105,4 +115,6 @@ class SimpleFileEditor(Editors.TreeEditor):
         return False
 
     def playMusic(self, file):
-        return self.update('track', file.fullpath)
+        newStore = self.store.set(self.trackref, file.fullpath)
+        return self.update('store', newStore)
+        # return self.update('track', file.fullpath)
