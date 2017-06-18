@@ -284,7 +284,7 @@ class IOApplication(pyglet.window.Window):
             if modifiers & key.MOD_CTRL and symbol < 256:
                 k = Key(symbol, modifiers)
                 return handler(k)
-            elif symbol > 255:
+            elif symbol > 255 and symbol not in (key.LEFT, key.RIGHT, key.UP, key.DOWN, key.BACKSPACE, key.DELETE):
                 return handler(Key(symbol, modifiers))
 
         return wrapper

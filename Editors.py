@@ -48,7 +48,7 @@ class Editor(fo.FuncObject):
     def handleMouse(self, mouse):
         return self
 
-class CellEditor(object):
+class CellEditor(fo.FuncObject):
     def __init__(self, content, index=0):
         self.original = str(content)
         self.content = list(str(content).encode('string_escape'))
@@ -78,62 +78,77 @@ class CellEditor(object):
             self.index = characterRef
 
     def handleKey(self, key):
+        self.returnCode = 'CONTINUE'
         if key.code == iop.KEY_ENTER:
             try:
                 if self.isString and ''.join(self.content).decode('string_escape'):
-                    return 'END'
+                    return self.update('returnCode', 'END')
             except ValueError: return
-            return 'END'  # exit editor
+            return self.update('returnCode', 'END')
 
         if key.code == iop.KEY_ESCAPE:
-            return 'CANCEL'  # exit editor
+            return self.update('returnCode', 'CANCEL' )
 
         elif key.code == iop.KEY_LEFT:
             if self.index > 0:
-                self.index -= 1
+                return self.update('index', self.index - 1)
 
         elif key.code == iop.KEY_RIGHT:
             if self.index < len(self.content):
-                self.index += 1
+                return self.update('index', self.index + 1)
 
         elif key.code == iop.KEY_BACKSPACE:
             if self.content and self.index != 0:
-                del self.content[self.index - 1]
-                self.index -= 1
+                newContent = list(self.content)
+                del newContent[self.index - 1]
+                return self.updateList(
+                    ('content', newContent),
+                    ('index', self.index - 1))
             elif not self.content:
-                return 'PREV'
+                return self.update('returnCode', 'PREV')
 
         elif key.code == iop.KEY_DELETE:
             if self.content and self.index != len(self.content):
-                del self.content[self.index]
+                newContent = list(self.content)
+                del newContent[self.index]
+                return self.update('content', newContent)
 
         elif not self.isString and key.char  == "'":
-            return 'QUOTE'
+            return self.update('returnCode', 'QUOTE')
 
         elif not self.isString and key.char == ".":
-            return 'DOT'
+            return self.update('returnCode', 'DOT')
 
         elif not self.isString and key.char == '(':
-            return 'NEST'
+            return self.update('returnCode', 'NEST')
 
         elif not self.isString and key.char == ')':
-            return 'UNNEST'
+            return self.update('returnCode', 'UNNEST')
 
         elif key.char == '"':
             if not self.isString:
-                self.isString = True
+                return self.update('isString', True)
             else:
                 temp = ''.join(self.content)
                 if temp.find(' ') == -1:
-                    self.isString = False
+                    return self.update('isString', False)
+                else:
+                    return self
 
         elif not self.isString and key.code == iop.KEY_SPACE:
             if len(self.content) > 0:
-                return 'SPACE'
+                return self.update('returnCode', 'SPACE')
 
         elif key.isPrintable() and (self.isString or key.char not in ':;\\|,#~[]{}%&*'):
-            self.content.insert(self.index, key.char)
-            self.index += 1
+            newContent = list(self.content)
+            newContent.insert(self.index, key.char)
+            return self.updateList(
+                ('content', newContent),
+                ('index', self.index + 1),
+                ('returnCode', 'CONTINUE'))
+
+        else:
+            return self
 
 
 class DisplayEditor(fo.FuncObject):
@@ -479,8 +494,15 @@ class TreeEditor(DisplayEditor):
         return self.updateToppedLineList(newTopLine)
 
     def handleCellEditor(self, key):
-        finished = self.cellEditor.handleKey(key)
-        if finished == 'END':
+        newCellEditor = self.cellEditor.handleKey(key)
+
+        if newCellEditor is None:
+            return self
+
+        if newCellEditor.returnCode == 'CONTINUE':
+            return self.update('cellEditor', newCellEditor)
+
+        elif newCellEditor.returnCode == 'END':
             if self.cellEditor.getContent() == '':
                 isChanged = False if self.cellEditor.original == '' else True
                 return self.updateList(
@@ -495,7 +517,7 @@ class TreeEditor(DisplayEditor):
                     ('editing', False),
                     ('updateUndo', True))
 
-        elif finished == 'CANCEL':
+        elif newCellEditor.returnCode == 'CANCEL':
             if self.buffer.cursor.child == '':
                 return self.updateList(
                     ('buffer', self.buffer.deleteAtCursor()),
@@ -503,7 +525,7 @@ class TreeEditor(DisplayEditor):
             else:
                 return self.update('editing', False)
 
-        elif finished == 'PREV':
+        elif newCellEditor.returnCode == 'PREV':
             if self.buffer.cursorAdd[-1] != 0 and self.buffer.cursor.next:
                 newBuff = self.buffer.deleteAtCursor().curPrev()
             else:
@@ -519,7 +541,7 @@ class TreeEditor(DisplayEditor):
                 ('buffer', newBuff),
                 ('cellEditor', CellEditor(newBuff.cursor.child, -1)))
 
-        elif finished == 'SPACE':
+        elif newCellEditor.returnCode == 'SPACE':
             ## ideal: self.buffer.spliceAtCursor([self.cellEditor.getContent(), ''], [1])
             newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent())
             newBuff2 = newBuff.appendAtCursor('').curNext()
@@ -527,7 +549,7 @@ class TreeEditor(DisplayEditor):
                 ('buffer', newBuff2),
                 ('cellEditor', CellEditor(Symbol(''))))
 
-        elif finished == 'NEST':
+        elif newCellEditor.returnCode == 'NEST':
             if self.cellEditor.content:
                 newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent())
                 newBuff2 = newBuff.appendAtCursor(['']).curNext().curChild()
@@ -538,7 +560,7 @@ class TreeEditor(DisplayEditor):
                 ('buffer', newBuff2),
                 ('cellEditor', CellEditor(Symbol(''))))
 
-        elif finished == 'UNNEST':
+        elif newCellEditor.returnCode == 'UNNEST':
             if self.cellEditor.content:
                 newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent())
             else:
@@ -551,7 +573,7 @@ class TreeEditor(DisplayEditor):
                 ('buffer', newBuff3),
                 ('cellEditor', CellEditor(Symbol(''))))
 
-        elif finished == 'QUOTE':
+        elif newCellEditor.returnCode == 'QUOTE':
             if self.cellEditor.content:
                 newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent())
                 newBuff2 = newBuff.appendAtCursor('').curNext().quoteAtCursor()
@@ -561,7 +583,7 @@ class TreeEditor(DisplayEditor):
                 ('buffer', newBuff2),
                 ('cellEditor', CellEditor(Symbol(''))))
 
-        elif finished == 'DOT':
+        elif newCellEditor.returnCode == 'DOT':
             if self.cellEditor.content:
                 if self.buffer.cursor.quoted:
                     newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent()).curUp().nestCursor()
