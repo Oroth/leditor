@@ -109,7 +109,6 @@ class WindowManager(fo.FuncObject):
 
     def updateSound(self):
         try:
-            # track = self.activeWindow.editor.track
             track = self.store.get(self.trackref)
             if track and track != self.track:
                 self.track = track

@@ -117,4 +117,3 @@ class SimpleFileEditor(Editors.TreeEditor):
     def playMusic(self, file):
         newStore = self.store.set(self.trackref, file.fullpath)
         return self.update('store', newStore)
-        # return self.update('track', file.fullpath)
