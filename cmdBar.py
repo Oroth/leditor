@@ -1,5 +1,6 @@
 import iop
-from Editors import TreeEditor, CellEditor
+from Editors import TreeEditor
+from celleditor import CellEditor
 from reader import Symbol
 import tn
 

@@ -2,11 +2,15 @@ import operator
 
 import funobj as fo
 import tn, buffer
-import iop, screen, printsexp
-import cmdList, misc, reader
+import iop, screen
+import cmdList
+import misc
+import printsexp
+from celleditor import CellEditor
 from colourScheme import ColourScheme
-from reader import Symbol
 from iop import Key
+from reader import Symbol
+
 
 class View(object):
     def __init__(self, address):
@@ -48,108 +52,6 @@ class Editor(fo.FuncObject):
     def handleMouse(self, mouse):
         return self
 
-class CellEditor(fo.FuncObject):
-    def __init__(self, content, index=0):
-        self.original = str(content)
-        self.content = list(str(content).encode('string_escape'))
-        self.returnCode = None
-        if index < 0:
-            self.index = len(self.content) + index + 1
-        else:
-            self.index = index
-
-        if type(content) is str:
-            self.isString = True
-        else: self.isString = False
-
-    def getContentAsString(self):
-        text = ''.join(self.content)
-        if self.isString:
-            text = '"' + text + '"'
-        return text
-
-    def getContent(self):
-        return reader.atom(self.getContentAsString())
-
-    def handleClick(self, characterRef):
-        if self.isString:
-            self.index = characterRef - 1
-        else:
-            self.index = characterRef
-
-    def handleKey(self, key):
-        self.returnCode = 'CONTINUE'
-        if key.code == iop.KEY_ENTER:
-            try:
-                if self.isString and ''.join(self.content).decode('string_escape'):
-                    return self.update('returnCode', 'END')
-            except ValueError: return
-            return self.update('returnCode', 'END')
-
-        if key.code == iop.KEY_ESCAPE:
-            return self.update('returnCode', 'CANCEL' )
-
-        elif key.code == iop.KEY_LEFT:
-            if self.index > 0:
-                return self.update('index', self.index - 1)
-
-        elif key.code == iop.KEY_RIGHT:
-            if self.index < len(self.content):
-                return self.update('index', self.index + 1)
-
-        elif key.code == iop.KEY_BACKSPACE:
-            if self.content and self.index != 0:
-                newContent = list(self.content)
-                del newContent[self.index - 1]
-                return self.updateList(
-                    ('content', newContent),
-                    ('index', self.index - 1))
-            elif not self.content:
-                return self.update('returnCode', 'PREV')
-
-        elif key.code == iop.KEY_DELETE:
-            if self.content and self.index != len(self.content):
-                newContent = list(self.content)
-                del newContent[self.index]
-                return self.update('content', newContent)
-
-        elif not self.isString and key.char  == "'":
-            return self.update('returnCode', 'QUOTE')
-
-        elif not self.isString and key.char == ".":
-            return self.update('returnCode', 'DOT')
-
-        elif not self.isString and key.char == '(':
-            return self.update('returnCode', 'NEST')
-
-        elif not self.isString and key.char == ')':
-            return self.update('returnCode', 'UNNEST')
-
-        elif key.char == '"':
-            if not self.isString:
-                return self.update('isString', True)
-            else:
-                temp = ''.join(self.content)
-                if temp.find(' ') == -1:
-                    return self.update('isString', False)
-                else:
-                    return self
-
-        elif not self.isString and key.code == iop.KEY_SPACE:
-            if len(self.content) > 0:
-                return self.update('returnCode', 'SPACE')
-
-        elif key.isPrintable() and (self.isString or key.char not in ':;\\|,#~[]{}%&*'):
-            newContent = list(self.content)
-            newContent.insert(self.index, key.char)
-            return self.updateList(
-                ('content', newContent),
-                ('index', self.index + 1),
-                ('returnCode', 'CONTINUE'))
-
-        else:
-            return self
-
 
 class DisplayEditor(fo.FuncObject):
     editors = 0
@@ -172,7 +74,7 @@ class DisplayEditor(fo.FuncObject):
         self.maxy = 68
         self._message = ''
 
-        self.statusDescription = reader.Symbol(self.__class__.__name__)
+        self.statusDescription = Symbol(self.__class__.__name__)
         self.id = DisplayEditor.editors
         DisplayEditor.editors += 1
 
@@ -199,7 +101,7 @@ class DisplayEditor(fo.FuncObject):
     def getEditorSettings(self):
         viewAdd = self.buffer.viewAdd
         cursorAdd = self.buffer.cursorAdd
-        s = reader.Symbol
+        s = Symbol
         zipList = []
         for k, v in self.zippedNodes.iteritems():
             if v is True:
@@ -246,7 +148,7 @@ class StatusBar(DisplayEditor):
         if aBuffer:
             statusBuffer = aBuffer
         else:
-            self.status = [reader.Symbol('Editor')]
+            self.status = [Symbol('Editor')]
             statusBuffer = buffer.BufferSexp(tn.createTNodeExpFromPyExp(self.status))
 
         super(StatusBar, self).__init__(statusBuffer)
@@ -785,7 +687,7 @@ def cmdCyclePrintMode(editor):
 
 def cmdViewNewListAtEndOfBuffer(editor):
     newBuff = buffer.BufferSexp(editor.buffer.root, [0], [0, 0]).curLast()
-    newBuff = newBuff.appendAtCursor([reader.Symbol('newNode')]).curNext()
+    newBuff = newBuff.appendAtCursor([Symbol('newNode')]).curNext()
     newBuff = newBuff.viewToCursor().curChild()
     editor.topLine = 0
     return editor.update('buffer', newBuff)
