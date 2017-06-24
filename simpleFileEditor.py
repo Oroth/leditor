@@ -98,7 +98,7 @@ class SimpleFileEditor(Editors.TreeEditor):
         if self.buffer.onSubNode():
             return self
 
-        file = self.buffer.getCurrent()
+        file = self.buffer.current
         if file.isdir:
             return self.newPath(file.fullpath)
         elif file.ismusic:

@@ -405,99 +405,28 @@ class TreeEditor(DisplayEditor):
             return self.update('cellEditor', newCellEditor)
 
         elif newCellEditor.returnCode == 'END':
-            if self.cellEditor.getContent() == '':
-                isChanged = False if self.cellEditor.original == '' else True
-                return self.updateList(
-                    ('buffer', self.buffer.deleteAtCursor()),
-                    ('editing', False),
-                    ('updateUndo', isChanged))
-            else:
-                content = self.cellEditor.getContent()
-
-                return self.updateList(
-                    ('buffer', self.buffer.replaceAtCursor(content)),
-                    ('editing', False),
-                    ('updateUndo', True))
+            return cmdAcceptCellEditor(self)
 
         elif newCellEditor.returnCode == 'CANCEL':
-            if self.buffer.cursor.child == '':
-                return self.updateList(
-                    ('buffer', self.buffer.deleteAtCursor()),
-                    ('editing', False))
-            else:
-                return self.update('editing', False)
+            return cmdCancelCellEditor(self)
 
         elif newCellEditor.returnCode == 'PREV':
-            if self.buffer.cursorAdd[-1] != 0 and self.buffer.cursor.next:
-                newBuff = self.buffer.deleteAtCursor().curPrev()
-            else:
-                newBuff = self.buffer.deleteAtCursor()
-
-            # check we didn't delete the last node:
-            if newBuff.onSubNode() or newBuff.cursor.child is None:
-                return self.updateList(
-                    ('buffer', newBuff),
-                    ('editing', False))
-
-            return self.updateList(
-                ('buffer', newBuff),
-                ('cellEditor', CellEditor(newBuff.cursor.child, -1)))
+            return cmdCellEditorDeleteBack(self)
 
         elif newCellEditor.returnCode == 'SPACE':
-            ## ideal: self.buffer.spliceAtCursor([self.cellEditor.getContent(), ''], [1])
-            newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent())
-            newBuff2 = newBuff.appendAtCursor('').curNext()
-            return self.updateList(
-                ('buffer', newBuff2),
-                ('cellEditor', CellEditor(Symbol(''))))
+            return cmdCellEditorAppendSpace(self)
 
         elif newCellEditor.returnCode == 'NEST':
-            if self.cellEditor.content:
-                newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent())
-                newBuff2 = newBuff.appendAtCursor(['']).curNext().curChild()
-            else:
-                newBuff2 = self.buffer.replaceAtCursor(['']).curChild()
-
-            return self.updateList(
-                ('buffer', newBuff2),
-                ('cellEditor', CellEditor(Symbol(''))))
+            return cmdCellEditorNestCursor(self)
 
         elif newCellEditor.returnCode == 'UNNEST':
-            if self.cellEditor.content:
-                newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent())
-            else:
-                newBuff = self.buffer.deleteAtCursor()
-
-            newBuff2 = newBuff.curUp()
-            newBuff3 = newBuff2.appendAtCursor('').curNext()
-
-            return self.updateList(
-                ('buffer', newBuff3),
-                ('cellEditor', CellEditor(Symbol(''))))
+            return cmdCellEditorUnnestCursor(self)
 
         elif newCellEditor.returnCode == 'QUOTE':
-            if self.cellEditor.content:
-                newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent())
-                newBuff2 = newBuff.appendAtCursor('').curNext().quoteAtCursor()
-            else:
-                newBuff2 = self.buffer.replaceAtCursor('').quoteAtCursor()
-            return self.updateList(
-                ('buffer', newBuff2),
-                ('cellEditor', CellEditor(Symbol(''))))
+            return cmdCellEditorQuoteCursor(self)
 
         elif newCellEditor.returnCode == 'DOT':
-            if self.cellEditor.content:
-                if self.buffer.cursor.quoted:
-                    newBuff = self.buffer.replaceAtCursor(self.cellEditor.getContent()).curUp().nestCursor()
-                    newBuff2 = newBuff.curChild().appendAtCursor('').curNext().quoteAtCursor()
-                else:
-                    newBuff = self.buffer.replaceAtCursor([self.cellEditor.getContent()]).curChild()
-                    newBuff2 = newBuff.appendAtCursor('').curNext().quoteAtCursor()
-            else:
-                return self
-            return self.updateList(
-                ('buffer', newBuff2),
-                ('cellEditor', CellEditor(Symbol(''))))
+            return cmdCellEditorSetMethodCall(self)
 
         else:
             return self
@@ -564,17 +493,118 @@ class TreeEditor(DisplayEditor):
         return self.image
 
 
+################################### Cell Editor Commands ################################################
+
+
+# if newCellEditor.returnCode == 'CONTINUE':
+#     return self.update('cellEditor', newCellEditor)
+
+def cmdAcceptCellEditor(editor):
+    content = editor.cellEditor.getContent()
+    isChanged = editor.cellEditor.original != content
+    if content == '':
+        newBuffer = editor.buffer.deleteAtCursor()
+    else:
+        newBuffer = editor.buffer.replaceAtCursor(content)
+
+    return editor.updateList(
+        ('buffer', newBuffer),
+        ('editing', False),
+        ('updateUndo', isChanged))
+
+def cmdCancelCellEditor(editor):
+    if editor.buffer.current == '':
+        return editor.updateList(
+            ('buffer', editor.buffer.deleteAtCursor()),
+            ('editing', False))
+    else:
+        return editor.update('editing', False)
+
+def cmdCellEditorDeleteBack(editor):
+    if not editor.buffer.onFirstNode() and editor.buffer.cursor.next:
+        newBuffer = editor.buffer.deleteAtCursor().curPrev()
+    else:
+        newBuffer = editor.buffer.deleteAtCursor()
+
+    # check we didn't delete the last node:
+    if newBuffer.onSubNode() or newBuffer.current is None:
+        return editor.updateList(
+            ('buffer', newBuffer),
+            ('editing', False))
+
+    return editor.updateList(
+        ('buffer', newBuffer),
+        ('cellEditor', CellEditor(newBuffer.current, -1)))
+
+
+def cmdCellEditorAppendSpace(editor):
+    ## ideal: editor.buffer.spliceAtCursor([editor.cellEditor.getContent(), ''], [1])
+    newBuff = editor.buffer.replaceAtCursor(editor.cellEditor.getContent())
+    newBuff2 = newBuff.appendAtCursor('').curNext()
+    return editor.updateList(
+        ('buffer', newBuff2),
+        ('cellEditor', CellEditor(Symbol(''))))
+
+def cmdCellEditorNestCursor(editor):
+    if editor.cellEditor.content:
+        newBuff = editor.buffer.replaceAtCursor(editor.cellEditor.getContent())
+        newBuff2 = newBuff.appendAtCursor(['']).curNext().curChild()
+    else:
+        newBuff2 = editor.buffer.replaceAtCursor(['']).curChild()
+
+    return editor.updateList(
+        ('buffer', newBuff2),
+        ('cellEditor', CellEditor(Symbol(''))))
+
+def cmdCellEditorUnnestCursor(editor):
+    if editor.cellEditor.content:
+        newBuff = editor.buffer.replaceAtCursor(editor.cellEditor.getContent())
+    else:
+        newBuff = editor.buffer.deleteAtCursor()
+
+    newBuff2 = newBuff.curUp()
+    newBuff3 = newBuff2.appendAtCursor('').curNext()
+
+    return editor.updateList(
+        ('buffer', newBuff3),
+        ('cellEditor', CellEditor(Symbol(''))))
+
+def cmdCellEditorQuoteCursor(editor):
+    if editor.cellEditor.content:
+        newBuff = editor.buffer.replaceAtCursor(editor.cellEditor.getContent())
+        newBuff2 = newBuff.appendAtCursor('').curNext().quoteAtCursor()
+    else:
+        newBuff2 = editor.buffer.replaceAtCursor('').quoteAtCursor()
+    return editor.updateList(
+        ('buffer', newBuff2),
+        ('cellEditor', CellEditor(Symbol(''))))
+
+def cmdCellEditorSetMethodCall(editor):
+    if editor.cellEditor.content:
+        if editor.buffer.cursor.quoted:
+            newBuff = editor.buffer.replaceAtCursor(editor.cellEditor.getContent()).curUp().nestCursor()
+            newBuff2 = newBuff.curChild().appendAtCursor('').curNext().quoteAtCursor()
+        else:
+            newBuff = editor.buffer.replaceAtCursor([editor.cellEditor.getContent()]).curChild()
+            newBuff2 = newBuff.appendAtCursor('').curNext().quoteAtCursor()
+    else:
+        return editor
+    return editor.updateList(
+        ('buffer', newBuff2),
+        ('cellEditor', CellEditor(Symbol(''))))
+
+
 ##################################### Change Mode Commands ###############################################
 
 def cmdChangeFromStart(editor):
     return editor.updateList(
-        ('cellEditor', CellEditor(editor.buffer.cursor.child)),
+        ('cellEditor', CellEditor(editor.buffer.current)),
         ('editing', True),
         ('changeMode', False))
 
 def cmdChangeFromEnd(editor):
     return editor.updateList(
-        ('cellEditor', CellEditor(editor.buffer.cursor.child, -1)),
+        ('cellEditor', CellEditor(editor.buffer.current, -1)),
         ('editing', True),
         ('changeMode', False))
 
@@ -591,7 +621,7 @@ def cmdChangeToMode(editor):
     return editor.update('changeMode', 'to')
 
 def cmdStartEditFromChangeMode(editor, key):
-    text = editor.buffer.cursor.child
+    text = editor.buffer.current
     index = text.find(key.char)
     if editor.changeMode == 'from':
         newCellEditor =  CellEditor(text, index)
@@ -737,12 +767,12 @@ def cmdMethodChainAtCursor(editor):
         return editor.update('buffer', newBuff)
 
 def cmdSlurpAtCursor(editor):
-    if editor.buffer.onSubNode() or editor.buffer.cursor.child is None:
+    if editor.buffer.onSubNode() or editor.buffer.current is None:
         newBuff = editor.buffer.slurpAtCursor()
         return editor.update('buffer', newBuff)
 
 def cmdBarfAtCursor(editor):
-    if editor.buffer.onSubNode() and editor.buffer.cursor.child:
+    if editor.buffer.onSubNode() and editor.buffer.current:
         newBuff = editor.buffer.barfAtCursor()
         return editor.update('buffer', newBuff)
 
@@ -767,7 +797,7 @@ def cmdToggleStringAtCursor(editor):
 def cmdSearchForMatchToCursor(editor):
     if not editor.buffer.onSubNode():
         try:
-            return editor.update('buffer', editor.buffer.search(editor.buffer.getCurrent()))
+            return editor.update('buffer', editor.buffer.search(editor.buffer.current))
         except ValueError: pass
 
 def cmdToggleRevealedNode(editor):
@@ -789,14 +819,14 @@ def cmdViewToCursor(editor):
 
 def cmdViewFuturePostion(editor):
     newHist = editor.viewHistory.curNext()
-    newBuff = editor.buffer.newViewAdd(newHist.cursor.child.address)
+    newBuff = editor.buffer.newViewAdd(newHist.current.address)
     return editor.updateList(
         ('viewHistory', newHist),
         ('buffer', newBuff))
 
 def cmdViewPastPosition(editor):
     newHist = editor.viewHistory.curPrev()
-    newBuff = editor.buffer.newViewAdd(newHist.cursor.child.address)
+    newBuff = editor.buffer.newViewAdd(newHist.current.address)
     return editor.updateList(
         ('viewHistory', newHist),
         ('buffer', newBuff))
@@ -827,7 +857,7 @@ def cmdCursorPrevious(editor):
     return editor.update('buffer', editor.buffer.curPrev())
 
 def cmdCursorFirst(editor):
-    return editor.update('buffer', editor.buffer.first())
+    return editor.update('buffer', editor.buffer.rootChild())
 
 def cmdCursorDownAlong(editor):
     if editor.cursorIsZipped(editor.buffer):

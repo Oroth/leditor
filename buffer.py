@@ -39,10 +39,14 @@ class SimpleBuffer(fo.FuncObject):
     def onSubNode(self):
         return self.cursor.isSubNode()
 
-    def first(self):
+    def onFirstNode(self):
+        return self.cursorAdd[-1] == 0
+
+    def rootChild(self):
         return self.root.child
 
-    def getCurrent(self):
+    @property
+    def current(self):
         return self.cursor.child
 
     def toPyExp(self):
@@ -161,7 +165,7 @@ class SimpleBuffer(fo.FuncObject):
             raise ValueError
 
     def findFirst(self, pred):
-        for n, node in enumerate(self.first()):
+        for n, node in enumerate(self.rootChild()):
             if pred(node.child):
                 return self.newCursorAdd([0, n])
         else:

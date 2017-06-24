@@ -51,7 +51,7 @@ class Window(fo.FuncObject):
 
     @property
     def editor(self):
-        return self.editorList.cursor.child
+        return self.editorList.current
 
     def addEditor(self, newEd):
         newEditorList = self.editorList.appendAtCursor(newEd).curNext()

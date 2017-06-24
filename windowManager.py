@@ -129,13 +129,13 @@ class WindowManager(fo.FuncObject):
 
 
     def getEditSexp(self):
-        curWin = self.windowList.getCurrent()
+        curWin = self.windowList.current
         curEd = curWin.editor
         return curEd.getEditorSettings()
 
     @property
     def activeWindow(self):
-        return self.windowList.getCurrent()
+        return self.windowList.current
 
     def writeEditor(self):
         print self.getWMSettings()
@@ -186,7 +186,7 @@ class WindowManager(fo.FuncObject):
         editorTNodeList = self.editorList.root
         windowTNodeList = self.windowList.root
 
-        for winPos, winNode in enumerate(self.windowList.first()):
+        for winPos, winNode in enumerate(self.windowList.rootChild()):
             if leftover > 0:
                 curYStep = minYStep + 1
                 leftover -= 1
@@ -198,7 +198,7 @@ class WindowManager(fo.FuncObject):
             curY += curYStep
 
             editBuffer = winNode.child.editorList
-            editor = editBuffer.cursor.child
+            editor = editBuffer.current
             editorAdd = editBuffer.cursorAdd
             newEditor = editor.updateSize(maxX, curYStep)
 
@@ -233,7 +233,7 @@ class WindowManager(fo.FuncObject):
         minYStep = screenForWins / wins
         leftover = screenForWins % wins
 
-        for winNode in self.windowList.first():
+        for winNode in self.windowList.rootChild():
             window = winNode.child
             if leftover > 0:
                 curYStep = minYStep + 1
@@ -269,9 +269,9 @@ class WindowManager(fo.FuncObject):
     # newWindow, new editor, new image
     # and then syncs the various parts
     def integrateUpdatedWindowList(self, newWinList):
-        newWin = newWinList.cursor.child
+        newWin = newWinList.current
         newEditorList = newWin.editorList
-        newEditor = newEditorList.cursor.child
+        newEditor = newEditorList.current
 
         if newEditor.isRootImageEditor() and self.ImageRoot != newEditor.buffer.root:
             newImage = newEditor.buffer.root
@@ -355,7 +355,7 @@ class WindowManager(fo.FuncObject):
         except ValueError:
             return self
         else:
-            resultWin = newwindowList.getCurrent().handleMouse(mouse)
+            resultWin = newwindowList.current.handleMouse(mouse)
             newwindowList2 = newwindowList.replaceAtCursor(resultWin)
             return self.update('windowList', newwindowList2)
 

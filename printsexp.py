@@ -24,7 +24,7 @@ class TokenNode(fo.FuncObject):
     def __init__(self, ps, text=None, stringSplit=None):
         self.nodeReference = ps.cursor
         if text is None:
-            self.text = reader.to_string(ps.cursor.child)
+            self.text = reader.to_string(ps.current)
         else:
             self.text = str(text)
         self.isCursor = ps.isCursor
@@ -421,7 +421,7 @@ def makeIndentedLineList(editor, winWidth, winHeight):
 
 
         elif ps.onSubNode():
-            if tn.isMethodCallExp(ps.cursor.child):
+            if tn.isMethodCallExp(ps.current):
                 methodChainps = ps.curChild().reset('newline').set('isMethodChain')
                 ret = makeMixedLineTokenList(methodChainps)
             else:
@@ -434,7 +434,7 @@ def makeIndentedLineList(editor, winWidth, winHeight):
                 ret.extend(makeMixedLineTokenList(psChild))
                 ret.append(TokenNode(ps, ps.cursor.endToken))
 
-        elif ps.cursor.child is None:
+        elif ps.current is None:
             ret = [TokenNode(ps, '('), TokenNode(ps, ')')]
 
         else:
